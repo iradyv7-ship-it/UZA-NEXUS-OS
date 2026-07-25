@@ -3,6 +3,8 @@ import { ConfigModule } from '@nestjs/config';
 import { PrismaModule } from './prisma/prisma.module';
 import { PlatformModule } from './platform/platform.module';
 import { TradeModule } from './trade/trade.module';
+import { SourcingModule } from './sourcing/sourcing.module';
+import { QualityModule } from './quality/quality.module';
 import { HealthController } from './health.controller';
 
 @Module({
@@ -11,6 +13,8 @@ import { HealthController } from './health.controller';
     PrismaModule,
     PlatformModule,
     TradeModule,
+    SourcingModule,
+    QualityModule,
   ],
   controllers: [HealthController],
 })
