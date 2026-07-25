@@ -4,12 +4,10 @@ import type { IdKind } from '@uza/contracts';
 /**
  * Readable-id helpers for finance-commission.
  *
- * `invoice`, `payment` and `installment` are defined in @uza/contracts ID_PATTERNS, so
- * they render through the shared platform formatter (single source over the patterns,
- * CF-001). `claim`, `pettyCash` and `bankChange` are NOT yet in ID_PATTERNS — they are
- * rendered locally here and a contract-request has been filed to add them
- * (docs/contract-requests/2026-07-25-finance-ids.md). Proceeding meanwhile, mirroring the
- * approach sourcing took for its missing patterns.
+ * `invoice`, `payment`, `installment`, `claim`, `pettyCash` and `bankChange` are all
+ * defined in @uza/contracts ID_PATTERNS, so every ref renders through the shared platform
+ * formatter (single source over the patterns, CF-001). The claim/pettyCash/bankChange keys
+ * were added from docs/contract-requests/2026-07-25-finance-ids.md.
  *
  * Sequencing is `count()+1` inside the insert transaction — collision-free under the
  * single-writer model, with the `ref`/`@id` constraint as the hard backstop.
@@ -30,11 +28,11 @@ export const paymentRef = (seq: number): string =>
 export const installmentRef = (order: string, trigger: string): string =>
   formatId('installment', { order, trigger });
 
-// ---- local patterns (pending contract-request) -----------------------------
-// TODO: pending docs/contract-requests/2026-07-25-finance-ids.md
-export const claimRef = (seq: number): string => `CLM-${currentYear()}-${pad(seq, 4)}`;
-export const pettyCashRef = (office: string, seq: number): string =>
-  `PC-${office}-${currentYear()}-${pad(seq, 4)}`;
-export const bankChangeRef = (seq: number): string => `SBC-${currentYear()}-${pad(seq, 4)}`;
+export const claimRef = (seq: number): string =>
+  formatId('claim', { year: currentYear(), seq });
 
-const pad = (n: number, width: number): string => String(n).padStart(width, '0');
+export const pettyCashRef = (office: string, seq: number): string =>
+  formatId('pettyCash', { office, year: currentYear(), seq });
+
+export const bankChangeRef = (seq: number): string =>
+  formatId('bankChange', { year: currentYear(), seq });
