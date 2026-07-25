@@ -1,0 +1,39 @@
+# Local infrastructure for UZA Nexus OS.
+# Bring up:   docker compose up -d
+# Postgres 16 and Redis 7 — the same major versions used in production (see docs/TOOLING.md).
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: uza-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: uza
+      POSTGRES_PASSWORD: uza_dev_pw
+      POSTGRES_DB: uza_nexus
+    ports:
+      - "5432:5432"
+    volumes:
+      - uza_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U uza -d uza_nexus"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    container_name: uza-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - uza_redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  uza_pgdata:
+  uza_redisdata:

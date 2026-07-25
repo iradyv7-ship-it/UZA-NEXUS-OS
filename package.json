@@ -1,0 +1,14 @@
+{
+  "name": "uza-nexus",
+  "version": "0.1.0",
+  "private": true,
+  "packageManager": "pnpm@11.17.0",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "typecheck": "pnpm -r typecheck",
+    "test": "pnpm --filter @uza/api test",
+    "contracts:typecheck": "pnpm --filter @uza/contracts typecheck"
+  }
+}

@@ -1,0 +1,182 @@
+// UZA Nexus OS — platform-core (Sprint 0)
+// Owns: identity, roles, authorisation audit, append-only audit log,
+// the transactional outbox, processed-events (idempotency) and notifications.
+//
+// Money is never stored here as a float. Where a minor-unit amount is needed by a
+// downstream module it is a BigInt/Int carried in an event payload, never a Float.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+/// Top-level tenant (UZA Solutions Ltd). Multi-org is modelled from day one so the
+/// "internal-only year one?" founder decision does not force a schema migration later.
+model Organisation {
+  id        String   @id @default(uuid())
+  name      String   @unique
+  createdAt DateTime @default(now())
+
+  offices Office[]
+}
+
+/// A physical/operational office (RW, GOM, CN-Ningbo ...). Actors carry an office.
+model Office {
+  id             String @id @default(uuid())
+  code           String @unique // e.g. "RW", "GOM", "CN"
+  name           String
+  organisationId String
+
+  organisation Organisation @relation(fields: [organisationId], references: [id])
+  users        User[]
+
+  createdAt DateTime @default(now())
+}
+
+enum UserKind {
+  employee
+  partner
+}
+
+enum RoleName {
+  ceo
+  venture_manager
+  china_sourcing
+  china_warehouse
+  front_office
+  finance
+  sales_agent
+  customer
+  logistics_partner
+}
+
+/// A principal that can authenticate. Employees, customers and external partners are
+/// all Users, differentiated by `kind`. Partner (and customer portal) accounts EXPIRE:
+/// `expiresAt` is enforced at authentication time. Scope columns hydrate the
+/// `Actor.scope` shape from @uza/contracts.
+model User {
+  id           String   @id @default(uuid())
+  ref          String   @unique // readable id, e.g. AGT-GOM-0021 (ID_PATTERNS)
+  email        String   @unique
+  passwordHash String
+  role         RoleName
+  kind         UserKind @default(employee)
+  officeId     String
+
+  // Object-scope, mirrors Actor.scope in @uza/contracts/permissions.ts
+  scopeCustomerId   String?
+  scopeCustomerIds  String[] @default([])
+  scopeShipmentRefs String[] @default([])
+
+  // MFA-ready. No secret material is required to exist; the columns are present so
+  // enabling TOTP later is a data change, not a migration.
+  mfaEnabled Boolean @default(false)
+  mfaSecret  String?
+
+  // Partner/customer accounts expire; internal employees leave expiresAt null.
+  expiresAt  DateTime?
+  disabledAt DateTime?
+
+  office          Office           @relation(fields: [officeId], references: [id])
+  roleAssignments RoleAssignment[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+/// Append-only history of who holds which role, and who granted it. Revocation is a
+/// new row's `revokedAt`, never a delete.
+model RoleAssignment {
+  id           String    @id @default(uuid())
+  userId       String
+  role         RoleName
+  assignedById String
+  assignedAt   DateTime  @default(now())
+  revokedAt    DateTime?
+  reason       String?
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+}
+
+enum AuditDecision {
+  allow
+  deny
+}
+
+/// APPEND-ONLY. The AuditService only ever inserts. There is no update or delete path
+/// in code, and every authorisation denial writes one of these rows BEFORE the throw.
+model AuditLog {
+  id        String        @id @default(uuid())
+  actorId   String
+  actorRole String
+  resource  String
+  action    String
+  decision  AuditDecision
+  reason    String? // e.g. ACCESS_DENIED_ROLE / ACCESS_DENIED_SCOPE
+  targetRef String?
+  detail    Json?
+  createdAt DateTime      @default(now())
+
+  @@index([actorId])
+  @@index([resource, action])
+  @@index([createdAt])
+}
+
+enum OutboxStatus {
+  pending
+  published
+  failed
+}
+
+/// Transactional outbox. A row is written in the SAME transaction as the state change
+/// it describes. The worker (apps/worker) polls `pending` rows and publishes them.
+/// Events are NEVER emitted directly from a request handler.
+model OutboxEvent {
+  id          String       @id @default(uuid())
+  eventId     String       @unique // idempotency key, also the EventEnvelope.eventId
+  name        String // UzaEventName
+  actorId     String
+  payload     Json
+  occurredAt  DateTime
+  status      OutboxStatus @default(pending)
+  attempts    Int          @default(0)
+  lastError   String?
+  publishedAt DateTime?
+  createdAt   DateTime     @default(now())
+
+  @@index([status, createdAt])
+}
+
+/// Idempotency ledger for consumers. A handler records the eventId it has processed;
+/// a second delivery of the same eventId is a no-op. `(eventId, consumer)` is unique so
+/// independent consumers each process an event exactly once.
+model ProcessedEvent {
+  id          String   @id @default(uuid())
+  eventId     String
+  consumer    String
+  processedAt DateTime @default(now())
+
+  @@unique([eventId, consumer])
+}
+
+/// Notification dispatch record. Fan-out on an exception writes one row per recipient,
+/// each addressed to a role-appropriate audience (see CF-023).
+model Notification {
+  id          String    @id @default(uuid())
+  ref         String    @unique
+  audience    String // NotificationAudience
+  recipientId String
+  subjectRef  String
+  body        String
+  channel     String    @default("in_app")
+  readAt      DateTime?
+  createdAt   DateTime  @default(now())
+
+  @@index([recipientId])
+}
