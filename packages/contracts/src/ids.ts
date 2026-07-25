@@ -23,6 +23,9 @@ export const ID_PATTERNS = {
   shipment:    'SHP-{year}-{seq:4}',
   delivery:    'DLV-{office}-{year}-{seq:4}',
   call:        'CALL-{year}-{seq:5}',
+  claim:       'CLM-{year}-{seq:4}',
+  pettyCash:   'PC-{office}-{year}-{seq:4}',
+  bankChange:  'SBC-{year}-{seq:4}',
 } as const;
 
 export type IdKind = keyof typeof ID_PATTERNS;
