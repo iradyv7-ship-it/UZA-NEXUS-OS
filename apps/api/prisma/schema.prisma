@@ -180,3 +180,186 @@ model Notification {
 
   @@index([recipientId])
 }
+
+// ===========================================================================
+// trade-flow (Sprint 1) — the commercial spine: enquiry -> confirmed order.
+// Owns: Customer, Lead, Request, Project, Task (RACI), Quotation (versioned),
+// Order, Installment. Money is stored as integer MINOR units (never Float);
+// the `*Minor` suffix marks every such column. Fractions (marginPct, pct) are
+// Float because they are ratios, not money. Cross-aggregate links are readable
+// refs (String), mirroring the event-driven reference; no relational FKs so the
+// aggregates stay independently writable and truncatable.
+// ===========================================================================
+
+enum QuotationStatus {
+  draft
+  approved
+  superseded
+}
+
+enum OrderStatus {
+  awaiting_payment
+  procurement_active
+  in_transit
+  delivered
+  cancelled
+}
+
+enum InstallmentStatus {
+  due
+  paid
+}
+
+/// A buyer. `completedOrders` drives the payment-schedule tier (>= 3 delivered =
+/// established, per policy.ESTABLISHED_AFTER_ORDERS). `ref` is the readable CUS-... id.
+model Customer {
+  id              String   @id @default(uuid())
+  ref             String   @unique
+  name            String
+  country         String
+  phone           String
+  agentId         String?
+  completedOrders Int      @default(0)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([agentId])
+}
+
+/// Badiane's real intake: an informal WhatsApp message lands as raw text. It is NOT a
+/// structured request yet. `clarified` flips only when a human confirms the AI/agent
+/// interpretation (clarifyLead), which is what produces the Request.
+model Lead {
+  id         String   @id @default(uuid())
+  ref        String   @unique
+  customerRef String
+  agentId    String
+  rawText    String
+  stage      String   @default("Awareness")
+  clarified  Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([customerRef])
+}
+
+/// A structured enquiry, produced only after a human confirms a Lead's interpretation.
+/// `spec` is the confirmed structured interpretation of the raw WhatsApp text.
+model Request {
+  id          String   @id @default(uuid())
+  ref         String   @unique
+  customerRef String
+  leadRef     String
+  spec        Json
+  venture     String   @default("BULK")
+  createdAt   DateTime @default(now())
+
+  @@index([customerRef])
+  @@index([leadRef])
+}
+
+/// The unit of delivery work. Created only from a Request whose Lead is clarified —
+/// unstructured text never becomes a project without the human-confirmation step.
+model Project {
+  id          String   @id @default(uuid())
+  ref         String   @unique
+  customerRef String
+  agentId     String?
+  requestRef  String
+  name        String
+  owner       String
+  stage       String   @default("Qualification")
+  health      String   @default("green")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([customerRef])
+  @@index([requestRef])
+}
+
+/// RACI: `accountable` (one owner, answers for the outcome) and `responsible` (does the
+/// work) are separate, mandatory fields — never collapsed into a single assignee.
+model Task {
+  id          String   @id @default(uuid())
+  ref         String   @unique
+  projectRef  String
+  title       String
+  accountable String
+  responsible String
+  status      String   @default("open")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([projectRef])
+}
+
+/// Versioned, never edited in place. A revision supersedes its predecessor and bumps
+/// `version`; `supersededByRef` chains old -> new. `ladder` is the full CostLadder
+/// (Record<CostRung, {estMinor, actMinor}>) as JSON. `marginPct` is the quoted margin at
+/// the sell incoterm, LOCKED at approval. `realizedMargin` is computed later from actuals
+/// (at DAP) and is a SEPARATE field — the quoted figure is never overwritten.
+model Quotation {
+  ref                    String          @id
+  projectRef             String
+  customerRef            String
+  agentId                String?
+  qty                    Int
+  sellIncoterm           String
+  ladder                 Json
+  supplierUnitCostMinor  Int
+  targetPriceMinor       Int
+  walkawayPriceMinor     Int
+  customerUnitPriceMinor Int
+  marginPct              Float
+  realizedMargin         Float?
+  version                Int             @default(1)
+  status                 QuotationStatus @default(draft)
+  supersededByRef        String?
+  createdAt              DateTime        @default(now())
+  updatedAt              DateTime        @updatedAt
+
+  @@index([projectRef])
+  @@index([customerRef])
+}
+
+/// A confirmed order. `tier` and the installment schedule are derived at creation from
+/// the customer's completed-order count; the schedule is NOT hardcoded. Order stops here
+/// for trade — the Invoice is Finance's (Sprint 2).
+model Order {
+  ref              String      @id
+  projectRef       String
+  customerRef      String
+  agentId          String?
+  quotationRef     String
+  totalMinor       Int
+  tier             String
+  status           OrderStatus @default(awaiting_payment)
+  commissionAccrued Boolean    @default(false)
+  cancelReason     String?
+  createdAt        DateTime    @default(now())
+  updatedAt        DateTime    @updatedAt
+
+  installments Installment[]
+
+  @@index([customerRef])
+  @@index([quotationRef])
+}
+
+/// One tranche of an order's payment schedule. Generated from scheduleFor +
+/// splitInstallments at order creation (parts sum EXACTLY to the total). Marked `paid`
+/// only when Finance's payment.verified event lands for its trigger.
+model Installment {
+  ref         String            @id
+  orderRef    String
+  trigger     String
+  pct         Float
+  amountMinor Int
+  status      InstallmentStatus @default(due)
+  paidEventId String?
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+
+  order Order @relation(fields: [orderRef], references: [ref], onDelete: Cascade)
+
+  @@index([orderRef])
+}
