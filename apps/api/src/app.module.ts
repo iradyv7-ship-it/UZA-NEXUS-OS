@@ -5,6 +5,7 @@ import { PlatformModule } from './platform/platform.module';
 import { TradeModule } from './trade/trade.module';
 import { SourcingModule } from './sourcing/sourcing.module';
 import { QualityModule } from './quality/quality.module';
+import { FinanceModule } from './finance/finance.module';
 import { HealthController } from './health.controller';
 
 @Module({
@@ -15,6 +16,7 @@ import { HealthController } from './health.controller';
     TradeModule,
     SourcingModule,
     QualityModule,
+    FinanceModule,
   ],
   controllers: [HealthController],
 })
