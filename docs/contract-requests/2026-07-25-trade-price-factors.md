@@ -1,3 +1,17 @@
+Status:     ACCEPTED (shared) — contracts-guardian, 2026-07-25.
+            Added `TARGET_PRICE_FACTOR` (0.92) and `WALKAWAY_FACTOR` (1.05) to
+            packages/contracts/src/policy.ts (section "quotation pricing"). Additive; no
+            breaking change. @uza/contracts typechecks clean.
+Rationale:  Commercial policy a founder (Badiane) tunes — the negotiation floor and the
+            walk-away ceiling. The target/walkaway VALUES are already shared contract
+            (Quotation.targetPriceMinor/walkawayPriceMinor + CONFIDENTIAL_FIELDS); the
+            derivation factors belong beside them in policy.ts, not inline.
+Migration:  Modules that must now import instead of inlining —
+            - trade-flow: apps/api/src/trade/quotation/pricing.ts — delete local
+              TARGET_PRICE_FACTOR / WALKAWAY_FACTOR, import from @uza/contracts, drop the
+              two `// TODO: pending contract-request` markers. No behavioural change.
+            No other module derives these today.
+
 Module:     trade-flow
 Need:       Quotation target price and walkaway price are derived from the supplier
             unit cost by two hardcoded factors in the reference oracle

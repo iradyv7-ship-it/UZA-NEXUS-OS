@@ -1,3 +1,27 @@
+Status:     ACCEPTED (shared) — contracts-guardian, 2026-07-25.
+            (1) Added `SUPPLIER_SCORE` (VARIANCE_MULTIPLIER 10, VARIANCE_CAP 2.0) to
+                packages/contracts/src/policy.ts (section "sourcing: supplier score").
+            (2) Added `supplier` (SUP-{country}-{seq:4}), `rfq` (RFQ-{year}-{seq:4}) and
+                `supplierQuote` (SQ-{seq:4}) keys to ID_PATTERNS in
+                packages/contracts/src/ids.ts.
+            Additive; no existing key or type changed. @uza/contracts typechecks clean.
+            The cause-tag enum is NOT added this sprint (request marks it optional); revisit
+            when a second score input is wired.
+Rationale:  (1) Founder-tunable — how hard a factory is punished for volume misdeclaration;
+            finance/analytics read the score series, warehouse produces the variance.
+            (2) Readable IDs are definitionally shared (CF-001); every module referencing a
+            supplier/quote by ref must agree on shape.
+Migration:  Modules that must now import instead of rendering locally —
+            - sourcing: apps/api/src/sourcing/scoring.ts — replace local
+              SCORE_VARIANCE_MULTIPLIER / SCORE_VARIANCE_CAP with SUPPLIER_SCORE.* from
+              @uza/contracts; drop the `// TODO: pending contract-request` marker.
+              varianceScoreDelta keeps its logic, just reads the shared constants.
+            - sourcing: apps/api/src/sourcing/sourcing-ids.ts — delete the local
+              supplierRef / rfqRef / supplierQuoteRef renderers and route through
+              formatId('supplier'|'rfq'|'supplierQuote', parts); update callers in
+              supplier.service.ts and rfq.service.ts. Rendered refs are unchanged.
+            No SCORE_CAUSE change: cause tags stay local until the shared enum is filed.
+
 Module:     sourcing-quality
 Need:       Two gaps in @uza/contracts surfaced while building sourcing:
 

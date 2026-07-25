@@ -34,6 +34,54 @@ export const LEAD_DECAY_RATE = 0.01;       // repeat orders, same client
 export const LEAD_OWNERSHIP_MONTHS = 12;
 export const CLAIMS_WINDOW_DAYS = 14;
 
+// ---------- quotation pricing ----------
+/**
+ * The negotiation floor and walk-away ceiling, derived from the supplier unit cost.
+ * TARGET is the price a negotiator aims for; below WALKAWAY UZA declines the deal.
+ * Founder-tunable commercial policy — never inline these in a pricing routine.
+ */
+export const TARGET_PRICE_FACTOR = 0.92;   // negotiation floor vs supplier unit cost
+export const WALKAWAY_FACTOR = 1.05;       // walk-away ceiling vs supplier unit cost
+
+// ---------- quality: inspection grading ----------
+/**
+ * How an inspection's defect counts grade into a result. A critical defect always fails
+ * and blocks release (no override); more than the major threshold is only conditional.
+ * Founder-tunable quality policy — quality grades against it, the release gate and the
+ * web inspection screen read the same boundary.
+ */
+export const INSPECTION_THRESHOLDS = {
+  /** critical > this ⇒ fail. A critical defect always fails, no override. */
+  CRITICAL_FAIL_AT: 0,
+  /** major > this ⇒ conditional (when not already failing on a critical). */
+  MAJOR_CONDITIONAL_AT: 2,
+} as const;
+
+/**
+ * The single definition of the grading rule, so a publisher and the release gate never
+ * re-derive "> 2 major = conditional" and drift. Return type mirrors Inspection.result.
+ */
+export const gradeInspection = (
+  critical: number,
+  major: number,
+): 'pass' | 'conditional' | 'fail' => {
+  if (critical > INSPECTION_THRESHOLDS.CRITICAL_FAIL_AT) return 'fail';
+  if (major > INSPECTION_THRESHOLDS.MAJOR_CONDITIONAL_AT) return 'conditional';
+  return 'pass';
+};
+
+// ---------- sourcing: supplier score ----------
+/**
+ * How hard a factory's score is lowered for declared-vs-measured volumetric variance:
+ *   delta = -min(abs(variance) * VARIANCE_MULTIPLIER, VARIANCE_CAP)
+ * applied only when the receipt flagged a discrepancy. Founder-tunable — finance and
+ * supplier analytics read the resulting score series; warehouse produces the variance.
+ */
+export const SUPPLIER_SCORE = {
+  VARIANCE_MULTIPLIER: 10,   // score points per unit of |variance|
+  VARIANCE_CAP: 2.0,         // max single-event penalty
+} as const;
+
 // ---------- cost ladder ----------
 export const INCOTERMS = ['EXW', 'FOB', 'CIF', 'DAP'] as const;
 export type Incoterm = (typeof INCOTERMS)[number];

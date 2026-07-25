@@ -2,6 +2,9 @@
 export const ID_PATTERNS = {
   customer:    'CUS-{country}-{seq:6}',
   agent:       'AGT-{office}-{seq:4}',
+  supplier:      'SUP-{country}-{seq:4}',
+  rfq:           'RFQ-{year}-{seq:4}',
+  supplierQuote: 'SQ-{seq:4}',
   lead:        'LED-{year}-{seq:4}',
   request:     'REQ-{venture}-{year}-{seq:4}',
   project:     'PRJ-{venture}-{year}-{seq:4}',
