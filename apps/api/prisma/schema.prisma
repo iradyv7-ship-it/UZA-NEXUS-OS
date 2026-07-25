@@ -686,3 +686,239 @@ model Capa {
   @@index([supplierRef])
   @@index([inspectionRef])
 }
+
+// ===========================================================================
+// finance-commission (Sprint 2) — the money half of the corridor.
+// Owns: Invoice + its finance-side installment schedule, Payment (proof capture
+// and Finance verification), the append-only Commission ledger (accrual /
+// clawback / payout), forwarder freight claims, petty cash, and dual-approval
+// supplier bank-detail changes.
+//
+// PRINCIPLES:
+//  - Money is integer MINOR units (*Minor), never Float. Fractions (pct,
+//    paidFraction) are ratios, not money.
+//  - Every balance is a LEDGER, never an in-place edit. A commission dispute is
+//    answered by pointing at rows (accrual + clawback both survive), not by a
+//    corrected number with no history.
+//  - Finance computes the expected installment amounts INDEPENDENTLY from the
+//    order.created payload (scheduleFor + splitInstallments — the same policy
+//    trade used), so it validates payments without reading trade's tables.
+//  - Cross-aggregate links are readable refs (String); no relational FK into
+//    trade/sourcing, so the aggregates stay independently writable.
+// ===========================================================================
+
+enum InvoiceStatus {
+  issued
+  part_paid
+  paid
+  void
+}
+
+/// One tranche of an invoice's payment schedule, finance-owned. Regenerated from the
+/// order.created payload via splitInstallments so verification can settle a NAMED
+/// installment (not an arbitrary amount) without touching trade's Installment rows.
+enum FinanceInstallmentStatus {
+  due
+  settled
+}
+
+/// A payment sits pending until a human with the finance role verifies it. AI, the front
+/// office and venture managers can never move it out of pending_verification.
+enum PaymentStatus {
+  pending_verification
+  verified
+  rejected
+}
+
+/// A movement in the commission ledger. NEVER a balance edit — the running balance is the
+/// signed sum of these rows. accrual is positive, clawback and payout are negative.
+enum CommissionEntryType {
+  accrual
+  clawback
+  payout
+}
+
+enum ClaimStatus {
+  raised
+  submitted
+  recovered
+  written_off
+}
+
+enum PettyCashKind {
+  float
+  expense
+  replenishment
+}
+
+enum BankChangeStatus {
+  pending_dual_approval
+  applied
+  rejected
+}
+
+/// The customer-facing bill for an order. Created by consuming trade's `order.created`
+/// (idempotent on eventId). `totalMinor` and `tier` come from the event; the schedule is
+/// derived locally. `commissionAccrued`/`commissionClawedBack` guard the ledger writes.
+model Invoice {
+  ref                  String        @id
+  orderRef             String        @unique
+  customerRef          String
+  agentId              String?
+  totalMinor           Int
+  tier                 String
+  status               InvoiceStatus @default(issued)
+  commissionAccrued    Boolean       @default(false)
+  commissionClawedBack Boolean       @default(false)
+  sourceEventId        String?       @unique
+  createdAt            DateTime      @default(now())
+  updatedAt            DateTime      @updatedAt
+
+  installments InvoiceInstallment[]
+
+  @@index([customerRef])
+  @@index([orderRef])
+}
+
+/// Finance's own view of the installment schedule. `settled` flips when Finance verifies
+/// a payment that covers it. Kept separate from trade's Installment so the modules stay
+/// independently writable; trade marks its own copy paid by consuming `payment.verified`.
+model InvoiceInstallment {
+  ref               String                   @id
+  invoiceRef        String
+  orderRef          String
+  trigger           String
+  pct               Float
+  amountMinor       Int
+  status            FinanceInstallmentStatus @default(due)
+  settledByPaymentRef String?
+  settledEventId    String?
+  createdAt         DateTime                 @default(now())
+  updatedAt         DateTime                 @updatedAt
+
+  invoice Invoice @relation(fields: [invoiceRef], references: [ref], onDelete: Cascade)
+
+  @@index([invoiceRef])
+  @@index([orderRef])
+}
+
+/// A payment against an invoice. Uploading proof only CAPTURES it (status
+/// pending_verification) and publishes `payment.proofUploaded`. Verification is a
+/// separate, finance-only act that settles a named installment and stamps `verifiedBy`.
+model Payment {
+  ref             String        @id
+  invoiceRef      String
+  orderRef        String
+  customerRef     String
+  amountMinor     Int
+  proofRef        String
+  targetTrigger   String
+  status          PaymentStatus @default(pending_verification)
+  verifiedBy      String?
+  verifiedAt      DateTime?
+  rejectionReason String?
+  settledInstallmentRef String?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  @@index([invoiceRef])
+  @@index([orderRef])
+  @@index([customerRef])
+}
+
+/// APPEND-ONLY commission ledger. 2% accrues when the confirmation installment is
+/// verified; a cancellation claws it back; a payout is a third row. The balance is the
+/// signed sum — no row is ever updated or deleted. `dedupeKey` is a nullable UNIQUE column
+/// giving DB-level idempotency for the singular accrual/clawback per order (payout rows
+/// leave it null, so an agent may be paid out many times).
+model CommissionEntry {
+  id            String              @id @default(uuid())
+  agentId       String
+  orderRef      String
+  amountMinor   Int
+  type          CommissionEntryType
+  reason        String?
+  sourceEventId String?
+  dedupeKey     String?             @unique
+  createdAt     DateTime            @default(now())
+
+  @@index([agentId])
+  @@index([orderRef])
+}
+
+/// A claim against a forwarder for over-billing: billed revenue-ton exceeded measured
+/// beyond `BILLING_CLAIM_THRESHOLD`. Raised by finance (never a client conversation),
+/// with Finance notified. Consumes logistics' `shipment.billedWeightRecorded`.
+model ForwarderClaim {
+  ref                String      @id
+  shipmentRef        String
+  measuredRevenueTon Float
+  billedRevenueTon   Float
+  overRevenueTon     Float
+  freightPaidMinor   Int?
+  status             ClaimStatus @default(raised)
+  sourceEventId      String?     @unique
+  createdAt          DateTime    @default(now())
+  updatedAt          DateTime    @updatedAt
+
+  @@index([shipmentRef])
+}
+
+/// Petty cash movements per office. Append-only ledger; the office balance is the signed
+/// sum. `float` seeds the tin, `expense` is negative spend, `replenishment` tops it up.
+model PettyCashTransaction {
+  ref         String        @id
+  office      String
+  amountMinor Int
+  kind        PettyCashKind
+  memo        String
+  actorId     String
+  createdAt   DateTime      @default(now())
+
+  @@index([office])
+}
+
+/// The active bank account we pay a supplier into. Only ever written by applying a
+/// dual-approved change request — there is no direct setter.
+model SupplierBankAccount {
+  supplierRef      String   @id
+  accountName      String
+  iban             String
+  bankName         String
+  appliedByRequest String?
+  updatedAt        DateTime @updatedAt
+}
+
+/// A proposed change to a supplier's bank details. It applies ONLY after two DISTINCT
+/// finance approvers approve it, and the requester may not self-approve. This is the
+/// dual-approval control on where supplier money goes.
+model SupplierBankChangeRequest {
+  ref         String           @id
+  supplierRef String
+  accountName String
+  iban        String
+  bankName    String
+  requestedBy String
+  status      BankChangeStatus @default(pending_dual_approval)
+  appliedAt   DateTime?
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  approvals SupplierBankChangeApproval[]
+
+  @@index([supplierRef])
+}
+
+/// One approver's approval of a bank-change request. `(requestRef, approverId)` is unique
+/// so one person cannot approve twice to fake dual approval.
+model SupplierBankChangeApproval {
+  id         String   @id @default(uuid())
+  requestRef String
+  approverId String
+  createdAt  DateTime @default(now())
+
+  request SupplierBankChangeRequest @relation(fields: [requestRef], references: [ref], onDelete: Cascade)
+
+  @@unique([requestRef, approverId])
+  @@index([requestRef])
+}
