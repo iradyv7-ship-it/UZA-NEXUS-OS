@@ -363,3 +363,326 @@ model Installment {
 
   @@index([orderRef])
 }
+
+// ===========================================================================
+// sourcing-quality (Sprint 1) — supplier intelligence + quality control.
+// Owns: Supplier (EN/CN names, lifecycle, certifications, price/quality history,
+// score), Rfq, SupplierQuote, PurchaseOrder, Visit, Inspection (four stages,
+// evidence bound to lot+package refs), Capa. Money is integer MINOR units
+// (*Minor). Cross-aggregate links are readable refs (String), mirroring trade.
+//
+// OFFLINE CAPTURE: François works a Ningbo warehouse on poor signal. Every write
+// path carries a nullable `clientRequestId` with a UNIQUE constraint. A device
+// captures offline with a client-generated UUID and syncs later; a replay of the
+// same clientRequestId is a no-op (the service returns the existing row and does
+// NOT re-emit its event). This is the retrofit the charter says to design in now.
+//
+// SUPPLIER SCORE moves only on logged evidence: every change writes a
+// SupplierScoreEvent row carrying the delta, the before/after score and the CAUSE.
+// The `score` column is never set by hand — only through that append-only ledger.
+// ===========================================================================
+
+/// Supplier lifecycle (matches @uza/contracts SupplierLifecycle).
+enum SupplierLifecycle {
+  Discovered
+  Contacted
+  PreScreened
+  SampleRequested
+  SampleApproved
+  TrialOrder
+  Verified
+  Preferred
+  StrategicPartner
+  Suspended
+  Blocked
+}
+
+/// A supplier quote's cost basis. EXW keeps inland cost separable; FOB buries it,
+/// so the quote is flagged inlandSeparable=false and cannot be compared like-for-like
+/// against an EXW quote without acknowledging the buried inland leg.
+enum QuoteBasis {
+  EXW
+  FOB
+}
+
+enum PoStatus {
+  issued
+  in_production
+  ready
+  shipped
+  cancelled
+}
+
+enum InspectionStage {
+  pre_production
+  during_production
+  pre_shipment
+  warehouse
+}
+
+enum InspectionResult {
+  pass
+  conditional
+  fail
+}
+
+enum CapaStatus {
+  open
+  evidence_submitted
+  closed
+}
+
+/// A factory. EN + CN names (both matter for a China corridor). `score` is a
+/// competitive asset and moves ONLY through SupplierScoreEvent — never a hand edit.
+model Supplier {
+  id                  String            @id @default(uuid())
+  ref                 String            @unique
+  nameEn              String
+  nameZh              String
+  country             String            @default("CN")
+  lifecycle           SupplierLifecycle @default(Discovered)
+  score               Float             @default(0)
+  relationshipOwnerId String?
+  clientRequestId     String?           @unique
+  createdAt           DateTime          @default(now())
+  updatedAt           DateTime          @updatedAt
+
+  certifications SupplierCertification[]
+  scoreEvents    SupplierScoreEvent[]
+  priceHistory   SupplierPricePoint[]
+  qualityHistory SupplierQualityRecord[]
+
+  @@index([lifecycle])
+}
+
+/// A supplier certification (ISO, CE, factory audit ...). Part of the intelligence
+/// picture: an expired cert is a sourcing signal.
+model SupplierCertification {
+  id          String    @id @default(uuid())
+  supplierRef String
+  name        String
+  issuer      String?
+  number      String?
+  issuedAt    DateTime?
+  expiresAt   DateTime?
+  createdAt   DateTime  @default(now())
+
+  supplier Supplier @relation(fields: [supplierRef], references: [ref], onDelete: Cascade)
+
+  @@index([supplierRef])
+}
+
+/// APPEND-ONLY score ledger. Every point a supplier gains or loses is a row here,
+/// carrying the CAUSE (declared-vs-measured variance, defect rate, delivery lateness,
+/// packaging failure) and the before/after score. `Supplier.score` is only ever the
+/// running total these rows produce. `sourceEventId` links a change to the domain event
+/// that drove it (e.g. a warehouse.receiptRecorded eventId) for idempotency + audit.
+model SupplierScoreEvent {
+  id            String   @id @default(uuid())
+  supplierRef   String
+  delta         Float
+  previousScore Float
+  newScore      Float
+  cause         String
+  causeRef      String?
+  detail        Json?
+  sourceEventId String?
+  createdAt     DateTime @default(now())
+
+  supplier Supplier @relation(fields: [supplierRef], references: [ref], onDelete: Cascade)
+
+  @@index([supplierRef])
+  @@index([cause])
+}
+
+/// Price history: one row per observed supplier price (from a quote). Kept as its own
+/// series so supplier price trends survive even if a quote is superseded.
+model SupplierPricePoint {
+  id              String    @id @default(uuid())
+  supplierRef     String
+  quoteRef        String?
+  unitCostMinor   Int
+  basis           QuoteBasis
+  inlandSeparable Boolean
+  observedAt      DateTime  @default(now())
+
+  supplier Supplier @relation(fields: [supplierRef], references: [ref], onDelete: Cascade)
+
+  @@index([supplierRef])
+}
+
+/// Quality history: one row per recorded inspection outcome, denormalised onto the
+/// supplier so their defect record is queryable without walking POs.
+model SupplierQualityRecord {
+  id            String           @id @default(uuid())
+  supplierRef   String
+  inspectionRef String           @unique
+  poRef         String
+  stage         InspectionStage
+  result        InspectionResult
+  critical      Int
+  major         Int
+  minor         Int
+  recordedAt    DateTime         @default(now())
+
+  supplier Supplier @relation(fields: [supplierRef], references: [ref], onDelete: Cascade)
+
+  @@index([supplierRef])
+}
+
+/// A request for quotation against a project. Suppliers answer with SupplierQuotes.
+model Rfq {
+  id              String   @id @default(uuid())
+  ref             String   @unique
+  projectRef      String
+  detail          Json?
+  status          String   @default("open")
+  clientRequestId String?  @unique
+  createdAt       DateTime @default(now())
+
+  quotes SupplierQuote[]
+
+  @@index([projectRef])
+}
+
+/// A supplier's quote. `basis` + `inlandSeparable` record the cost basis so an EXW
+/// (inland separable) quote is never silently compared against an FOB (inland buried)
+/// one. Money is MINOR units; volumetrics (cbm/kg) are the factory's DECLARED figures.
+model SupplierQuote {
+  id              String     @id @default(uuid())
+  ref             String     @unique
+  supplierRef     String
+  projectRef      String
+  rfqRef          String?
+  unitCostMinor   Int
+  moq             Int
+  leadTimeDays    Int
+  unitCbm         Float
+  unitKg          Float
+  basis           QuoteBasis @default(EXW)
+  inlandSeparable Boolean    @default(true)
+  clientRequestId String?    @unique
+  createdAt       DateTime   @default(now())
+
+  rfq Rfq? @relation(fields: [rfqRef], references: [ref])
+
+  @@index([supplierRef])
+  @@index([projectRef])
+}
+
+/// A purchase order to a supplier for a confirmed order. `declaredCbm`/`declaredKg`
+/// are what the FACTORY says — the first of the three volumetric numbers (declared,
+/// measured, billed). Publishing `po.issued` is owned here.
+model PurchaseOrder {
+  ref             String   @id
+  supplierRef     String
+  orderRef        String
+  quoteRef        String?
+  qty             Int
+  unitCostMinor   Int
+  poTotalMinor    Int
+  declaredCbm     Float
+  declaredKg      Float
+  status          PoStatus @default(issued)
+  clientRequestId String?  @unique
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  visits      Visit[]
+  inspections Inspection[]
+
+  @@index([supplierRef])
+  @@index([orderRef])
+}
+
+/// A factory visit assigned to an inspector (François). One PO can have several visits
+/// across the production timeline.
+model Visit {
+  id              String   @id @default(uuid())
+  ref             String   @unique
+  poRef           String
+  assignedTo      String
+  status          String   @default("assigned")
+  clientRequestId String?  @unique
+  createdAt       DateTime @default(now())
+
+  po          PurchaseOrder @relation(fields: [poRef], references: [ref], onDelete: Cascade)
+  inspections Inspection[]
+
+  @@index([poRef])
+}
+
+/// An inspection at one of four stages. `result` is DERIVED (critical>0 ⇒ fail;
+/// major>2 ⇒ conditional; else pass) — never set by the caller. A critical defect
+/// fails and blocks release, no override. `capturedOffline` records that François
+/// captured on a phone with no signal and synced later.
+model Inspection {
+  ref             String           @id
+  visitRef        String
+  poRef           String
+  supplierRef     String
+  stage           InspectionStage  @default(pre_shipment)
+  critical        Int              @default(0)
+  major           Int              @default(0)
+  minor           Int              @default(0)
+  result          InspectionResult
+  inspectorId     String
+  capturedOffline Boolean          @default(false)
+  clientRequestId String?          @unique
+  createdAt       DateTime         @default(now())
+
+  visit    Visit                @relation(fields: [visitRef], references: [ref])
+  po       PurchaseOrder        @relation(fields: [poRef], references: [ref])
+  evidence InspectionEvidence[]
+  capas    Capa[]
+
+  @@index([poRef])
+  @@index([supplierRef])
+}
+
+/// Inspection evidence (photo, video, measurement) bound to the lot + package refs it
+/// documents — NOT stored loose. This is what wins a forwarder or supplier claim later.
+/// lotRef/packageRef are nullable because early-stage inspections predate packing
+/// (warehouse creates lots/packages in a later sprint); a warehouse-stage inspection
+/// carries them.
+model InspectionEvidence {
+  id            String   @id @default(uuid())
+  inspectionRef String
+  kind          String
+  uri           String
+  lotRef        String?
+  packageRef    String?
+  note          String?
+  capturedAt    DateTime @default(now())
+
+  inspection Inspection @relation(fields: [inspectionRef], references: [ref], onDelete: Cascade)
+
+  @@index([inspectionRef])
+  @@index([lotRef])
+  @@index([packageRef])
+}
+
+/// A corrective action, auto-opened when an inspection fails on a critical defect. AI
+/// may DRAFT `correctiveAction`; it may not close the CAPA. Closure requires a
+/// human-approved PASSING reinspection (`closedByReinspectionRef` + `closedBy`).
+model Capa {
+  id                     String     @id @default(uuid())
+  ref                    String     @unique
+  inspectionRef          String
+  supplierRef            String
+  poRef                  String
+  status                 CapaStatus @default(open)
+  correctiveAction       String?
+  draftedBy              String?
+  closedByReinspectionRef String?
+  closedBy               String?
+  closedAt               DateTime?
+  clientRequestId        String?    @unique
+  createdAt              DateTime   @default(now())
+  updatedAt              DateTime   @updatedAt
+
+  inspection Inspection @relation(fields: [inspectionRef], references: [ref])
+
+  @@index([supplierRef])
+  @@index([inspectionRef])
+}
