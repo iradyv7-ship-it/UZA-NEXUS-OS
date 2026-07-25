@@ -4,6 +4,8 @@ import {
   marginAt,
   FREIGHT_CONTINGENCY,
   INCOTERMS,
+  TARGET_PRICE_FACTOR,
+  WALKAWAY_FACTOR,
   type CostLadder,
   type CostRung,
   type Incoterm,
@@ -15,16 +17,9 @@ import {
  * incoterm, with the DAP margin computed alongside (see QuotationService.read).
  *
  * The negotiation floor (`target`) and walk-away ceiling (`walkaway`) are derived from
- * the supplier unit cost by two factors that the reference oracle hardcodes
- * (0.92 / 1.05). They are founder-tunable commercial policy and belong in policy.ts;
- * a contract-request is filed (docs/contract-requests/2026-07-25-trade-price-factors.md).
- * Until it lands they live here as clearly-named local constants.
+ * the supplier unit cost by TARGET_PRICE_FACTOR / WALKAWAY_FACTOR, founder-tunable
+ * commercial policy imported from @uza/contracts.
  */
-// TODO: pending contract-request 2026-07-25-trade-price-factors — move to policy.ts
-export const TARGET_PRICE_FACTOR = 0.92;
-// TODO: pending contract-request 2026-07-25-trade-price-factors — move to policy.ts
-export const WALKAWAY_FACTOR = 1.05;
-
 /**
  * The rungs that carry the freight contingency uplift at quotation time (CF-004):
  * ocean freight and inland-to-destination, matching the reference oracle. The uplift
