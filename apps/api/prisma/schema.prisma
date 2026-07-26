@@ -922,3 +922,225 @@ model SupplierBankChangeApproval {
   @@unique([requestRef, approverId])
   @@index([requestRef])
 }
+
+// ===========================================================================
+// logistics-warehouse (Sprint 3) — the physical chain and the last real control
+// point over an order: goods in the warehouse, not yet on a vessel.
+// Owns: WarehouseReceipt (the lot-level three-way volumetric record), Package,
+// Shipment (the container), FreightAllocation (per-container P&L), TrackingEvent,
+// Delivery, plus locally-projected consumer state (OrderPaymentState, InspectionOutcome).
+//
+// The single most important rule (CF-014): `qcReleased` (QC state) and
+// `varianceHold` (commercial hold) are TWO SEPARATE boolean columns on Package.
+// They are NEVER collapsed into one status/zone column. Collapsing them once let
+// unresolved goods sail.
+//
+// Volumetrics are three numbers, never one: declared (factory, on WarehouseReceipt
+// from the PO), measured (François, the Package kg/cbm and the receipt's measured*),
+// billed (forwarder, on Shipment). No column is overwritten by another number.
+//
+// Money is integer MINOR units (`*Minor`). Cross-aggregate links are readable refs
+// (String), mirroring trade/sourcing/finance; no relational FKs across aggregates so
+// the modules stay independently writable and truncatable.
+// ===========================================================================
+
+/// Physical staging zone. Deliberately does NOT encode QC state or the commercial
+/// hold — those are the separate qcReleased/varianceHold booleans on Package (CF-014).
+enum WarehouseZone {
+  AWAITING_INSPECTION
+  READY_FOR_LOADING
+  QUARANTINE
+  AWAITING_CORRECTION
+  FRAGILE
+}
+
+enum Destination {
+  KIGALI
+  GOMA
+  BUKAVU
+  UZA_STOCK
+  OTHER
+}
+
+/// A tracking event's provenance. A customer must never be shown an estimate as if it
+/// were confirmed (CF-022): carrier/partner/uza are confirmed, estimated is not.
+enum TrackingSource {
+  carrier
+  partner
+  uza
+  estimated
+}
+
+enum ShipmentStatus {
+  planned
+  in_transit
+  delayed
+  arrived
+  delivered
+}
+
+enum DeliveryStatus {
+  planned
+  in_progress
+  delivered
+  failed
+}
+
+/// The lot-level warehouse receipt: the three-way volumetric reconciliation record.
+/// `declared*` is the factory number (copied from the PO, never mutated here);
+/// `measured*` is François's number at the warehouse. `variance` = (measuredCbm -
+/// declaredCbm)/declaredCbm. Beyond CBM_HARD_STOP the goods freeze (varianceHold on the
+/// packages) until a human records a `decision` (CF-013). Declared-vs-measured is a
+/// SUPPLIER problem — the warehouse.receiptRecorded event feeds the supplier score.
+model WarehouseReceipt {
+  ref                String    @id
+  orderRef           String
+  poRef              String
+  customerRef        String
+  lotRef             String    @unique
+  declaredCbm        Float
+  declaredKg         Float
+  measuredCbm        Float
+  measuredKg         Float
+  measuredRevenueTon Float
+  variance           Float
+  discrepancy        Boolean
+  hardStop           Boolean
+  decision           String? // VarianceDecision: client_pays | uza_absorbs | reduce_qty
+  decidedBy          String?
+  decidedNote        String?
+  decidedAt          DateTime?
+  clientRequestId    String?   @unique // offline-capture idempotency (François, poor signal)
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  packages Package[]
+
+  @@index([orderRef])
+  @@index([poRef])
+}
+
+/// A physical package (carton/pallet) received into the warehouse. `kg`/`cbm` are the
+/// MEASURED numbers (François), never the declared or billed ones. `qcReleased` and
+/// `varianceHold` are DELIBERATELY separate booleans (CF-014): releasing QC must not
+/// clear a commercial hold, and clearing a hold must not release QC.
+model Package {
+  ref          String        @id
+  orderRef     String
+  customerRef  String
+  poRef        String
+  lotRef       String
+  kg           Float
+  cbm          Float
+  destination  Destination?
+  zone         WarehouseZone @default(AWAITING_INSPECTION)
+  qcReleased   Boolean       @default(false)
+  varianceHold Boolean       @default(false)
+  shipmentRef  String?
+  delivered    Boolean       @default(false)
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  receipt WarehouseReceipt @relation(fields: [lotRef], references: [lotRef], onDelete: Cascade)
+
+  @@index([orderRef])
+  @@index([lotRef])
+  @@index([shipmentRef])
+}
+
+/// A shipment == a booked container. Containers are destination-PURE (CF-018): one
+/// container, one destination. `billedRevenueTon`/`freightPaidMinor` are the FORWARDER's
+/// numbers (the third of the three) recorded after booking; the measured numbers live on
+/// the packages. `daysWaitingForConsolidation` is logged on every shipment from day one
+/// (the container-utilisation founder decision) so the destination-pure policy can be judged.
+model Shipment {
+  ref                         String         @id
+  container                   String
+  carrier                     String
+  destination                 Destination
+  etd                         String
+  eta                         String
+  status                      ShipmentStatus @default(planned)
+  partnerId                   String?
+  billedRevenueTon            Float?
+  measuredRevenueTon          Float?
+  freightPaidMinor            Int?
+  daysWaitingForConsolidation Int            @default(0)
+  createdAt                   DateTime       @default(now())
+  updatedAt                   DateTime       @updatedAt
+
+  allocations FreightAllocation[]
+
+  @@index([partnerId])
+}
+
+/// Per-container freight P&L. Freight allocates PRO-RATA by revenue ton, `max(cbm,
+/// kg/1000)`, not by CBM (CF-021). One row per order on the container; the rows sum
+/// EXACTLY to freightPaidMinor (remainder to the last, like splitInstallments).
+model FreightAllocation {
+  id          String   @id @default(uuid())
+  shipmentRef String
+  orderRef    String
+  revenueTon  Float
+  amountMinor Int
+  createdAt   DateTime @default(now())
+
+  shipment Shipment @relation(fields: [shipmentRef], references: [ref], onDelete: Cascade)
+
+  @@unique([shipmentRef, orderRef])
+  @@index([shipmentRef])
+}
+
+/// A tracking milestone on a shipment. `source` declares provenance (CF-022): an
+/// estimated milestone must never be presented to a customer as confirmed.
+model TrackingEvent {
+  ref         String         @id
+  shipmentRef String
+  milestone   String
+  source      TrackingSource
+  occurredAt  DateTime
+  note        String?
+  createdAt   DateTime       @default(now())
+
+  @@index([shipmentRef])
+}
+
+/// Proof-of-delivery record. Created only after the release gate passes: goods release
+/// requires FULL payment (CF-028), not merely arrival.
+model Delivery {
+  ref         String         @id
+  shipmentRef String
+  orderRef    String
+  customerRef String
+  packageRefs String[]
+  podRef      String
+  status      DeliveryStatus @default(delivered)
+  createdAt   DateTime       @default(now())
+
+  @@index([shipmentRef])
+  @@index([orderRef])
+}
+
+/// Locally-projected order payment state, built by consuming finance's `payment.verified`
+/// (never by reading finance tables). Feeds booking gate 2 (pre-loading installment paid)
+/// and the release gate (full payment, CF-028). `paidTriggers` is the set of settled
+/// installment triggers; `paidFraction` is the cumulative fraction paid.
+model OrderPaymentState {
+  orderRef     String   @id
+  paidFraction Float    @default(0)
+  paidTriggers String[]
+  updatedAt    DateTime @updatedAt
+}
+
+/// Locally-projected quality state per PO, built by consuming `inspection.recorded` /
+/// `quality.failed`. The QC-release gate reads it: a package on a PO whose latest
+/// inspection failed cannot be released. Kept SEPARATE from the commercial varianceHold.
+model InspectionOutcome {
+  poRef          String   @id
+  lastResult     String // pass | conditional | fail
+  releaseBlocked Boolean  @default(false)
+  critical       Int      @default(0)
+  major          Int      @default(0)
+  minor          Int      @default(0)
+  updatedAt      DateTime @updatedAt
+}
