@@ -26,6 +26,7 @@ const book = (refs: string[], partnerId?: string) =>
   });
 
 describe('container booking — three independent gates, in order', () => {
+  // CF-019 — a container books once all three gates clear.
   it('books a container when all gates pass, emits container.assigned, stamps daysWaitingForConsolidation', async () => {
     const { refs } = await loadableLot({ destination: 'KIGALI' });
     const { shipment, daysWaitingForConsolidation } = await book(refs, 'IMARI');
@@ -52,7 +53,7 @@ describe('container booking — three independent gates, in order', () => {
     await expect(book(packages.map((p) => p.ref))).rejects.toMatchObject({ code: 'GATE_QC_NOT_RELEASED' });
   });
 
-  // GATE 1 (CF-016/017) — volumetric variance resolved. Reads varianceHold, NOT qcReleased.
+  // GATE 1 (CF-016) — volumetric variance resolved. Reads varianceHold, NOT qcReleased.
   it('GATE 1: an unresolved commercial hold blocks with GATE_VARIANCE_UNRESOLVED', async () => {
     // hard-stop receipt → varianceHold=true; QC-release + destination + payment so ONLY gate 1 can fire
     const { receipt, packages } = await receiveLot({ declaredCbm: 3.0 });
@@ -65,14 +66,14 @@ describe('container booking — three independent gates, in order', () => {
     await expect(book(refs)).rejects.toMatchObject({ code: 'GATE_VARIANCE_UNRESOLVED' });
   });
 
-  // GATE 2 (CF-018) — pre-loading installment paid. Only reached once variance is resolved.
+  // GATE 2 (CF-017) — pre-loading installment paid. Only reached once variance is resolved.
   it('GATE 2: an unpaid pre-loading installment blocks with GATE_PRELOADING_UNPAID', async () => {
     const { refs } = await loadableLot({ destination: 'KIGALI', payPreLoading: false });
     // variance clean, QC released, destination set, but pre-loading not paid
     await expect(book(refs)).rejects.toMatchObject({ code: 'GATE_PRELOADING_UNPAID' });
   });
 
-  // GATE 3 (CF-018/019) — single destination. Containers are destination-pure.
+  // GATE 3 (CF-018) — single destination. Containers are destination-pure.
   it('GATE 3: a mixed-destination load blocks with GATE_MIXED_DESTINATION', async () => {
     const a = await loadableLot({ orderRef: ORDER_REF, poRef: PO_REF, destination: 'KIGALI' });
     const b = await loadableLot({ orderRef: ORDER_REF_2, poRef: PO_REF_2, destination: 'GOMA' });
