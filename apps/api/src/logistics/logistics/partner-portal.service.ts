@@ -1,5 +1,5 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { MASK, type Actor } from '@uza/contracts';
+import { type Actor } from '@uza/contracts';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AuthorizationService } from '../../platform/authorization/authorization.service';
 
@@ -11,18 +11,11 @@ import { AuthorizationService } from '../../platform/authorization/authorization
  * fields from a DTO. Weight/CBM and shipment/package/delivery reach the partner; freight
  * cost is masked.
  *
- * @uza/contracts CONFIDENTIAL_FIELDS masks supplier cost / margins already, but freight
- * cost on the SHIPMENT (freightPaidMinor, billed/measured revenue ton) is not yet in that
- * map. A contract-request is filed (2026-07-25-partner-freight-mask.md); meanwhile this
- * service masks those keys locally for the partner, marked pending. Once the contract
- * lands this local override is deleted and authz.mask alone suffices.
+ * @uza/contracts CONFIDENTIAL_FIELDS masks supplier cost / margins AND the shipment freight
+ * figures (freightPaidMinor, billed/measured revenue ton), added from the accepted
+ * contract-request 2026-07-26-partner-freight-mask.md. So authz.mask alone masks cost for a
+ * logistics_partner — no local override needed.
  */
-const LOGISTICS_CONFIDENTIAL: readonly string[] = [
-  'freightPaidMinor',
-  'billedRevenueTon',
-  'measuredRevenueTon',
-];
-
 @Injectable()
 export class PartnerPortalService {
   constructor(
@@ -30,15 +23,9 @@ export class PartnerPortalService {
     private readonly authz: AuthorizationService,
   ) {}
 
-  /** Mask cost for a partner: contract masking first, then the pending freight-cost keys. */
+  /** Cost masking is entirely driven by @uza/contracts CONFIDENTIAL_FIELDS + maskFields. */
   private maskForPartner<T extends Record<string, unknown>>(actor: Actor, record: T) {
-    const masked = this.authz.mask(actor, record) as Record<string, unknown>;
-    if (actor.role === 'logistics_partner') {
-      for (const key of LOGISTICS_CONFIDENTIAL) {
-        if (key in masked) masked[key] = MASK;
-      }
-    }
-    return masked;
+    return this.authz.mask(actor, record);
   }
 
   async readShipment(actor: Actor, shipmentRef: string) {

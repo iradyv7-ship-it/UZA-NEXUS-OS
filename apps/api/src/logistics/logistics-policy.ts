@@ -1,19 +1,11 @@
 /**
- * Logistics-local policy constants that are NOT (yet) in @uza/contracts policy.ts.
- *
- * A founder should be able to change these without a developer, so they belong in
- * contracts. A contract-request is filed (docs/contract-requests/2026-07-25-container-
- * capacity.md); rendered locally meanwhile, marked pending.
+ * Logistics policy. The founder-tunable container revenue-ton capacity now lives in
+ * @uza/contracts (policy.ts, `CONTAINER_RT_CAPACITY`), accepted from
+ * docs/contract-requests/2026-07-26-container-capacity.md — re-exported here for the
+ * module's call sites. It is used only to report container utilisation
+ * (`totalRevenueTon / CONTAINER_RT_CAPACITY`); it never gates anything.
  */
-
-/**
- * Nominal revenue-ton capacity of a standard container. Used only to report container
- * utilisation (`totalRevenueTon / CONTAINER_RT_CAPACITY`) alongside the per-container
- * freight P&L — it never gates anything. The reference used 28.0.
- *
- * TODO: pending contract-request 2026-07-25-container-capacity.md.
- */
-export const CONTAINER_RT_CAPACITY = 28.0;
+export { CONTAINER_RT_CAPACITY } from '@uza/contracts';
 
 /** A fully-paid order for the release gate: cumulative paid fraction has reached 1.0. */
 export const FULLY_PAID_FRACTION = 1.0;
