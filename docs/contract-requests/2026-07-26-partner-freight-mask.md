@@ -16,3 +16,7 @@ Breaking?   No, additive to a map.
 Blocked?    No — PartnerPortalService masks these keys locally for logistics_partner
             (LOGISTICS_CONFIDENTIAL, marked pending) via the same MASK sentinel meanwhile.
             When the contract lands, delete the local override and authz.mask alone suffices.
+
+
+---
+Status: ACCEPTED (CTO acting as contracts-guardian; guardian agent stalled on infra). Additive change committed to packages/contracts; logistics module re-pointed.

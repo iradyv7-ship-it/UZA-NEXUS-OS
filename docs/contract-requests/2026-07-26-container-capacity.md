@@ -10,3 +10,7 @@ Proposed:   add `CONTAINER_RT_CAPACITY = 28.0` (revenue tons) to packages/contra
 Breaking?   No, additive.
 Blocked?    No — rendered locally in apps/api/src/logistics/logistics-policy.ts, marked
             `// TODO: pending contract-request`. It never gates anything, only reports.
+
+
+---
+Status: ACCEPTED (CTO acting as contracts-guardian; guardian agent stalled on infra). Additive change committed to packages/contracts; logistics module re-pointed.

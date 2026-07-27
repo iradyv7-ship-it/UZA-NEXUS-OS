@@ -25,6 +25,9 @@ export const CBM_TOLERANCE = 0.05;   // declared vs measured, normal factory dri
 export const CBM_HARD_STOP = 0.10;   // beyond this, loading stops until a human decides
 export const FREIGHT_CONTINGENCY = 0.09;
 export const BILLING_CLAIM_THRESHOLD = 0.02; // billed over measured before we claim
+/** Revenue-ton capacity of a container, for utilisation reporting only (never a gate).
+ * Ties to the open founder decision on container utilisation (CLAUDE.md §7). */
+export const CONTAINER_RT_CAPACITY = 28.0;
 
 export type VarianceDecision = 'client_pays' | 'uza_absorbs' | 'reduce_qty';
 

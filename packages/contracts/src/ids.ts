@@ -21,6 +21,7 @@ export const ID_PATTERNS = {
   inspection:  'INS-{country}-{year}-{seq:4}',
   capa:        'CAPA-{country}-{year}-{seq:4}',
   shipment:    'SHP-{year}-{seq:4}',
+  tracking:    'TRK-{year}-{seq:4}',
   delivery:    'DLV-{office}-{year}-{seq:4}',
   call:        'CALL-{year}-{seq:5}',
   claim:       'CLM-{year}-{seq:4}',

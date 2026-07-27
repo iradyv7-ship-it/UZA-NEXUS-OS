@@ -64,6 +64,12 @@ export const CONFIDENTIAL_FIELDS: Record<string, readonly Role[]> = {
   marginPct:        ['ceo', 'venture_manager', 'finance'],
   realizedMargin:   ['ceo', 'venture_manager', 'finance'],
   agentCommission:  ['ceo', 'finance', 'sales_agent'],
+  // Freight monetary figures on a Shipment — a logistics_partner sees weight/CBM but
+  // never cost (constitution rule 12). measuredRevenueTon is a volumetric the China
+  // warehouse legitimately needs; only the money figures are strictly cost.
+  freightPaidMinor:   ['ceo', 'venture_manager', 'finance'],
+  billedRevenueTon:   ['ceo', 'venture_manager', 'finance'],
+  measuredRevenueTon: ['ceo', 'venture_manager', 'finance', 'china_warehouse'],
 };
 
 export const MASK = '***' as const;
