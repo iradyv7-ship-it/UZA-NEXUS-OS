@@ -6,6 +6,7 @@ import { IntakeService } from './intake/intake.service';
 import { ProjectService } from './project/project.service';
 import { QuotationService } from './quotation/quotation.service';
 import { OrderService } from './order/order.service';
+import { TRADE_CONTROLLERS } from './trade.controllers';
 
 /**
  * trade-flow: the commercial spine from enquiry to confirmed order.
@@ -16,6 +17,7 @@ import { OrderService } from './order/order.service';
  */
 @Module({
   imports: [AuthorizationModule, OutboxModule],
+  controllers: [...TRADE_CONTROLLERS],
   providers: [CustomerService, IntakeService, ProjectService, QuotationService, OrderService],
   exports: [CustomerService, IntakeService, ProjectService, QuotationService, OrderService],
 })

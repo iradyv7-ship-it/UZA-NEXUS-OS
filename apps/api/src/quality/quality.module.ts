@@ -5,6 +5,7 @@ import { NotificationModule } from '../platform/notification/notification.module
 import { VisitService } from './visit/visit.service';
 import { InspectionService } from './inspection/inspection.service';
 import { CapaService } from './capa/capa.service';
+import { QUALITY_CONTROLLERS } from './quality.controllers';
 
 /**
  * quality: factory visits, inspections (four stages, derived pass/conditional/fail),
@@ -19,6 +20,7 @@ import { CapaService } from './capa/capa.service';
  */
 @Module({
   imports: [AuthorizationModule, OutboxModule, NotificationModule],
+  controllers: [...QUALITY_CONTROLLERS],
   providers: [VisitService, InspectionService, CapaService],
   exports: [VisitService, InspectionService, CapaService],
 })

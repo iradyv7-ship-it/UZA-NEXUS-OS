@@ -5,6 +5,7 @@ import { SupplierService } from './supplier/supplier.service';
 import { SupplierScoreService } from './supplier/supplier-score.service';
 import { RfqService } from './quote/rfq.service';
 import { PurchaseOrderService } from './po/purchase-order.service';
+import { SOURCING_CONTROLLERS } from './sourcing.controllers';
 
 /**
  * sourcing: supplier intelligence and procurement — suppliers (EN/CN, lifecycle,
@@ -17,6 +18,7 @@ import { PurchaseOrderService } from './po/purchase-order.service';
  */
 @Module({
   imports: [AuthorizationModule, OutboxModule],
+  controllers: [...SOURCING_CONTROLLERS],
   providers: [SupplierService, SupplierScoreService, RfqService, PurchaseOrderService],
   exports: [SupplierService, SupplierScoreService, RfqService, PurchaseOrderService],
 })
