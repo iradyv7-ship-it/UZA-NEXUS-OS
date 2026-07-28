@@ -9,3 +9,4 @@ export {
   drainOutbox,
   type OutboxHandler,
 } from './platform/outbox/outbox-processor';
+export { EVENTS_QUEUE, EVENT_JOB_OPTS } from './platform/outbox/event-bus.constants';

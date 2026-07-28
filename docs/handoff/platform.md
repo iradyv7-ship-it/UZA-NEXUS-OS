@@ -118,12 +118,40 @@ Example envelope written to the outbox (and later delivered to subscribers):
 }
 ```
 
-The worker (`apps/worker`) polls `OutboxEvent(status=pending)`, publishes each to the
-BullMQ queue `uza.events`, and marks it `published`. Consumers are **idempotent on
-`eventId`**: `processOutboxEvent` claims `(eventId, consumer)` in `ProcessedEvent` before
-running the handler, so a redelivered event runs the handler at most once. Subscriber
-fan-out to other modules is a no-op today (they don't exist yet); the durable record
-already exists in `OutboxEvent` + `ProcessedEvent`.
+The worker (`apps/worker`) is the **publisher**: it polls `OutboxEvent(status=pending)`,
+publishes each to the BullMQ queue `uza.events`, and marks it `published`. Consumers are
+**idempotent on `eventId`**: each handler claims `(eventId, consumer)` in `ProcessedEvent`
+before doing work, so a redelivered event runs the handler at most once.
+
+**Subscriber fan-out is now wired** (was a no-op in Sprint 0). The BullMQ **consumer** runs
+in `apps/api` (`src/integration/`), because fan-out invokes NestJS-managed feature services
+(`OrderService`, `InvoiceService`, …) whose constructor injection needs
+`emitDecoratorMetadata` — which apps/api's SWC runtime emits and apps/worker's tsx runtime
+does not. `EventDispatchModule` is the composition root: it imports the feature modules and
+builds a registry (`buildDispatchMap`) mapping each `UzaEventName` to its list of
+`{consumer, handler}`. `platform/*` still imports no module internals. The event → consumer
+map as wired:
+
+| Event | Consumer handler(s) |
+|---|---|
+| `order.created` | finance `InvoiceService.handleOrderCreated` |
+| `order.cancelled` | finance `CommissionService.handleOrderCancelled` |
+| `payment.verified` | trade `OrderService.handlePaymentVerified` **and** logistics `OrderPaymentService.handlePaymentVerified` |
+| `inspection.recorded` | logistics `QualityGateService.handleInspectionRecorded` |
+| `quality.failed` | logistics `QualityGateService.handleQualityFailed` |
+| `warehouse.receiptRecorded` | sourcing `SupplierScoreService.handleWarehouseReceipt` |
+| `shipment.billedWeightRecorded` | finance `ForwarderClaimService.handleBilledWeightRecorded` |
+
+Note: finance does **not** consume `payment.verified` — it PUBLISHES it, accruing the 2%
+commission inline in `PaymentService.verify()` in the same transaction. Handlers self-guard
+on `(eventId, consumer)`, so the dispatcher invokes them directly (it must NOT wrap them in
+`processOutboxEvent` under the same key, or the guard would claim the row and the handler
+would no-op). **Ordering / failure policy:** if a handler throws (e.g. a referenced
+aggregate has not arrived yet, an out-of-order delivery), `dispatchEnvelope` throws
+`EventDispatchError` and the BullMQ job is **retried with exponential backoff**
+(`EVENT_JOB_OPTS`: 5 attempts); an exhausted job stays in the failed set as a durable
+dead-letter (`removeOnFail: false`). Nothing is silently swallowed. Siblings that already
+succeeded self-guard, so a retry re-runs only the unfinished handler.
 
 ## Prisma models added (migration `20260724142706_init_platform_core`)
 
@@ -153,7 +181,9 @@ run and were exercised end-to-end over HTTP/Redis.
   flow. `/identity/*` are admin routes that will sit behind it.
 - **Notification delivery** — persists the record + channel; WhatsApp/SMS/web-push
   transport is a later sprint.
-- **Subscriber fan-out** — the worker publishes and dedupes; no module subscribes yet.
+- ~~**Subscriber fan-out**~~ — DONE (integration): the worker publishes, and the apps/api
+  BullMQ consumer fans each event out to every module's idempotent handler. Proven
+  end-to-end against real Postgres + Redis in `test/integration.fanout.test.ts`.
 
 ## Conformance assertions now covered
 
