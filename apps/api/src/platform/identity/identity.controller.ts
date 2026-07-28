@@ -1,4 +1,5 @@
 import { Body, Controller, Param, Post } from '@nestjs/common';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { IsDateString, IsEmail, IsIn, IsOptional, IsString, MinLength } from 'class-validator';
 import { IdentityService } from './identity.service';
 import type { RoleName } from '@prisma/client';
@@ -38,6 +39,8 @@ class AssignRoleDto {
  * guard (see handoff, "auth requirements"); the guard binding lands with the web module's
  * auth flow. The authorisation *rules* are enforced in the service layer per the contract.
  */
+@ApiTags('identity')
+@ApiBearerAuth()
 @Controller('identity')
 export class IdentityController {
   constructor(private readonly identity: IdentityService) {}
