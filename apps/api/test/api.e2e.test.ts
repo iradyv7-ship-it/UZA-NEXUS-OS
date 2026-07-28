@@ -1,6 +1,9 @@
 import { spawn, type ChildProcessWithoutNullStreams } from 'node:child_process';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import type { Actor } from '@uza/contracts';
 import { IdentityService } from '../src/platform/identity/identity.service';
+import { AuditService } from '../src/platform/audit/audit.service';
+import { AuthorizationService } from '../src/platform/authorization/authorization.service';
 import { prisma } from './db';
 import { resetAllDb } from './api-e2e-db';
 
@@ -54,12 +57,15 @@ const tokens: Record<string, string> = {};
 beforeAll(async () => {
   await resetAllDb();
 
-  // Seed identity directly (Prisma works without the DI container).
-  const identity = new IdentityService(prisma as never);
-  const org = await identity.createOrganisation('UZA Solutions Ltd');
-  const off = await identity.createOffice(org.id, 'GOM', 'Goma HQ');
+  // Seed identity directly (Prisma works without the DI container). Bootstrap uses a ceo
+  // Actor value — authorize() checks the grant, not DB existence, so the first admin seeds.
+  const authz = new AuthorizationService(new AuditService(prisma as never));
+  const identity = new IdentityService(prisma as never, authz);
+  const ceoActor: Actor = { userId: 'CEO-RW-0001', role: 'ceo', office: 'GOM', scope: {} };
+  const org = await identity.createOrganisation(ceoActor, 'UZA Solutions Ltd');
+  const off = await identity.createOffice(ceoActor, org.id, 'GOM', 'Goma HQ');
   const seed = (ref: string, email: string, role: string) =>
-    identity.createEmployee({ ref, email, password: 'password1', role: role as never, officeId: off.id });
+    identity.createEmployee(ceoActor, { ref, email, password: 'password1', role: role as never, officeId: off.id });
   await seed('CEO-RW-0001', 'ceo@uza.rw', 'ceo');
   await seed('AGT-GOM-0021', 'agent@uza.rw', 'sales_agent');
   await seed('VM-RW-0001', 'vm@uza.rw', 'venture_manager');

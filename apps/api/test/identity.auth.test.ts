@@ -1,19 +1,25 @@
 import { beforeEach, afterAll, describe, expect, it } from 'vitest';
 import { JwtService } from '@nestjs/jwt';
+import type { Actor } from '@uza/contracts';
 import { prisma, resetDb } from './db';
 import { IdentityService } from '../src/platform/identity/identity.service';
 import { AuditService } from '../src/platform/audit/audit.service';
+import { AuthorizationService } from '../src/platform/authorization/authorization.service';
 import { AuthService } from '../src/platform/auth/auth.service';
 import { formatId, idRegex } from '../src/platform/ids/readable-id';
 
-const identity = new IdentityService(prisma as never);
 const audit = new AuditService(prisma as never);
+const authz = new AuthorizationService(audit);
+const identity = new IdentityService(prisma as never, authz);
 const jwt = new JwtService({ secret: 'test-secret', signOptions: { expiresIn: '3600s' } });
 const auth = new AuthService(prisma as never, jwt, audit);
 
+// Identity admin requires the ceo grant (*:*); non-admins are denied at the service layer.
+const ceo: Actor = { userId: 'CEO-1', role: 'ceo', office: 'RW', scope: {} };
+
 async function office() {
-  const org = await identity.createOrganisation('UZA Solutions Ltd');
-  return identity.createOffice(org.id, 'RW', 'Kigali HQ');
+  const org = await identity.createOrganisation(ceo, 'UZA Solutions Ltd');
+  return identity.createOffice(ceo, org.id, 'RW', 'Kigali HQ');
 }
 
 beforeEach(async () => {
@@ -26,7 +32,7 @@ afterAll(async () => {
 describe('identity + auth', () => {
   it('creates an employee and logs them in (JWT + Actor)', async () => {
     const off = await office();
-    await identity.createEmployee({
+    await identity.createEmployee(ceo, {
       ref: 'AGT-RW-0001', email: 'kagabo@uza.rw', password: 'sup3rsecret',
       role: 'finance', officeId: off.id,
     });
@@ -44,7 +50,7 @@ describe('identity + auth', () => {
 
   it('rejects a wrong password', async () => {
     const off = await office();
-    await identity.createEmployee({
+    await identity.createEmployee(ceo, {
       ref: 'AGT-RW-0002', email: 'x@uza.rw', password: 'correcthorse', role: 'front_office', officeId: off.id,
     });
     await expect(auth.login('x@uza.rw', 'wrong')).rejects.toThrow();
@@ -56,6 +62,7 @@ describe('identity + auth', () => {
     // A past expiry is refused at creation.
     await expect(
       identity.createPartnerAccount(
+        ceo,
         { ref: 'PRT-1', email: 'p1@forwarder.cn', password: 'password1', role: 'logistics_partner', officeId: off.id },
         new Date(Date.now() - 1000),
       ),
@@ -63,6 +70,7 @@ describe('identity + auth', () => {
 
     // A valid partner is created with a future expiry and can log in.
     await identity.createPartnerAccount(
+      ceo,
       { ref: 'PRT-2', email: 'p2@forwarder.cn', password: 'password1', role: 'logistics_partner',
         officeId: off.id, scopeShipmentRefs: ['SHP-2026-0001'] },
       new Date(Date.now() + 86_400_000),
@@ -82,12 +90,12 @@ describe('identity + auth', () => {
 
   it('role assignment keeps append-only history and updates the active role', async () => {
     const off = await office();
-    const user = await identity.createEmployee({
+    const user = await identity.createEmployee(ceo, {
       ref: 'EMP-1', email: 'promote@uza.rw', password: 'password1', role: 'front_office', officeId: off.id,
     });
 
-    await identity.assignRole(user.id, 'venture_manager', 'ceo-user', 'promotion');
-    await identity.assignRole(user.id, 'finance', 'ceo-user', 'reorg');
+    await identity.assignRole(ceo, user.id, 'venture_manager', 'promotion');
+    await identity.assignRole(ceo, user.id, 'finance', 'reorg');
 
     const active = await prisma.user.findUnique({ where: { id: user.id } });
     expect(active!.role).toBe('finance');
@@ -96,6 +104,19 @@ describe('identity + auth', () => {
     expect(history).toHaveLength(2);
     expect(history[0]!.revokedAt).not.toBeNull(); // first assignment closed
     expect(history[1]!.revokedAt).toBeNull(); // current one open
+  });
+
+  it('a non-admin is denied identity admin at the service layer, audited before the throw', async () => {
+    const agent: Actor = { userId: 'AGT-GOM-0021', role: 'sales_agent', office: 'GOM', scope: {} };
+    await expect(identity.createOrganisation(agent, 'Rogue Org')).rejects.toThrow();
+
+    // No org was created, and the denial was audited (authorize writes the row before throwing).
+    expect(await prisma.organisation.count()).toBe(0);
+    const denial = await prisma.auditLog.findFirst({ where: { decision: 'deny' } });
+    expect(denial).not.toBeNull();
+
+    // A sales_agent likewise cannot escalate by assigning itself a role.
+    await expect(identity.assignRole(agent, 'some-user-id', 'ceo')).rejects.toThrow();
   });
 });
 
