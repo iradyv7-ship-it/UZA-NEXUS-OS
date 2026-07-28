@@ -1,6 +1,8 @@
 import { Injectable, BadRequestException } from '@nestjs/common';
 import type { RoleName, UserKind } from '@prisma/client';
+import type { Actor } from '@uza/contracts';
 import { PrismaService } from '../../prisma/prisma.service';
+import { AuthorizationService } from '../authorization/authorization.service';
 import { hashPassword } from '../auth/password';
 
 /** Never return password hashes or MFA secrets over the wire. */
@@ -33,24 +35,31 @@ export interface NewUser {
  */
 @Injectable()
 export class IdentityService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly authz: AuthorizationService,
+  ) {}
 
-  createOrganisation(name: string) {
+  async createOrganisation(actor: Actor, name: string) {
+    await this.authz.authorize(actor, 'organisation', 'create');
     return this.prisma.organisation.create({ data: { name } });
   }
 
-  createOffice(organisationId: string, code: string, name: string) {
+  async createOffice(actor: Actor, organisationId: string, code: string, name: string) {
+    await this.authz.authorize(actor, 'office', 'create');
     return this.prisma.office.create({ data: { organisationId, code, name } });
   }
 
-  async createEmployee(input: NewUser) {
+  async createEmployee(actor: Actor, input: NewUser) {
+    await this.authz.authorize(actor, 'user', 'create');
     return this.prisma.user.create({
       data: await this.userData(input, 'employee', null),
       select: SAFE_USER_SELECT,
     });
   }
 
-  async createPartnerAccount(input: NewUser, expiresAt: Date) {
+  async createPartnerAccount(actor: Actor, input: NewUser, expiresAt: Date) {
+    await this.authz.authorize(actor, 'user', 'create');
     if (!expiresAt || expiresAt.getTime() <= Date.now()) {
       throw new BadRequestException('Partner accounts require a future expiry date');
     }
@@ -60,7 +69,9 @@ export class IdentityService {
     });
   }
 
-  async assignRole(userId: string, role: RoleName, assignedById: string, reason?: string) {
+  /** The assigner is the authenticated actor — not a caller-supplied id. */
+  async assignRole(actor: Actor, userId: string, role: RoleName, reason?: string) {
+    await this.authz.authorize(actor, 'role', 'assign');
     return this.prisma.$transaction(async (tx) => {
       // close any open assignment, then open a new one — history is preserved
       await tx.roleAssignment.updateMany({
@@ -68,14 +79,15 @@ export class IdentityService {
         data: { revokedAt: new Date() },
       });
       const assignment = await tx.roleAssignment.create({
-        data: { userId, role, assignedById, reason: reason ?? null },
+        data: { userId, role, assignedById: actor.userId, reason: reason ?? null },
       });
       await tx.user.update({ where: { id: userId }, data: { role } });
       return assignment;
     });
   }
 
-  disableAccount(userId: string) {
+  async disableAccount(actor: Actor, userId: string) {
+    await this.authz.authorize(actor, 'user', 'update');
     return this.prisma.user.update({ where: { id: userId }, data: { disabledAt: new Date() } });
   }
 

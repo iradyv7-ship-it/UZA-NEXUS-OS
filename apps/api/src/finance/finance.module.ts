@@ -8,6 +8,7 @@ import { CommissionService } from './commission/commission.service';
 import { ForwarderClaimService } from './claim/forwarder-claim.service';
 import { PettyCashService } from './petty-cash/petty-cash.service';
 import { SupplierBankService } from './supplier-bank/supplier-bank.service';
+import { FINANCE_CONTROLLERS } from './finance.controllers';
 
 /**
  * finance-commission: the money half of the corridor — invoices, payment verification,
@@ -22,6 +23,7 @@ import { SupplierBankService } from './supplier-bank/supplier-bank.service';
  */
 @Module({
   imports: [AuthorizationModule, OutboxModule, NotificationModule],
+  controllers: [...FINANCE_CONTROLLERS],
   providers: [
     InvoiceService,
     PaymentService,

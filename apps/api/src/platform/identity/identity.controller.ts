@@ -1,5 +1,8 @@
 import { Body, Controller, Param, Post } from '@nestjs/common';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { IsDateString, IsEmail, IsIn, IsOptional, IsString, MinLength } from 'class-validator';
+import type { Actor } from '@uza/contracts';
+import { CurrentActor } from '../auth/current-actor.decorator';
 import { IdentityService } from './identity.service';
 import type { RoleName } from '@prisma/client';
 
@@ -29,41 +32,44 @@ class CreatePartnerDto extends CreateUserDto {
 }
 class AssignRoleDto {
   @IsIn(ROLES) role!: RoleName;
-  @IsString() assignedById!: string;
   @IsOptional() @IsString() reason?: string;
 }
 
 /**
- * Administrative identity endpoints. In production these sit behind a CEO/venture_manager
- * guard (see handoff, "auth requirements"); the guard binding lands with the web module's
- * auth flow. The authorisation *rules* are enforced in the service layer per the contract.
+ * Administrative identity endpoints. Behind the global JWT guard (authenticated) AND
+ * authorised in IdentityService: every method calls `authorize(actor, ...)`, which only the
+ * `ceo` grant (`*:*`) satisfies today — so a non-admin principal is denied (403) at the
+ * service layer, the single enforcement point. The assigner of a role is the authenticated
+ * actor, never a caller-supplied id.
  */
+@ApiTags('identity')
+@ApiBearerAuth()
 @Controller('identity')
 export class IdentityController {
   constructor(private readonly identity: IdentityService) {}
 
   @Post('organisations')
-  createOrg(@Body() dto: CreateOrgDto) {
-    return this.identity.createOrganisation(dto.name);
+  createOrg(@CurrentActor() actor: Actor, @Body() dto: CreateOrgDto) {
+    return this.identity.createOrganisation(actor, dto.name);
   }
 
   @Post('offices')
-  createOffice(@Body() dto: CreateOfficeDto) {
-    return this.identity.createOffice(dto.organisationId, dto.code, dto.name);
+  createOffice(@CurrentActor() actor: Actor, @Body() dto: CreateOfficeDto) {
+    return this.identity.createOffice(actor, dto.organisationId, dto.code, dto.name);
   }
 
   @Post('employees')
-  createEmployee(@Body() dto: CreateUserDto) {
-    return this.identity.createEmployee(dto);
+  createEmployee(@CurrentActor() actor: Actor, @Body() dto: CreateUserDto) {
+    return this.identity.createEmployee(actor, dto);
   }
 
   @Post('partners')
-  createPartner(@Body() dto: CreatePartnerDto) {
-    return this.identity.createPartnerAccount(dto, new Date(dto.expiresAt));
+  createPartner(@CurrentActor() actor: Actor, @Body() dto: CreatePartnerDto) {
+    return this.identity.createPartnerAccount(actor, dto, new Date(dto.expiresAt));
   }
 
   @Post('users/:id/roles')
-  assignRole(@Param('id') id: string, @Body() dto: AssignRoleDto) {
-    return this.identity.assignRole(id, dto.role, dto.assignedById, dto.reason);
+  assignRole(@CurrentActor() actor: Actor, @Param('id') id: string, @Body() dto: AssignRoleDto) {
+    return this.identity.assignRole(actor, id, dto.role, dto.reason);
   }
 }

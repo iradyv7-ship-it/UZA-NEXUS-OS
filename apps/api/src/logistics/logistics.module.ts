@@ -11,6 +11,7 @@ import { FreightService } from './logistics/freight.service';
 import { TrackingService } from './logistics/tracking.service';
 import { DeliveryService } from './logistics/delivery.service';
 import { PartnerPortalService } from './logistics/partner-portal.service';
+import { LOGISTICS_CONTROLLERS } from './logistics.controllers';
 
 /**
  * logistics-warehouse (Sprint 3): the physical chain and the last real control point over
@@ -26,6 +27,7 @@ import { PartnerPortalService } from './logistics/partner-portal.service';
  */
 @Module({
   imports: [AuthorizationModule, OutboxModule, NotificationModule],
+  controllers: [...LOGISTICS_CONTROLLERS],
   providers: [
     ReceivingService,
     ReleaseService,
