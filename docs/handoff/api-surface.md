@@ -58,15 +58,33 @@ only authenticates; the service authorises + masks. `(scoped)` = object-scope is
 | POST | `/leads` | `lead:create` | `{customerRef,rawText,agentId?}` | `IntakeService.createLead` |
 | POST | `/leads/:ref/clarify` | `request:create` | `{spec}` | `IntakeService.clarifyLead` |
 | POST | `/projects` | `project:create` | `{requestRef,name,owner}` | `ProjectService.create` |
+| GET | `/projects` | `project:read` (scoped, masked; paginated) | query `customerRef?`, `stage?`, `limit?`, `offset?` | `ProjectService.list` |
+| GET | `/projects/:ref` | `project:read` (scoped) | — | `ProjectService.read` |
 | POST | `/projects/:ref/tasks` | `task:create` | `{title,accountable,responsible}` | `ProjectService.createTask` |
 | POST | `/quotations` | `quotation:create` | `{projectRef,supplierUnitCostMinor,estCostsMinor,qty,requiredMargin,sellIncoterm?}` | `QuotationService.build` |
+| GET | `/quotations` | `quotation:read` (scoped; cost/margins masked; paginated) | query `projectRef?`, `status?`, `limit?`, `offset?` | `QuotationService.list` |
 | POST | `/quotations/:ref/revise` | `quotation:create` | pricing (as above, no `projectRef`) | `QuotationService.revise` |
 | POST | `/quotations/:ref/approve` | `quotation:approve` | — | `QuotationService.approve` |
 | POST | `/quotations/:ref/close-costs` | `margin:read` | `{actualsMinor}` | `QuotationService.closeCosts` |
 | GET | `/quotations/:ref` | `quotation:read` (scoped; cost/margins masked) | — | `QuotationService.read` |
 | POST | `/orders` | `order:create` | `{quotationRef}` | `OrderService.create` |
+| GET | `/orders` | `order:read` (scoped, masked; paginated) | query `status?`, `customerRef?`, `limit?`, `offset?` | `OrderService.list` |
 | POST | `/orders/:ref/cancel` | `order:update` | `{reason}` | `OrderService.cancel` |
 | GET | `/orders/:ref` | `order:read` (scoped) | — | `OrderService.read` |
+
+> **List endpoints (`GET /projects`, `GET /quotations`, `GET /orders`).** Same security
+> posture as the by-ref reads, expressed as a query predicate — a list never returns a row
+> the by-ref read would deny. Object-scope mirrors `inScope` (`packages/contracts`):
+> `ceo`/`venture_manager`/`finance`/`china_*`/`front_office` see all rows (they pass
+> `inScope` unconditionally, where the role also holds the read grant); a `sales_agent` sees
+> only rows where `agentId === userId` OR `customerRef ∈ scope.customerIds`; a `customer`
+> sees only rows where `customerRef === scope.customerId`. The role grant is checked first
+> (no grant → `403 ACCESS_DENIED_ROLE`, e.g. `sales_agent` on `/projects`, `finance` on
+> `/quotations` — matching the by-ref reads). Optional filters (`customerRef`/`stage`/
+> `projectRef`/`status`) only NARROW scope (AND-composed), never widen it. Quotation rows
+> are masked identically to `GET /quotations/:ref` (cost/target/walkaway + both margins →
+> `***` for unauthorised roles). **Pagination:** `limit` (default 20, max 100) + `offset`
+> (default 0), both validated (`400` on non-int/out-of-range); stable sort `updatedAt desc`.
 
 ### sourcing
 | Method | Path | Auth | Body / params | Service.method |
