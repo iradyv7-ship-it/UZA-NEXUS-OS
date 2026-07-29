@@ -1,5 +1,6 @@
-import { Body, Controller, Get, Param, Post } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiProperty, ApiTags } from '@nestjs/swagger';
+import { Body, Controller, Get, Param, Post, Query } from '@nestjs/common';
+import { ApiBearerAuth, ApiOperation, ApiProperty, ApiPropertyOptional, ApiTags } from '@nestjs/swagger';
+import { Type } from 'class-transformer';
 import {
   IsIn,
   IsInt,
@@ -7,8 +8,11 @@ import {
   IsObject,
   IsOptional,
   IsString,
+  Max,
+  Min,
   MinLength,
 } from 'class-validator';
+import type { OrderStatus, QuotationStatus } from '@prisma/client';
 import type { Actor, CostRung, Incoterm, Minor } from '@uza/contracts';
 import { INCOTERMS } from '@uza/contracts';
 import { CurrentActor } from '../platform/auth/current-actor.decorator';
@@ -82,6 +86,42 @@ class CancelOrderDto {
   @ApiProperty() @IsString() @MinLength(1) reason!: string;
 }
 
+// ---- list / work-queue query DTOs ------------------------------------------
+// Query params arrive as strings; @Type(() => Number) coerces the pagination ints so the
+// global ValidationPipe (transform:true) rejects non-numeric/out-of-range input with 400.
+
+const QUOTATION_STATUSES = ['draft', 'approved', 'superseded'] as const;
+const ORDER_STATUSES = [
+  'awaiting_payment', 'procurement_active', 'in_transit', 'delivered', 'cancelled',
+] as const;
+
+class ListQueryDto {
+  @ApiPropertyOptional({ minimum: 1, maximum: 100, default: 20 })
+  @IsOptional() @Type(() => Number) @IsInt() @Min(1) @Max(100)
+  limit = 20;
+
+  @ApiPropertyOptional({ minimum: 0, default: 0 })
+  @IsOptional() @Type(() => Number) @IsInt() @Min(0)
+  offset = 0;
+}
+
+class ListProjectsQueryDto extends ListQueryDto {
+  @ApiPropertyOptional() @IsOptional() @IsString() customerRef?: string;
+  @ApiPropertyOptional() @IsOptional() @IsString() stage?: string;
+}
+
+class ListQuotationsQueryDto extends ListQueryDto {
+  @ApiPropertyOptional() @IsOptional() @IsString() projectRef?: string;
+  @ApiPropertyOptional({ enum: QUOTATION_STATUSES })
+  @IsOptional() @IsIn(QUOTATION_STATUSES) status?: QuotationStatus;
+}
+
+class ListOrdersQueryDto extends ListQueryDto {
+  @ApiPropertyOptional() @IsOptional() @IsString() customerRef?: string;
+  @ApiPropertyOptional({ enum: ORDER_STATUSES })
+  @IsOptional() @IsIn(ORDER_STATUSES) status?: OrderStatus;
+}
+
 const asPricing = (dto: PricingDto): QuotationPricingInput => ({
   supplierUnitCostMinor: dto.supplierUnitCostMinor as Minor,
   estCostsMinor: dto.estCostsMinor as Partial<Record<CostRung, Minor>>,
@@ -145,6 +185,22 @@ export class ProjectController {
     return this.projects.create(actor, dto);
   }
 
+  @Get()
+  @ApiOperation({ summary: 'List in-scope projects (project:read, scoped; updatedAt desc)' })
+  list(@CurrentActor() actor: Actor, @Query() q: ListProjectsQueryDto) {
+    return this.projects.list(
+      actor,
+      { customerRef: q.customerRef, stage: q.stage },
+      { limit: q.limit, offset: q.offset },
+    );
+  }
+
+  @Get(':ref')
+  @ApiOperation({ summary: 'Read a project (project:read, scoped)' })
+  read(@CurrentActor() actor: Actor, @Param('ref') ref: string) {
+    return this.projects.read(actor, ref);
+  }
+
   @Post(':ref/tasks')
   @ApiOperation({ summary: 'Add a RACI task to a project (task:create)' })
   createTask(@CurrentActor() actor: Actor, @Param('ref') ref: string, @Body() dto: CreateTaskDto) {
@@ -162,6 +218,16 @@ export class QuotationController {
   @ApiOperation({ summary: 'Build a quotation for a project (quotation:create)' })
   build(@CurrentActor() actor: Actor, @Body() dto: BuildQuotationDto) {
     return this.quotations.build(actor, dto.projectRef, asPricing(dto));
+  }
+
+  @Get()
+  @ApiOperation({ summary: 'List in-scope quotations (quotation:read, scoped; cost/margins masked; updatedAt desc)' })
+  list(@CurrentActor() actor: Actor, @Query() q: ListQuotationsQueryDto) {
+    return this.quotations.list(
+      actor,
+      { projectRef: q.projectRef, status: q.status },
+      { limit: q.limit, offset: q.offset },
+    );
   }
 
   @Post(':ref/revise')
@@ -199,6 +265,16 @@ export class OrderController {
   @ApiOperation({ summary: 'Create an order from an approved quotation (order:create)' })
   create(@CurrentActor() actor: Actor, @Body() dto: CreateOrderDto) {
     return this.orders.create(actor, dto.quotationRef);
+  }
+
+  @Get()
+  @ApiOperation({ summary: 'List in-scope orders (order:read, scoped; updatedAt desc)' })
+  list(@CurrentActor() actor: Actor, @Query() q: ListOrdersQueryDto) {
+    return this.orders.list(
+      actor,
+      { status: q.status, customerRef: q.customerRef },
+      { limit: q.limit, offset: q.offset },
+    );
   }
 
   @Post(':ref/cancel')
