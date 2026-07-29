@@ -2,24 +2,13 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { translator, type Translate, type Locale } from '@/i18n';
 import { getLocale } from '@/lib/session';
-import { authedCall } from '@/lib/api';
-import { getWorklist, type WorklistEntry } from '@/lib/worklist';
-import { orderPromise, quotationPromise, type Promise as Promised } from '@/lib/promise';
-import type { OrderView, QuotationView } from '@/lib/types';
+import { loadQueue, PAGE_SIZE, type QueueCard } from '@/lib/queue';
+import { money } from '@/lib/format';
 import { Badge } from '@/components/ui';
 import { StatePanel } from '@/components/States';
-import { seedDealAction, trackRefAction, removeEntryAction } from './actions';
+import { seedDealAction, trackRefAction } from './actions';
 
 export const dynamic = 'force-dynamic';
-
-interface Row {
-  entry: WorklistEntry;
-  ok: boolean;
-  denied?: boolean;
-  promise?: Promised;
-  projectName?: string;
-  customerRef?: string;
-}
 
 function toneForStage(key: string): 'slate' | 'green' | 'amber' | 'blue' | 'red' {
   if (key.endsWith('approved') || key.endsWith('delivered')) return 'green';
@@ -32,28 +21,21 @@ function toneForStage(key: string): 'slate' | 'green' | 'amber' | 'blue' | 'red'
 export default async function DashboardPage({
   searchParams,
 }: {
-  searchParams: Promise<{ err?: string }>;
+  searchParams: Promise<{ err?: string; count?: string }>;
 }) {
   const locale = await getLocale();
   const t = translator(locale);
-  const { err } = await searchParams;
-  const worklist = await getWorklist();
+  const { err, count: countParam } = await searchParams;
+  const requested = Number.parseInt(countParam ?? '', 10);
 
-  const rows: Row[] = [];
-  for (const entry of worklist) {
-    const path = entry.kind === 'quotation' ? `/quotations/${entry.ref}` : `/orders/${entry.ref}`;
-    const res = await authedCall<QuotationView | OrderView>(path);
-    if (res.kind === 'unauthorized') redirect('/login');
-    if (res.kind === 'ok') {
-      const promise =
-        entry.kind === 'quotation'
-          ? quotationPromise((res.data as QuotationView).status)
-          : orderPromise((res.data as OrderView).status);
-      rows.push({ entry, ok: true, promise, projectName: entry.projectName, customerRef: (res.data as QuotationView).customerRef });
-    } else {
-      rows.push({ entry, ok: false, denied: res.kind === 'denied' });
-    }
-  }
+  const result = await loadQueue(Number.isFinite(requested) ? requested : PAGE_SIZE);
+  if (result.kind === 'unauthorized') redirect('/login');
+
+  const { quotations, orders, quotationsState, ordersState, hasMore, count } = result;
+  const total = quotations.length + orders.length;
+  const bothDenied = quotationsState === 'denied' && ordersState === 'denied';
+  const bothFailed =
+    quotationsState !== 'ok' && ordersState !== 'ok' && !(quotationsState === 'denied' && ordersState === 'denied');
 
   return (
     <div className="space-y-4">
@@ -75,14 +57,32 @@ export default async function DashboardPage({
 
       <Toolbar t={t} />
 
-      {rows.length === 0 ? (
+      {bothDenied ? (
+        <StatePanel tone="amber" title={t('state.denied.title')} body={t('state.denied.body')} />
+      ) : bothFailed ? (
+        <StatePanel tone="red" title={t('state.error.title')} body={t('state.error.body')} />
+      ) : total === 0 ? (
         <StatePanel title={t('dash.empty.title')} body={t('dash.empty.body')} />
       ) : (
-        <ul className="space-y-3">
-          {rows.map((row) => (
-            <DealCard key={`${row.entry.kind}:${row.entry.ref}`} row={row} t={t} locale={locale} />
-          ))}
-        </ul>
+        <div className="space-y-5">
+          <QueueSection
+            title={t('record.quotation')}
+            cards={quotations}
+            state={quotationsState}
+            t={t}
+            locale={locale}
+          />
+          <QueueSection title={t('record.order')} cards={orders} state={ordersState} t={t} locale={locale} />
+
+          {hasMore && (
+            <Link
+              href={`/dashboard?count=${count + PAGE_SIZE}`}
+              className="block rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-center text-sm font-semibold text-slate-700"
+            >
+              {t('dash.loadMore')}
+            </Link>
+          )}
+        </div>
       )}
     </div>
   );
@@ -117,27 +117,51 @@ function Toolbar({ t }: { t: Translate }) {
   );
 }
 
-function DealCard({ row, t, locale }: { row: Row; t: Translate; locale: Locale }) {
-  const { entry, promise } = row;
-  const recordLabel = entry.kind === 'quotation' ? t('record.quotation') : t('record.order');
-  const path = entry.kind === 'quotation' ? `/quotations/${entry.ref}` : `/orders/${entry.ref}`;
+function QueueSection({
+  title,
+  cards,
+  state,
+  t,
+  locale,
+}: {
+  title: string;
+  cards: QueueCard[];
+  state: 'ok' | 'denied' | 'error';
+  t: Translate;
+  locale: Locale;
+}) {
+  // Nothing to say for an empty-but-ok section — the other section (or empty state) covers it.
+  if (state === 'ok' && cards.length === 0) return null;
 
-  if (!row.ok) {
-    return (
-      <li className="rounded-xl border border-slate-200 bg-white p-4">
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="text-sm font-medium text-slate-700">{entry.projectName ?? recordLabel}</p>
-            <p className="font-mono text-xs text-slate-400">{entry.ref}</p>
-          </div>
-          <Badge tone={row.denied ? 'amber' : 'slate'}>
-            {row.denied ? t('state.denied.title') : t('dash.row.gone')}
-          </Badge>
-        </div>
-        <RemoveForm entry={entry} label={t('dash.remove')} />
-      </li>
-    );
-  }
+  return (
+    <section className="space-y-3">
+      <div className="flex items-center justify-between">
+        <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-500">{title}</h2>
+        {state === 'ok' && (
+          <span className="text-xs font-medium text-slate-400">{cards.length}</span>
+        )}
+      </div>
+
+      {state === 'denied' ? (
+        <p className="rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-800">{t('dash.section.denied')}</p>
+      ) : state === 'error' ? (
+        <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{t('dash.section.error')}</p>
+      ) : (
+        <ul className="space-y-3">
+          {cards.map((card) => (
+            <DealCard key={`${card.kind}:${card.ref}`} card={card} t={t} locale={locale} />
+          ))}
+        </ul>
+      )}
+    </section>
+  );
+}
+
+function DealCard({ card, t, locale }: { card: QueueCard; t: Translate; locale: Locale }) {
+  const recordLabel = card.kind === 'quotation' ? t('record.quotation') : t('record.order');
+  const path = card.kind === 'quotation' ? `/quotations/${card.ref}` : `/orders/${card.ref}`;
+  const { promise } = card;
+  const amount = money(card.amount.minor, locale);
 
   return (
     <li className="rounded-xl border border-slate-200 bg-white shadow-sm">
@@ -145,44 +169,33 @@ function DealCard({ row, t, locale }: { row: Row; t: Translate; locale: Locale }
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
             <p className="truncate text-base font-semibold text-slate-900">
-              {entry.projectName ?? recordLabel}
+              {card.projectName ?? recordLabel}
             </p>
             <p className="truncate text-xs text-slate-500">
-              {recordLabel}
-              {entry.customerName ? ` · ${t('record.for')} ${entry.customerName}` : ''}
+              {recordLabel} · {t('record.for')} <span className="font-mono">{card.customerRef}</span>
             </p>
           </div>
-          {promise && <Badge tone={toneForStage(promise.stageKey)}>{t(promise.stageKey)}</Badge>}
+          <Badge tone={toneForStage(promise.stageKey)}>{t(promise.stageKey)}</Badge>
         </div>
 
-        {promise && (
-          <div className="mt-3 rounded-lg bg-slate-50 px-3 py-2">
-            <p className="text-[11px] uppercase tracking-wide text-slate-400">{t('dash.col.next')}</p>
-            <p className="text-sm font-medium text-slate-800">{t(promise.nextKey)}</p>
-            <p className="mt-0.5 text-xs text-slate-500">
-              {t('dash.col.owner')}: <span className="font-medium text-slate-700">{t(`owner.${promise.ownerRole}`)}</span>
-              {entry.ownerId && promise.ownerRole === 'venture_manager' ? (
-                <span className="ml-1 font-mono text-[11px] text-slate-400">{entry.ownerId}</span>
-              ) : null}
-            </p>
-          </div>
-        )}
+        <div className="mt-3 rounded-lg bg-slate-50 px-3 py-2">
+          <p className="text-[11px] uppercase tracking-wide text-slate-400">{t('dash.col.next')}</p>
+          <p className="text-sm font-medium text-slate-800">{t(promise.nextKey)}</p>
+          <p className="mt-0.5 text-xs text-slate-500">
+            {t('dash.col.owner')}:{' '}
+            <span className="font-medium text-slate-700">{t(`owner.${promise.ownerRole}`)}</span>
+            {card.ownerId ? <span className="ml-1 font-mono text-[11px] text-slate-400">{card.ownerId}</span> : null}
+          </p>
+        </div>
 
-        <p className="mt-2 font-mono text-[11px] text-slate-400">{entry.ref}</p>
+        <div className="mt-2 flex items-center justify-between">
+          <p className="font-mono text-[11px] text-slate-400">{card.ref}</p>
+          <p className="text-xs tabular-nums text-slate-600">
+            <span className="font-medium text-slate-800">{amount}</span>
+            {card.amount.per === 'unit' ? <span className="text-slate-400"> {t('dash.perUnit')}</span> : null}
+          </p>
+        </div>
       </Link>
-      <div className="border-t border-slate-100 px-4 py-2">
-        <RemoveForm entry={entry} label={t('dash.remove')} />
-      </div>
     </li>
-  );
-}
-
-function RemoveForm({ entry, label }: { entry: WorklistEntry; label: string }) {
-  return (
-    <form action={removeEntryAction} className="mt-1">
-      <input type="hidden" name="kind" value={entry.kind} />
-      <input type="hidden" name="ref" value={entry.ref} />
-      <button className="text-xs text-slate-400 underline underline-offset-2">{label}</button>
-    </form>
   );
 }

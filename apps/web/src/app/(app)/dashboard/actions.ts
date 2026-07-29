@@ -4,7 +4,6 @@ import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
 import { apiCall, authedCall } from '@/lib/api';
 import { getSession } from '@/lib/session';
-import { addToWorklist, removeFromWorklist } from '@/lib/worklist';
 
 /**
  * DEV SCAFFOLDING. The venture_manager can build a project → quotation from a clarified
@@ -77,26 +76,20 @@ export async function seedDealAction(): Promise<void> {
     },
   });
   if (quotation.kind !== 'ok') redirect('/dashboard?err=seed');
-  const quotationRef = quotation.kind === 'ok' ? quotation.data.ref : '';
 
-  await addToWorklist({ kind: 'quotation', ref: quotationRef, projectName, customerName, ownerId: session.actor.userId });
+  // The new quotation now appears in the live queue (GET /quotations) — no worklist to update.
   revalidatePath('/dashboard');
   redirect('/dashboard');
 }
 
+/**
+ * Secondary "jump to a record" utility. The queue itself comes from the live lists; this
+ * just lets a VM open a specific quotation/order by its readable ref. It navigates straight
+ * to the detail screen (which enforces its own auth/masking) — it no longer tracks anything.
+ */
 export async function trackRefAction(formData: FormData): Promise<void> {
   const ref = String(formData.get('ref') ?? '').trim().toUpperCase();
-  if (/^QUO-/.test(ref)) await addToWorklist({ kind: 'quotation', ref });
-  else if (/^ORD-/.test(ref)) await addToWorklist({ kind: 'order', ref });
-  else redirect('/dashboard?err=track');
-  revalidatePath('/dashboard');
-  redirect('/dashboard');
-}
-
-export async function removeEntryAction(formData: FormData): Promise<void> {
-  const kind = String(formData.get('kind') ?? '') as 'quotation' | 'order';
-  const ref = String(formData.get('ref') ?? '');
-  if ((kind === 'quotation' || kind === 'order') && ref) await removeFromWorklist(kind, ref);
-  revalidatePath('/dashboard');
-  redirect('/dashboard');
+  if (/^QUO-/.test(ref)) redirect(`/quotations/${ref}`);
+  if (/^ORD-/.test(ref)) redirect(`/orders/${ref}`);
+  redirect('/dashboard?err=track');
 }
