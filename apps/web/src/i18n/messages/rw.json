@@ -10,5 +10,13 @@
   "dash.title": "Amasezerano yanjye",
   "dash.col.stage": "Icyiciro",
   "dash.col.next": "Igikorwa gikurikira",
-  "dash.col.owner": "Ushinzwe"
+  "dash.col.owner": "Ushinzwe",
+  "nav.verifyQueue": "Emeza ubwishyu",
+  "install.due": "Bigomba kwishyurwa",
+  "install.paid": "Byishyuwe",
+  "pay.pending": "Bitegereje kwemezwa",
+  "pay.upload": "Ohereza icyemezo cy'ubwishyu",
+  "verify.title": "Emeza ubwishyu",
+  "verify.verify": "Emeza",
+  "verify.reject": "Anga"
 }

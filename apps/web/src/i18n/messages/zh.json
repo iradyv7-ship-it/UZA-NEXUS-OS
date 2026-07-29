@@ -10,5 +10,13 @@
   "dash.title": "我的交易",
   "dash.col.stage": "阶段",
   "dash.col.next": "下一步",
-  "dash.col.owner": "负责人"
+  "dash.col.owner": "负责人",
+  "nav.verifyQueue": "核对付款",
+  "install.due": "待付",
+  "install.paid": "已付",
+  "pay.pending": "等待核对",
+  "pay.upload": "上传付款凭证",
+  "verify.title": "核对付款",
+  "verify.verify": "核对",
+  "verify.reject": "拒绝"
 }
