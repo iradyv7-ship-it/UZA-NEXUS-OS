@@ -1,0 +1,14 @@
+{
+  "app.name": "UZA Nexus",
+  "app.tagline": "Umuhora w'ubucuruzi Ubushinwa → Kigali/Goma",
+  "nav.dashboard": "Imbonerahamwe",
+  "nav.logout": "Sohoka",
+  "login.title": "Injira",
+  "login.email": "Imeyili",
+  "login.password": "Ijambobanga",
+  "login.submit": "Injira",
+  "dash.title": "Amasezerano yanjye",
+  "dash.col.stage": "Icyiciro",
+  "dash.col.next": "Igikorwa gikurikira",
+  "dash.col.owner": "Ushinzwe"
+}
