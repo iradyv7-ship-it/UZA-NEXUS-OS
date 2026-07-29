@@ -54,3 +54,28 @@ export interface OrderView {
   cancelReason: string | null;
   installments: InstallmentView[];
 }
+
+/**
+ * List-row shapes for the work-queue endpoints (GET /quotations, /orders, /projects).
+ * Same security posture as the by-ref reads: scoped server-side, and quotation rows are
+ * masked identically (cost/target/walkaway + both margins → "***"). Orders and projects
+ * carry no confidential fields, so their numeric fields are always real.
+ */
+
+/** A row from GET /quotations — identical projection to a by-ref quotation read. */
+export type QuotationListRow = QuotationView;
+
+/** A row from GET /orders — the order without its installment schedule (not listed). */
+export type OrderListRow = Omit<OrderView, 'installments'>;
+
+/** A row from GET /projects — used to resolve project names + owners for the queue. */
+export interface ProjectListRow {
+  ref: string;
+  customerRef: string;
+  agentId: string | null;
+  requestRef: string;
+  name: string;
+  owner: string;
+  stage: string;
+  health: string;
+}

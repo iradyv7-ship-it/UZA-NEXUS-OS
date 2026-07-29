@@ -13,7 +13,6 @@ import { DEFAULT_LOCALE, isLocale } from '@/i18n';
 export const TOKEN_COOKIE = 'uza_token';
 export const ACTOR_COOKIE = 'uza_actor';
 export const LOCALE_COOKIE = 'uza_locale';
-export const WORKLIST_COOKIE = 'uza_worklist';
 
 export type Role =
   | 'ceo' | 'venture_manager' | 'china_sourcing' | 'china_warehouse'
@@ -68,7 +67,6 @@ export async function clearSession(): Promise<void> {
   const jar = await cookies();
   jar.delete(TOKEN_COOKIE);
   jar.delete(ACTOR_COOKIE);
-  jar.delete(WORKLIST_COOKIE);
 }
 
 export async function getLocale(): Promise<Locale> {

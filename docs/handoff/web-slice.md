@@ -15,7 +15,7 @@ PWA-ready). Runs on **:3100**; the API runs on **:3000**.
 |---|---|---|
 | `/login` | Email/password sign-in | `POST /auth/login` |
 | `/` | Redirects to `/dashboard` or `/login` by session | — |
-| `/dashboard` | venture_manager work queue; one card per tracked quotation/order with **stage · next action · owner** and secondary readable ref | `GET /quotations/:ref`, `GET /orders/:ref` (one per worklist entry); toolbar actions call `POST /customers`, `/leads`, `/leads/:ref/clarify`, `/projects`, `/quotations` (seed) |
+| `/dashboard` | venture_manager work queue; **one card per live-listed quotation/order** with **stage · next action · owner** and secondary readable ref. Scoped + masked server-side; paginated via Load more | `GET /quotations?limit=`, `GET /orders?limit=`, `GET /projects?limit=100` (names/owners, best-effort); toolbar seed action calls `POST /customers`, `/leads`, `/leads/:ref/clarify`, `/projects`, `/quotations` |
 | `/quotations/[ref]` | Quotation detail: qty, incoterm, customer price, **both quoted margin (at sell incoterm) AND DAP margin**, supplier cost / target / walk-away — masked `***` where the API masks; approve + create-order actions | `GET /quotations/:ref`, `POST /quotations/:ref/approve`, `POST /orders` |
 | `/orders/[ref]` | Order detail: total, tier, **installment schedule**, next action + owner | `GET /orders/:ref` |
 
@@ -63,21 +63,34 @@ The **next-action + owner** derivation (the product promise) is centralised in
   All server actions hit the live API; state changes were confirmed back through the API.
 - 403 (finance reading a quotation → "Not permitted") and 404 (bogus ref → "Not found").
 
+**Dashboard now runs on the live list endpoints (worklist cookie retired).**
+- The `GET /quotations`, `GET /orders`, `GET /projects` list endpoints now exist (scoped +
+  masked, `updatedAt desc`, `limit`/`offset`). The dashboard queue is built directly from them
+  in `src/lib/queue.ts` — **no `uza_worklist` cookie**. The cookie, `src/lib/worklist.ts` and the
+  add/remove/track-into-worklist actions are **deleted**. Each endpoint is scoped to the caller
+  server-side, so the queue is genuinely "everything I own": a VM sees all rows with margins; a
+  `sales_agent` sees only their own rows with confidential fields masked `***`; `finance` (no
+  `quotation:read`) gets the Quotations section replaced by an inline "your role cannot view
+  these" notice while its Orders section still renders. Projects are fetched **best-effort** for
+  names/owners — a role denied `project:read` (sales_agent) still gets a full queue, just without
+  project names (falls back to the record-type label).
+- **Pagination.** Page size 20 via a `?count=` search param; "Load more" grows the window
+  (`count += 20`, re-fetched from offset 0 so a server-rendered, freshly-sorted set is always
+  consistent), capped at the API's `limit` max of 100. Quotations and Orders render as two
+  labelled sections within the one queue (a merged time-sort isn't possible — the masked
+  quotation projection carries no `updatedAt`).
+- **"Track by reference"** is retained only as a secondary jump-to-record utility: it now
+  redirects straight to `/quotations/:ref` or `/orders/:ref` (which enforce their own
+  auth/masking) instead of writing to any worklist.
+
 **Stubbed / worked around (honest):**
-- **No list endpoints exist.** `api-surface.md` exposes GET-by-ref only — there is no
-  `GET /quotations`, `GET /orders`, or `GET /projects` list. The dashboard therefore keeps a
-  per-user **worklist** in an httpOnly cookie (`uza_worklist`: readable refs + display labels
-  only, no figures) and fetches each record **live**. This is a genuine limitation, not a mock —
-  see the contract request below. A real "my work" list needs a backend endpoint.
 - **"Generate demo deal" is dev scaffolding.** The venture_manager cannot create a customer/lead
   (that is a `sales_agent` grant, upstream of this slice), so the seed button logs in as a seeded
   agent (env `UZA_SEED_AGENT_*`, default `agent@uza.rw`) to build customer+lead, then runs the
   venture-manager half (clarify → project → quotation) with the **logged-in user's own token**.
   The approve/create-order actions the slice is really about use only the session token. Not part
-  of the production auth story.
-- **Project name** is captured at seed time into the worklist because there is no `GET /project/:ref`.
-  Tracking a bare quotation/order ref shows the record type instead of a project name until a
-  project read endpoint exists.
+  of the production auth story. The queue no longer depends on it — seeded records simply appear
+  in the live lists on the next dashboard load.
 
 ## How to run it
 
@@ -92,24 +105,22 @@ cd apps/web
 UZA_API_URL=http://127.0.0.1:3000 pnpm dev              # web on :3100  (or: next dev -p 3100)
 ```
 
-Sign in as **vm@uza.rw / password1**, click **Generate demo deal**, open the quotation, approve,
-create the order. Seeded users: `ceo@uza.rw`, `vm@uza.rw`, `agent@uza.rw`, `finance@uza.rw`
-(all `password1`).
+Sign in as **vm@uza.rw / password1**. Click **Generate demo deal** a few times (or POST via the
+API) to populate data, then watch the queue list the real quotations/orders — no worklist cookie.
+Open a quotation, approve, create the order; the new order surfaces in the queue on the next load.
+Seeded users: `ceo@uza.rw`, `vm@uza.rw`, `agent@uza.rw`, `finance@uza.rw` (all `password1`).
+Sign in as `agent@uza.rw` to see the same list **scoped to the agent's own records with margins
+masked**; as `finance@uza.rw` to see the Quotations section denied while Orders still render.
 
 ## Next screens to build (suggested order)
 
-1. **A list/work-queue endpoint** (contract request) so the dashboard stops relying on the
-   worklist cookie — `GET /quotations?owner=…`, `GET /orders?…`, scoped + masked like the reads.
-2. **Payment capture** (`POST /payments`, `/payments/:ref/verify`) so the awaiting_payment →
+1. **Payment capture** (`POST /payments`, `/payments/:ref/verify`) so the awaiting_payment →
    procurement_active transition is visible in the UI (currently the order's honest next step).
-3. **Quotation revise** (`POST /quotations/:ref/revise`) — the versioning UI (supersede chain).
-4. **The offline-first inspection/receiving screens** (François) — queue writes locally, honest
+2. **Quotation revise** (`POST /quotations/:ref/revise`) — the versioning UI (supersede chain).
+3. **The offline-first inspection/receiving screens** (François) — queue writes locally, honest
    sync state. Different role, different device story; start from `/receiving` and `/inspections`.
-5. **Provenance on tracking milestones** (`GET /tracking/:shipmentRef/timeline`) — the
+4. **Provenance on tracking milestones** (`GET /tracking/:shipmentRef/timeline`) — the
    carrier-confirmed vs estimated distinction; a `Provenance` chip already exists in `components/ui.tsx`.
-
-## Contract request to file
-
-`GET` list endpoints for a user's projects / quotations / orders (scoped + masked), and a
-`GET /projects/:ref`. Without them the dashboard cannot show a real "everything I own" queue —
-only records whose refs the client already knows.
+5. **Server-side status filters / offset paging** on the queue if volumes grow — the list
+   endpoints already accept `status`/`stage`/`customerRef` + `offset`; the dashboard currently
+   only grows `limit`. Adding filter chips is a small follow-up.
