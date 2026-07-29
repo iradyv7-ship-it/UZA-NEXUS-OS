@@ -1,8 +1,15 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import type { Prisma } from '@prisma/client';
 import type { Actor } from '@uza/contracts';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AuthorizationService } from '../../platform/authorization/authorization.service';
 import { makeRef, VENTURE, currentYear } from '../trade-ids';
+import { tradeScopeWhere } from '../list-scope';
+
+export interface ListPage {
+  readonly limit: number;
+  readonly offset: number;
+}
 
 /**
  * Projects and their RACI tasks. A project is the unit of delivery work, created from a
@@ -44,6 +51,52 @@ export class ProjectService {
         owner: input.owner,
       },
     });
+  }
+
+  /**
+   * Single project read (name / owner / stage). Same object-scope as every by-ref read:
+   * authorize with the record's `{ customerId, agentId }` so a caller out of scope is
+   * denied 403 (ACCESS_DENIED_SCOPE). Projects carry no CONFIDENTIAL_FIELDS, so `mask` is
+   * a no-op here — applied anyway to keep every read path uniform.
+   */
+  async read(actor: Actor, ref: string) {
+    const project = await this.prisma.project.findUnique({ where: { ref } });
+    if (!project) throw new NotFoundException(`project ${ref} not found`);
+    await this.authz.authorize(actor, 'project', 'read', {
+      customerId: project.customerRef,
+      agentId: project.agentId ?? undefined,
+    });
+    return this.authz.mask(actor, { ...project });
+  }
+
+  /**
+   * The caller's in-scope projects. Role grant is checked first (no object → 403 if the
+   * role cannot read projects at all); object-scope is then applied as a WHERE predicate
+   * via `tradeScopeWhere`, which mirrors `inScope` exactly so the list can never surface a
+   * record the by-ref read would deny. Optional `customerRef`/`stage` filters AND on top of
+   * scope (a filter can only narrow, never widen, the in-scope set). Stable sort:
+   * most-recently-updated first.
+   */
+  async list(
+    actor: Actor,
+    filters: { customerRef?: string; stage?: string },
+    page: ListPage,
+  ) {
+    await this.authz.authorize(actor, 'project', 'read');
+    const where: Prisma.ProjectWhereInput = {
+      AND: [
+        tradeScopeWhere(actor),
+        ...(filters.customerRef ? [{ customerRef: filters.customerRef }] : []),
+        ...(filters.stage ? [{ stage: filters.stage }] : []),
+      ],
+    };
+    const rows = await this.prisma.project.findMany({
+      where,
+      orderBy: { updatedAt: 'desc' },
+      take: page.limit,
+      skip: page.offset,
+    });
+    return rows.map((row) => this.authz.mask(actor, { ...row }));
   }
 
   /**

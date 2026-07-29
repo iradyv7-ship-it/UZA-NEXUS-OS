@@ -2,7 +2,18 @@
 
 **Date:** 2026-07-29
 **From:** frontend (Sprint 4b web vertical slice)
-**Status:** proposed
+**Status:** IMPLEMENTED (2026-07-29, branch `web2-list-endpoints`)
+
+> **Implementation note.** Delivered as new trade service methods + controller routes only —
+> **no `packages/contracts` change**. Added `GET /projects` (+ `?customerRef=&stage=`),
+> `GET /projects/:ref`, `GET /quotations` (+ `?projectRef=&status=`), `GET /orders`
+> (+ `?status=&customerRef=`), each authorised at the service layer and masked per row.
+> Object-scope is a Prisma WHERE predicate (`apps/api/src/trade/list-scope.ts`) that mirrors
+> `inScope` exactly, verified by an agreement test. Pagination is `limit` (default 20,
+> max 100) + `offset` with a stable `updatedAt desc` sort. The requested `?owner=` project
+> filter was not added (not needed by the dashboard; `stage` + `customerRef` suffice); it can
+> be added as another AND-composed filter if required. See `docs/handoff/api-surface.md`.
+> The web slice can now drop the worklist-cookie workaround.
 
 ## Problem
 

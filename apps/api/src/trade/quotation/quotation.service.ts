@@ -1,5 +1,5 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
+import { Prisma, type Quotation, type QuotationStatus } from '@prisma/client';
 import {
   dapMargin,
   MASK,
@@ -13,6 +13,8 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { AuthorizationService } from '../../platform/authorization/authorization.service';
 import { OutboxService } from '../../platform/outbox/outbox.service';
 import { makeRef, VENTURE, currentYear } from '../trade-ids';
+import { tradeScopeWhere } from '../list-scope';
+import type { ListPage } from '../project/project.service';
 import { priceQuotation } from './pricing';
 
 export interface QuotationPricingInput {
@@ -175,10 +177,47 @@ export class QuotationService {
       customerId: q.customerRef,
       agentId: q.agentId ?? undefined,
     });
+    return this.maskedView(actor, q);
+  }
 
+  /**
+   * The caller's in-scope quotations, masked EXACTLY as the by-ref read (cost / target /
+   * walkaway / both margins hidden for roles outside CONFIDENTIAL_FIELDS). Role grant is
+   * checked first (no object → 403 if the role holds no `quotation:read`); object-scope is
+   * a WHERE predicate via `tradeScopeWhere`, mirroring `inScope`. Optional
+   * `projectRef`/`status` filters AND on top of scope. Stable sort: updatedAt desc.
+   */
+  async list(
+    actor: Actor,
+    filters: { projectRef?: string; status?: QuotationStatus },
+    page: ListPage,
+  ) {
+    await this.authz.authorize(actor, 'quotation', 'read');
+    const where: Prisma.QuotationWhereInput = {
+      AND: [
+        tradeScopeWhere(actor),
+        ...(filters.projectRef ? [{ projectRef: filters.projectRef }] : []),
+        ...(filters.status ? [{ status: filters.status }] : []),
+      ],
+    };
+    const rows = await this.prisma.quotation.findMany({
+      where,
+      orderBy: { updatedAt: 'desc' },
+      take: page.limit,
+      skip: page.offset,
+    });
+    return rows.map((q) => this.maskedView(actor, q));
+  }
+
+  /**
+   * Single masking + DAP-margin projection, shared by `read` and `list` so a list row is
+   * never a weaker security posture than a by-ref read. Projects onto the field names
+   * CONFIDENTIAL_FIELDS masks against (supplierUnitCost, targetPrice, walkawayPrice carry
+   * Minor values, matching the repo's masking convention). dapMargin is masked in lockstep
+   * with the quoted marginPct — a margin is a margin.
+   */
+  private maskedView(actor: Actor, q: Quotation) {
     const ladder = asLadder(q.ladder);
-    // Project onto the field names CONFIDENTIAL_FIELDS masks against (supplierUnitCost,
-    // targetPrice, walkawayPrice carry Minor values, matching the repo's masking convention).
     const view = {
       ref: q.ref,
       projectRef: q.projectRef,

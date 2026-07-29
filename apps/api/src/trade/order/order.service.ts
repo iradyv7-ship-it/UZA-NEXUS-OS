@@ -1,4 +1,5 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import type { Prisma, OrderStatus } from '@prisma/client';
 import {
   scheduleFor,
   splitInstallments,
@@ -12,6 +13,8 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { AuthorizationService } from '../../platform/authorization/authorization.service';
 import { OutboxService } from '../../platform/outbox/outbox.service';
 import { makeRef, VENTURE, currentYear } from '../trade-ids';
+import { tradeScopeWhere } from '../list-scope';
+import type { ListPage } from '../project/project.service';
 
 const PAYMENT_VERIFIED_CONSUMER = 'trade.payment-verified';
 
@@ -120,6 +123,36 @@ export class OrderService {
       agentId: order.agentId ?? undefined,
     });
     return this.authz.mask(actor, { ...order });
+  }
+
+  /**
+   * The caller's in-scope orders. Role grant is checked first (no object → 403 if the role
+   * holds no `order:read`); object-scope is a WHERE predicate via `tradeScopeWhere`,
+   * mirroring `inScope` so a listed order is always one the by-ref read would also admit.
+   * Optional `status`/`customerRef` filters AND on top of scope. Stable sort: updatedAt
+   * desc. Orders carry no CONFIDENTIAL_FIELDS, so `mask` is a no-op — applied for
+   * uniformity across read paths. Installments are omitted here to keep the list light.
+   */
+  async list(
+    actor: Actor,
+    filters: { status?: OrderStatus; customerRef?: string },
+    page: ListPage,
+  ) {
+    await this.authz.authorize(actor, 'order', 'read');
+    const where: Prisma.OrderWhereInput = {
+      AND: [
+        tradeScopeWhere(actor),
+        ...(filters.status ? [{ status: filters.status }] : []),
+        ...(filters.customerRef ? [{ customerRef: filters.customerRef }] : []),
+      ],
+    };
+    const rows = await this.prisma.order.findMany({
+      where,
+      orderBy: { updatedAt: 'desc' },
+      take: page.limit,
+      skip: page.offset,
+    });
+    return rows.map((row) => this.authz.mask(actor, { ...row }));
   }
 
   /**
