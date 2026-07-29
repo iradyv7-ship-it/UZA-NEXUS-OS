@@ -115,10 +115,12 @@ only authenticates; the service authorises + masks. `(scoped)` = object-scope is
 | Method | Path | Auth | Body / params | Service.method |
 |---|---|---|---|---|
 | GET | `/invoices/:ref` | `invoice:read` (scoped, masked) | — | `InvoiceService.read` |
+| GET | `/invoices/order/:orderRef` | `invoice:read` (scoped, masked) | — | `InvoiceService.readByOrder` |
 | GET | `/invoices/order/:orderRef/release-eligibility` | `invoice:read` (scoped) | — | `InvoiceService.releaseEligibility` |
 | POST | `/payments` | `payment:create` (scoped) | `{invoiceRef,amountMinor,proofRef,targetTrigger}` | `PaymentService.uploadProof` |
 | POST | `/payments/:ref/verify` | `payment:approve` (**finance/ceo only**) | — | `PaymentService.verify` |
 | POST | `/payments/:ref/reject` | `payment:approve` | `{reason}` | `PaymentService.reject` |
+| GET | `/payments` | `payment:read` (scoped, masked; paginated) | query `status?`, `invoiceRef?`, `limit?`, `offset?` | `PaymentService.list` |
 | GET | `/payments/:ref` | `payment:read` (scoped, masked) | — | `PaymentService.read` |
 | POST | `/commissions/payouts` | `commission:payout` | `{agentId,orderRef,amountMinor}` | `CommissionService.recordPayout` |
 | GET | `/commissions/agents/:agentId/balance` | `commission:read` (scoped) | — | `CommissionService.balanceFor` |
@@ -130,6 +132,26 @@ only authenticates; the service authorises + masks. `(scoped)` = object-scope is
 | POST | `/supplier-bank/changes` | `payment:approve` | `{supplierRef,accountName,iban,bankName}` | `SupplierBankService.requestChange` |
 | POST | `/supplier-bank/changes/:ref/approve` | `payment:approve` (dual, distinct approvers) | — | `SupplierBankService.approve` |
 | GET | `/supplier-bank/:supplierRef` | `supplier:read` | — | `SupplierBankService.readAccount` |
+
+> **`GET /invoices/order/:orderRef`** resolves an order to its invoice for the payment UI
+> (the customer holds the order ref, not the invoice ref). Same posture as `GET /invoices/:ref`:
+> `invoice:read` role grant, then object-scope via `inScope` (a `customer` sees only their own
+> invoice; `finance`/`ceo`/`venture_manager` see all), then masking. `404` when the order has
+> no invoice, `403 ACCESS_DENIED_SCOPE` when out of scope — never a silent empty.
+
+> **`GET /payments`** is Finance's verification queue (primary use `?status=pending_verification`).
+> Same security posture as `GET /payments/:ref`, expressed as a query predicate — a list never
+> returns a row the by-ref read would deny. The role grant is checked first (no grant →
+> `403 ACCESS_DENIED_ROLE`): per `ROLE_GRANTS` only `finance` (`payment:*`), `ceo` (`*:*`) and
+> `venture_manager` (`payment:read`) hold `payment:read` — a `customer` (`payment:create` only)
+> and a `sales_agent` (`commission:read` only) are denied, matching their by-ref read. Object
+> scope mirrors `inScope` (`financeScopeWhere`): those three roles pass `inScope` unconditionally
+> and see all rows; the `customer`/`sales_agent` branches (unreachable via the grant, kept for a
+> total mirror) admit only rows where `customerRef` matches — a Payment carries no `agentId`, so
+> only the customer-membership disjunct can fire. Optional `status`/`invoiceRef` filters only
+> NARROW (AND-composed), never widen. Payment rows declare no `CONFIDENTIAL_FIELDS`, so masking is
+> a no-op (applied for uniformity). **Pagination:** `limit` (default 20, max 100) + `offset`
+> (default 0), validated (`400` on non-int/out-of-range); stable sort `updatedAt desc`.
 
 ### logistics
 | Method | Path | Auth | Body / params | Service.method |
