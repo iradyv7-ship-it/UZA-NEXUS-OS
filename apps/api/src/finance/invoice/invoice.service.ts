@@ -97,6 +97,26 @@ export class InvoiceService {
   }
 
   /**
+   * The invoice for an order, resolved by the ORDER ref (the payment-capture UI holds the
+   * order, not the invoice ref). Same security posture as `read` above and as
+   * `GET /invoices/:ref`: `invoice:read` role grant, then object-scope via `inScope`
+   * (a customer sees only their own invoice; finance/ceo/vm see all), then field masking.
+   * 404 when the order has no invoice, 403 when it is out of scope — never a silent empty.
+   */
+  async readByOrder(actor: Actor, orderRef: string) {
+    const invoice = await this.prisma.invoice.findUnique({
+      where: { orderRef },
+      include: { installments: true },
+    });
+    if (!invoice) throw new NotFoundException(`invoice for order ${orderRef} not found`);
+    await this.authz.authorize(actor, 'invoice', 'read', {
+      customerId: invoice.customerRef,
+      agentId: invoice.agentId ?? undefined,
+    });
+    return this.authz.mask(actor, { ...invoice });
+  }
+
+  /**
    * CF-028 — goods release requires FULL payment (not delivery, release). This is the
    * fully-paid determination logistics' delivery step will read in Sprint 3. An order is
    * release-eligible only when every finance installment is settled; otherwise the
