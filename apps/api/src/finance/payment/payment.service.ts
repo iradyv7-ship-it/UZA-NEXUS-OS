@@ -1,4 +1,5 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import type { Prisma, PaymentStatus } from '@prisma/client';
 import {
   MIN_DEPOSIT,
   UzaError,
@@ -12,6 +13,7 @@ import { OutboxService } from '../../platform/outbox/outbox.service';
 import { NotificationService } from '../../platform/notification/notification.service';
 import { CommissionService } from '../commission/commission.service';
 import { paymentRef } from '../finance-ids';
+import { financeScopeWhere } from '../list-scope';
 
 export interface ProofUpload {
   readonly invoiceRef: string;
@@ -19,6 +21,16 @@ export interface ProofUpload {
   readonly proofRef: string;
   /** Which named installment this payment is meant to settle. */
   readonly targetTrigger: InstallmentTrigger;
+}
+
+export interface ListPage {
+  readonly limit: number;
+  readonly offset: number;
+}
+
+export interface PaymentListFilters {
+  readonly status?: PaymentStatus;
+  readonly invoiceRef?: string;
 }
 
 /**
@@ -228,6 +240,34 @@ export class PaymentService {
       customerId: payment.customerRef,
     });
     return this.authz.mask(actor, { ...payment });
+  }
+
+  /**
+   * The caller's in-scope payments — the Finance verification queue when filtered
+   * `status=pending_verification`. Role grant is checked first (no object → 403 if the
+   * role holds no `payment:read`; a `customer` has only `payment:create`, so a customer
+   * list is denied exactly as its by-ref read would be); object-scope is a WHERE predicate
+   * via `financeScopeWhere`, mirroring `inScope` so a listed payment is always one the
+   * by-ref read would also admit. Optional `status`/`invoiceRef` filters AND on top of
+   * scope — they only NARROW, never widen. Stable sort: updatedAt desc. Payment rows carry
+   * no CONFIDENTIAL_FIELDS, so `mask` is a no-op — applied for uniformity across read paths.
+   */
+  async list(actor: Actor, filters: PaymentListFilters, page: ListPage) {
+    await this.authz.authorize(actor, 'payment', 'read');
+    const where: Prisma.PaymentWhereInput = {
+      AND: [
+        financeScopeWhere(actor),
+        ...(filters.status ? [{ status: filters.status }] : []),
+        ...(filters.invoiceRef ? [{ invoiceRef: filters.invoiceRef }] : []),
+      ],
+    };
+    const rows = await this.prisma.payment.findMany({
+      where,
+      orderBy: { updatedAt: 'desc' },
+      take: page.limit,
+      skip: page.offset,
+    });
+    return rows.map((row) => this.authz.mask(actor, { ...row }));
   }
 }
 
