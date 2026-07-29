@@ -1,0 +1,19 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+}
+
+html,
+body {
+  @apply bg-slate-50 text-slate-900 antialiased;
+}
+
+/* Tap targets never smaller than 44px — one-handed use on a phone (charter). */
+button,
+[role='button'],
+a.btn {
+  min-height: 44px;
+}
