@@ -2,6 +2,9 @@ packages:
   - 'packages/*'
   - 'apps/*'
 
+allowBuilds:
+  sharp: false
+
 onlyBuiltDependencies:
   - '@prisma/client'
   - '@prisma/engines'

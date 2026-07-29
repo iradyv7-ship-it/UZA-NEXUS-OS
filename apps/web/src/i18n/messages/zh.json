@@ -1,0 +1,14 @@
+{
+  "app.name": "UZA Nexus",
+  "app.tagline": "中国 → 基加利/戈马 贸易走廊",
+  "nav.dashboard": "仪表板",
+  "nav.logout": "退出登录",
+  "login.title": "登录",
+  "login.email": "邮箱",
+  "login.password": "密码",
+  "login.submit": "登录",
+  "dash.title": "我的交易",
+  "dash.col.stage": "阶段",
+  "dash.col.next": "下一步",
+  "dash.col.owner": "负责人"
+}

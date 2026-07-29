@@ -1,0 +1,10 @@
+{
+  "name": "UZA Nexus",
+  "short_name": "UZA",
+  "description": "China → Kigali/Goma trade corridor operations console",
+  "start_url": "/dashboard",
+  "display": "standalone",
+  "background_color": "#f8fafc",
+  "theme_color": "#0f5132",
+  "icons": []
+}
