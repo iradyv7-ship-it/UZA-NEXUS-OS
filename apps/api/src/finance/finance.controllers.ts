@@ -1,6 +1,14 @@
-import { Body, Controller, Get, Param, Patch, Post } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiProperty, ApiTags } from '@nestjs/swagger';
-import { IsIn, IsInt, IsString, MinLength } from 'class-validator';
+import { Body, Controller, Get, Param, Patch, Post, Query } from '@nestjs/common';
+import {
+  ApiBearerAuth,
+  ApiOperation,
+  ApiProperty,
+  ApiPropertyOptional,
+  ApiTags,
+} from '@nestjs/swagger';
+import { Type } from 'class-transformer';
+import { IsIn, IsInt, IsOptional, IsString, Max, Min, MinLength } from 'class-validator';
+import type { PaymentStatus } from '@prisma/client';
 import type { Actor, InstallmentTrigger, Minor } from '@uza/contracts';
 import { CurrentActor } from '../platform/auth/current-actor.decorator';
 import { InvoiceService } from './invoice/invoice.service';
@@ -13,6 +21,7 @@ import { SupplierBankService } from './supplier-bank/supplier-bank.service';
 const TRIGGERS: readonly InstallmentTrigger[] = ['confirmation', 'pre_loading', 'pre_release'];
 const PETTY_CASH_KINDS: readonly PettyCashKind[] = ['float', 'expense', 'replenishment'];
 const CLAIM_STATUSES = ['submitted', 'recovered', 'written_off'] as const;
+const PAYMENT_STATUSES = ['pending_verification', 'verified', 'rejected'] as const;
 
 class UploadProofDto {
   @ApiProperty() @IsString() invoiceRef!: string;
@@ -23,6 +32,23 @@ class UploadProofDto {
 
 class RejectPaymentDto {
   @ApiProperty() @IsString() @MinLength(1) reason!: string;
+}
+
+// Query params arrive as strings; @Type(() => Number) coerces the pagination ints so the
+// global ValidationPipe (transform:true) rejects non-numeric/out-of-range input with 400.
+class ListPaymentsQueryDto {
+  @ApiPropertyOptional({ enum: PAYMENT_STATUSES })
+  @IsOptional() @IsIn(PAYMENT_STATUSES) status?: PaymentStatus;
+
+  @ApiPropertyOptional() @IsOptional() @IsString() invoiceRef?: string;
+
+  @ApiPropertyOptional({ minimum: 1, maximum: 100, default: 20 })
+  @IsOptional() @Type(() => Number) @IsInt() @Min(1) @Max(100)
+  limit = 20;
+
+  @ApiPropertyOptional({ minimum: 0, default: 0 })
+  @IsOptional() @Type(() => Number) @IsInt() @Min(0)
+  offset = 0;
 }
 
 class RecordPayoutDto {
@@ -61,6 +87,12 @@ export class InvoiceController {
     return this.invoices.releaseEligibility(actor, orderRef);
   }
 
+  @Get('order/:orderRef')
+  @ApiOperation({ summary: 'Read the invoice for an order (invoice:read, scoped + masked)' })
+  readByOrder(@CurrentActor() actor: Actor, @Param('orderRef') orderRef: string) {
+    return this.invoices.readByOrder(actor, orderRef);
+  }
+
   @Get(':ref')
   @ApiOperation({ summary: 'Read an invoice + installments (invoice:read, scoped + masked)' })
   read(@CurrentActor() actor: Actor, @Param('ref') ref: string) {
@@ -90,6 +122,18 @@ export class PaymentController {
   @ApiOperation({ summary: 'Reject a captured payment (payment:approve)' })
   reject(@CurrentActor() actor: Actor, @Param('ref') ref: string, @Body() dto: RejectPaymentDto) {
     return this.payments.reject(actor, ref, dto.reason);
+  }
+
+  @Get()
+  @ApiOperation({
+    summary: 'List in-scope payments — the verification queue (payment:read, scoped; updatedAt desc)',
+  })
+  list(@CurrentActor() actor: Actor, @Query() q: ListPaymentsQueryDto) {
+    return this.payments.list(
+      actor,
+      { status: q.status, invoiceRef: q.invoiceRef },
+      { limit: q.limit, offset: q.offset },
+    );
   }
 
   @Get(':ref')
