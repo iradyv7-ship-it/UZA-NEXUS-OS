@@ -13,7 +13,7 @@ export default async function LoginPage() {
   const t = translator(locale);
 
   return (
-    <main className="mx-auto flex min-h-screen max-w-md flex-col justify-center px-5 py-10">
+    <main className="mx-auto flex min-h-screen max-w-md flex-col justify-center px-5 py-10 sm:max-w-lg sm:px-6">
       <div className="mb-6 flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-brand">{t('app.name')}</h1>

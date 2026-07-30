@@ -1,7 +1,39 @@
 import type { ReactNode } from 'react';
 
+/**
+ * The one responsive width the whole app shares. Mobile-first: full-width on a phone,
+ * then a comfortable column that grows step-by-step to use a tablet/desktop's space
+ * instead of leaving a thin centred strip. Applied to the app shell (header + main) and
+ * referenced by the login screen so every surface lines up at every breakpoint.
+ */
+export const SHELL_WIDTH = 'max-w-md sm:max-w-2xl lg:max-w-5xl xl:max-w-6xl';
+
+/** Horizontal padding that grows with the shell, so gutters feel right at every size. */
+export const SHELL_PADDING_X = 'px-4 sm:px-6 lg:px-8';
+
 export function Card({ children, className = '' }: { children: ReactNode; className?: string }) {
   return <div className={`rounded-xl border border-slate-200 bg-white p-4 shadow-sm ${className}`}>{children}</div>;
+}
+
+/**
+ * A work-queue / list grid: one tap-friendly card per row on a phone, two on `md`, three
+ * on `lg`. Renders a `<ul>` so `<li>` cards keep their list semantics. Used by the
+ * dashboard queue, the partner shipments list and the finance verify queue so they all
+ * flow the same way as the viewport grows.
+ */
+export function CardGrid({ children, className = '' }: { children: ReactNode; className?: string }) {
+  return (
+    <ul className={`grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-3 ${className}`}>{children}</ul>
+  );
+}
+
+/**
+ * A detail / reading page wrapper. The app shell can be wide, but a single record read
+ * top-to-bottom wants a capped line length — this centres the content and stops it
+ * sprawling edge-to-edge on a large monitor while still using more room than a phone.
+ */
+export function DetailShell({ children, className = '' }: { children: ReactNode; className?: string }) {
+  return <div className={`mx-auto w-full max-w-3xl space-y-4 ${className}`}>{children}</div>;
 }
 
 export function Field({ label, children }: { label: string; children: ReactNode }) {
