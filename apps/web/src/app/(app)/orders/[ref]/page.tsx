@@ -7,7 +7,7 @@ import { can } from '@/lib/permissions';
 import { money, percent } from '@/lib/format';
 import { orderPromise } from '@/lib/promise';
 import type { InvoiceInstallmentView, InvoiceView, OrderView, PaymentView } from '@/lib/types';
-import { Badge, Card, Field } from '@/components/ui';
+import { Badge, Card, DetailShell, Field } from '@/components/ui';
 import { ResultError } from '@/components/States';
 import { uploadPaymentProofAction } from './actions';
 
@@ -32,10 +32,10 @@ export default async function OrderPage({
 
   if (res.kind !== 'ok') {
     return (
-      <div className="space-y-4">
+      <DetailShell>
         <BackLink label={t('action.back')} />
         <ResultError result={res} t={t} />
-      </div>
+      </DetailShell>
     );
   }
 
@@ -69,7 +69,7 @@ export default async function OrderPage({
   const installments = invoice?.installments ?? null;
 
   return (
-    <div className="space-y-4">
+    <DetailShell>
       <BackLink label={t('action.back')} />
 
       <div className="flex items-start justify-between gap-3">
@@ -95,6 +95,8 @@ export default async function OrderPage({
         </p>
       )}
 
+      {/* Summary and payment schedule sit side by side on large screens, stacked on a phone. */}
+      <div className="grid gap-4 lg:grid-cols-2 lg:items-start">
       <Card>
         <dl className="divide-y divide-slate-100">
           <Field label={t('ord.total')}>{money(o.totalMinor, locale)}</Field>
@@ -159,14 +161,15 @@ export default async function OrderPage({
           </ul>
         )}
       </div>
+      </div>
 
       <Link
         href={`/quotations/${o.quotationRef}`}
-        className="block rounded-lg border border-slate-300 px-4 py-3 text-center text-sm font-medium text-slate-700"
+        className="block rounded-lg border border-slate-300 px-4 py-3 text-center text-sm font-medium text-slate-700 sm:inline-block sm:w-auto sm:px-8"
       >
         {t('ord.viewQuotation')}
       </Link>
-    </div>
+    </DetailShell>
   );
 }
 

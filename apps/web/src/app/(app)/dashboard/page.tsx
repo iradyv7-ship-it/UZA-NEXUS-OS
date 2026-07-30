@@ -5,7 +5,7 @@ import { getLocale, getSession } from '@/lib/session';
 import { homePathFor, showSeedTools } from '@/lib/permissions';
 import { loadQueue, PAGE_SIZE, type QueueCard } from '@/lib/queue';
 import { money } from '@/lib/format';
-import { Badge } from '@/components/ui';
+import { Badge, CardGrid } from '@/components/ui';
 import { StatePanel } from '@/components/States';
 import type { ProjectListRow } from '@/lib/types';
 import { seedDealAction, trackRefAction } from './actions';
@@ -134,7 +134,7 @@ function ProjectSection({
       ) : state === 'error' ? (
         <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{t('dash.section.error')}</p>
       ) : (
-        <ul className="space-y-3">
+        <CardGrid>
           {projects.map((p) => (
             <li key={p.ref} className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
               <div className="flex items-start justify-between gap-3">
@@ -148,7 +148,7 @@ function ProjectSection({
               <p className="mt-1 font-mono text-[11px] text-slate-400">{p.ref}</p>
             </li>
           ))}
-        </ul>
+        </CardGrid>
       )}
     </section>
   );
@@ -213,11 +213,11 @@ function QueueSection({
       ) : state === 'error' ? (
         <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{t('dash.section.error')}</p>
       ) : (
-        <ul className="space-y-3">
+        <CardGrid>
           {cards.map((card) => (
             <DealCard key={`${card.kind}:${card.ref}`} card={card} t={t} locale={locale} />
           ))}
-        </ul>
+        </CardGrid>
       )}
     </section>
   );
@@ -230,8 +230,8 @@ function DealCard({ card, t, locale }: { card: QueueCard; t: Translate; locale: 
   const amount = money(card.amount.minor, locale);
 
   return (
-    <li className="rounded-xl border border-slate-200 bg-white shadow-sm">
-      <Link href={path} className="block p-4">
+    <li className="h-full rounded-xl border border-slate-200 bg-white shadow-sm">
+      <Link href={path} className="flex h-full flex-col p-4">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
             <p className="truncate text-base font-semibold text-slate-900">
@@ -254,7 +254,7 @@ function DealCard({ card, t, locale }: { card: QueueCard; t: Translate; locale: 
           </p>
         </div>
 
-        <div className="mt-2 flex items-center justify-between">
+        <div className="mt-auto flex items-center justify-between pt-2">
           <p className="font-mono text-[11px] text-slate-400">{card.ref}</p>
           <p className="text-xs tabular-nums text-slate-600">
             <span className="font-medium text-slate-800">{amount}</span>

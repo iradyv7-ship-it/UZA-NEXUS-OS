@@ -7,7 +7,7 @@ import { authedCall, type ApiResult } from '@/lib/api';
 import { shipmentPromise } from '@/lib/promise';
 import { isMasked } from '@/lib/types';
 import type { DeliveryView, PackageView, ShipmentView, TrackingEventView } from '@/lib/types';
-import { Badge, Card, Field, Masked, Provenance } from '@/components/ui';
+import { Badge, Card, DetailShell, Field, Masked, Provenance } from '@/components/ui';
 import { ResultError } from '@/components/States';
 
 export const dynamic = 'force-dynamic';
@@ -39,10 +39,10 @@ export default async function PartnerShipmentPage({ params }: { params: Promise<
 
   if (res.kind !== 'ok') {
     return (
-      <div className="space-y-4">
+      <DetailShell>
         <BackLink label={t('action.back')} />
         <ResultError result={res} t={t} />
-      </div>
+      </DetailShell>
     );
   }
 
@@ -61,7 +61,7 @@ export default async function PartnerShipmentPage({ params }: { params: Promise<
   }
 
   return (
-    <div className="space-y-4">
+    <DetailShell>
       <BackLink label={t('action.back')} />
 
       <div className="flex items-start justify-between gap-3">
@@ -80,6 +80,10 @@ export default async function PartnerShipmentPage({ params }: { params: Promise<
         </p>
       </div>
 
+      {/* Two reading columns on large screens (carrier + packages | delivery + timeline);
+          on a phone they stack in the same top-to-bottom order. */}
+      <div className="grid gap-4 lg:grid-cols-2 lg:items-start">
+      <div className="space-y-4">
       <Card>
         <dl className="divide-y divide-slate-100">
           <Field label={t('ship.carrier')}>{s.carrier}</Field>
@@ -100,9 +104,14 @@ export default async function PartnerShipmentPage({ params }: { params: Promise<
       </Card>
 
       <PackagesSection res={pkgRes} t={t} locale={locale} />
+      </div>
+
+      <div className="space-y-4">
       <DeliverySection res={delRes} t={t} />
       <TimelineSection res={tlRes} t={t} />
-    </div>
+      </div>
+      </div>
+    </DetailShell>
   );
 }
 

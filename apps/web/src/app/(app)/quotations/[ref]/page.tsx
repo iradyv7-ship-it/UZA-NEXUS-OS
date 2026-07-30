@@ -6,7 +6,7 @@ import { authedCall } from '@/lib/api';
 import { maskedMoney, maskedPercent, money } from '@/lib/format';
 import { quotationPromise } from '@/lib/promise';
 import { isMasked, type QuotationView } from '@/lib/types';
-import { Badge, Card, Field, Masked } from '@/components/ui';
+import { Badge, Card, DetailShell, Field, Masked } from '@/components/ui';
 import { ResultError } from '@/components/States';
 import { approveQuotationAction, createOrderAction } from './actions';
 
@@ -29,10 +29,10 @@ export default async function QuotationPage({
 
   if (res.kind !== 'ok') {
     return (
-      <div className="space-y-4">
+      <DetailShell>
         <BackLink label={t('action.back')} />
         <ResultError result={res} t={t} />
-      </div>
+      </DetailShell>
     );
   }
 
@@ -41,7 +41,7 @@ export default async function QuotationPage({
   const anyMasked = isMasked(q.marginPct);
 
   return (
-    <div className="space-y-4">
+    <DetailShell>
       <BackLink label={t('action.back')} />
 
       <div className="flex items-start justify-between gap-3">
@@ -66,6 +66,8 @@ export default async function QuotationPage({
       {err === 'approve' && <ErrBanner t={t} />}
       {err === 'order' && <ErrBanner t={t} />}
 
+      {/* On wider screens the two cards sit side by side; they stack on a phone. */}
+      <div className="grid gap-4 lg:grid-cols-2 lg:items-start">
       <Card>
         <dl className="divide-y divide-slate-100">
           <Field label={t('record.project')}>
@@ -106,12 +108,14 @@ export default async function QuotationPage({
         </dl>
         <p className="mt-2 text-xs text-slate-400">{anyMasked ? t('quo.masked.note') : t('quo.marginHint')}</p>
       </Card>
+      </div>
 
-      {/* End-to-end flow controls, gated by lifecycle. */}
+      {/* End-to-end flow controls, gated by lifecycle. Full-width on a phone; a comfortable
+          fixed width on larger screens rather than a button stretched across the page. */}
       {q.status === 'draft' && (
         <form action={approveQuotationAction}>
           <input type="hidden" name="ref" value={q.ref} />
-          <button className="w-full rounded-lg bg-brand px-4 py-3 text-base font-semibold text-white active:scale-[0.99]">
+          <button className="w-full rounded-lg bg-brand px-4 py-3 text-base font-semibold text-white active:scale-[0.99] sm:w-auto sm:min-w-64 sm:px-10">
             {t('quo.approve')}
           </button>
         </form>
@@ -119,12 +123,12 @@ export default async function QuotationPage({
       {q.status === 'approved' && (
         <form action={createOrderAction}>
           <input type="hidden" name="ref" value={q.ref} />
-          <button className="w-full rounded-lg bg-brand px-4 py-3 text-base font-semibold text-white active:scale-[0.99]">
+          <button className="w-full rounded-lg bg-brand px-4 py-3 text-base font-semibold text-white active:scale-[0.99] sm:w-auto sm:min-w-64 sm:px-10">
             {t('quo.createOrder')}
           </button>
         </form>
       )}
-    </div>
+    </DetailShell>
   );
 }
 
