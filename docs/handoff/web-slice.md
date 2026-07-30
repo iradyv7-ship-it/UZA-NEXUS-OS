@@ -167,6 +167,53 @@ Minted real sessions via `POST /auth/login`, curled the web server with `uza_tok
 - **Payment proof is a text reference**, not a file upload (same as the existing order screen).
 - **RW/ZH** partner/portal strings fall back to EN via the i18n loader (key-ready, not translated).
 
+## Responsive layout system (branch `web-responsive`)
+
+The app was previously locked to a single `max-w-md` (~448px) column on every screen — right
+on a phone, a thin wasted strip on tablet/desktop. It now scales up while keeping 375px as the
+primary, mobile-first target. **Layout/CSS only** — no data wiring, masking, role-gating or API
+changes. Tailwind breakpoints only, no new deps.
+
+**Shared primitives live in `src/components/ui.tsx`** so breakpoints are defined once, not copied
+per page:
+- `SHELL_WIDTH` = `max-w-md sm:max-w-2xl lg:max-w-5xl xl:max-w-6xl` — the one width the whole app
+  grows through. `SHELL_PADDING_X` = `px-4 sm:px-6 lg:px-8` gutters that grow with it.
+- `CardGrid` — a `<ul>` that is **1 column on mobile, 2 on `md`, 3 on `lg`**
+  (`grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-3`). Keeps `<li>` list semantics.
+- `DetailShell` — a `mx-auto w-full max-w-3xl` wrapper for single-record reading pages, so
+  content uses more than a phone's width but never sprawls edge-to-edge on a 1440px monitor.
+
+**App shell (`(app)/layout.tsx`).** The sticky header is now a **full-bleed white bar** whose inner
+content is centred to `SHELL_WIDTH`; `<main>` is centred to the same width. Header action row and
+the "signed in as" line use `flex-wrap` so the locale switch + verify-queue + sign-out wrap
+sensibly from 375px up. The page background (`bg-slate-50`) spans the full viewport.
+
+**Where each primitive is applied:**
+- **List / work-queue pages → `CardGrid`:** dashboard quotations & orders sections and the
+  customer projects section (`dashboard/page.tsx`), the Imari partner shipments list
+  (`partner/shipments/page.tsx`), the Finance verify-payments queue (`finance/payments/page.tsx`).
+  Cards get `h-full` + `flex flex-col` with the ref/amount row pushed to the bottom
+  (`mt-auto`) so cards in a row are equal height. The `loading.tsx` skeleton mirrors the grid.
+- **Detail pages → `DetailShell` + a `lg:grid-cols-2` inner grid:** quotation (info card | margins
+  card), order (summary card | installment schedule), partner shipment detail (carrier + packages |
+  delivery + timeline). Columns stack in the same top-to-bottom order on a phone.
+- **Buttons / forms:** primary actions are `w-full` on mobile and cap to `sm:w-auto sm:min-w-64`
+  (or `sm:inline-block sm:w-auto`) on wider screens instead of stretching across the page; 44px
+  tap targets preserved. Login (`login/page.tsx`) stays a centred card, `max-w-md sm:max-w-lg`.
+
+**Breakpoints:** `sm` 640 · `md` 768 · `lg` 1024 · `xl` 1280 (Tailwind defaults). Net effect —
+cards: 1-col <768, 2-col 768–1023, 3-col ≥1024; shell: ~448px <640 → 2xl@640 → 5xl@1024 → 6xl@1280.
+
+**Verified (live stack, cookie method) at 375 / 768 / 1280.** Killed stale node on 3000/3100,
+rebuilt (`next build` passes), reseeded, minted sessions via `POST /auth/login` and curled the web
+server with `uza_token` + `uza_actor` cookies. All key pages return HTTP 200 with the responsive
+classes present in the rendered markup — `SHELL_WIDTH` on header+main everywhere; `CardGrid` on
+vm/customer dashboards, finance queue, partner list; `DetailShell` + `lg:grid-cols-2` on
+quotation/order/partner-shipment detail. Confirmed the generated CSS carries the media-query rules
+(`md:grid-cols-2`, `lg:grid-cols-3`, `lg:grid-cols-2`, `sm:max-w-2xl`, `lg:max-w-5xl`,
+`xl:max-w-6xl`) so at 375 everything is single-column at `max-w-md` (mobile experience unchanged),
+2-col at 768, 3-col at 1280 with the shell widened. Masking unaffected (partner freight still `***`).
+
 ## Next screens to build (suggested order)
 
 1. **Payment capture** (`POST /payments`, `/payments/:ref/verify`) so the awaiting_payment →
