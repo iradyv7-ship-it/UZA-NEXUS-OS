@@ -56,6 +56,60 @@ export interface OrderView {
 }
 
 /**
+ * Finance read-shapes. Invoices carry NO confidential fields (nothing in CONFIDENTIAL_FIELDS
+ * targets them), so their money is always a real number, never masked. The finance-side
+ * installment status is `due | settled` — Finance flips it to `settled` when it verifies a
+ * covering payment. We render `settled` as "paid" to the human.
+ */
+
+export type InvoiceStatus = 'issued' | 'part_paid' | 'paid' | 'void';
+export type FinanceInstallmentStatus = 'due' | 'settled';
+
+export interface InvoiceInstallmentView {
+  ref: string;
+  invoiceRef: string;
+  orderRef: string;
+  trigger: InstallmentTrigger;
+  pct: number;
+  amountMinor: number;
+  status: FinanceInstallmentStatus;
+  settledByPaymentRef: string | null;
+}
+
+export interface InvoiceView {
+  ref: string;
+  orderRef: string;
+  customerRef: string;
+  agentId: string | null;
+  totalMinor: number;
+  tier: 'new' | 'established';
+  status: InvoiceStatus;
+  commissionAccrued: boolean;
+  installments: InvoiceInstallmentView[];
+}
+
+export type PaymentStatus = 'pending_verification' | 'verified' | 'rejected';
+
+/** A payment against an invoice. Payment rows declare no confidential fields (mask is a
+ *  no-op on the API), so every field arrives real. */
+export interface PaymentView {
+  ref: string;
+  invoiceRef: string;
+  orderRef: string;
+  customerRef: string;
+  amountMinor: number;
+  proofRef: string;
+  targetTrigger: InstallmentTrigger;
+  status: PaymentStatus;
+  verifiedBy: string | null;
+  verifiedAt: string | null;
+  rejectionReason: string | null;
+  settledInstallmentRef: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/**
  * List-row shapes for the work-queue endpoints (GET /quotations, /orders, /projects).
  * Same security posture as the by-ref reads: scoped server-side, and quotation rows are
  * masked identically (cost/target/walkaway + both margins → "***"). Orders and projects

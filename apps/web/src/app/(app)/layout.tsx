@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { translator } from '@/i18n';
 import { getLocale, getSession } from '@/lib/session';
+import { can } from '@/lib/permissions';
 import { LocaleSwitch } from '@/components/LocaleSwitch';
 import { logoutAction } from '@/app/actions';
 
@@ -12,6 +13,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const locale = await getLocale();
   const t = translator(locale);
   const roleLabel = t(`owner.${session.actor.role === 'venture_manager' ? 'venture_manager' : session.actor.role}`);
+  const showVerifyQueue = can(session.actor, 'payment', 'read');
 
   return (
     <div className="mx-auto min-h-screen max-w-md bg-slate-50">
@@ -22,6 +24,14 @@ export default async function AppLayout({ children }: { children: React.ReactNod
             <span className="text-[11px] text-slate-500">{t('app.tagline')}</span>
           </Link>
           <div className="flex items-center gap-2">
+            {showVerifyQueue && (
+              <Link
+                href="/finance/payments"
+                className="rounded-lg border border-brand/40 bg-brand-soft px-3 py-2 text-sm font-semibold text-brand"
+              >
+                {t('nav.verifyQueue')}
+              </Link>
+            )}
             <LocaleSwitch locale={locale} />
             <form action={logoutAction}>
               <button className="rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-600">
