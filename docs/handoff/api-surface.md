@@ -167,6 +167,7 @@ only authenticates; the service authorises + masks. `(scoped)` = object-scope is
 | GET | `/tracking/:shipmentRef/timeline` | `shipment:read` | — | `TrackingService.timeline` |
 | POST | `/tracking/:shipmentRef/delay` | `shipment:create` | `{newEta,reason,agentId?,ownerId?,frontOfficeId?}` | `TrackingService.delayShipment` |
 | POST | `/deliveries` | `delivery:create` (shipment-scoped) | `{shipmentRef,packageRefs[],podRef,office?}` | `DeliveryService.deliver` |
+| GET | `/partner-portal/shipments` | `shipment:read` (scoped to `scope.shipmentRefs`; freight cost masked) | `?limit=&offset=` | `PartnerPortalService.listShipments` |
 | GET | `/partner-portal/shipments/:ref` | `shipment:read` (scoped; freight cost masked) | — | `PartnerPortalService.readShipment` |
 | GET | `/partner-portal/shipments/:ref/packages` | `package:read` (scoped) | — | `PartnerPortalService.readPackages` |
 | GET | `/partner-portal/shipments/:ref/delivery` | `delivery:read` (scoped) | — | `PartnerPortalService.readDelivery` |
