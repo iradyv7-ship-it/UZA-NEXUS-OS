@@ -299,6 +299,9 @@ async function main() {
     ['VM-RW-0001', 'vm@uza.rw', 'venture_manager'],
     ['AGT-GOM-0021', 'agent@uza.rw', 'sales_agent'],
     ['FIN-RW-0001', 'finance@uza.rw', 'finance'],
+    // The owner's Gmail, so once Google credentials are configured they can "Sign in with
+    // Google" and be matched to this ceo user (password login also works meanwhile).
+    ['CEO-RW-0002', 'iradyv7@gmail.com', 'ceo'],
   ];
   for (const [ref, email, role] of users) {
     const existing = await prisma.user.findUnique({ where: { email } });

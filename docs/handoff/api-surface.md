@@ -17,9 +17,22 @@ OpenAPI is live at **`/docs`** (JSON at `/docs-json`) — 68 paths. Build agains
 
 - **`POST /auth/login`** (public) → `{ accessToken, actor, mfaRequired }`. The `actor` is the
   exact `@uza/contracts` `Actor` (`{ userId, role, office, scope }`).
+- **`GET /auth/google`** (public) → **302** redirect to Google's OAuth 2.0 consent screen
+  (scopes `openid email profile`, a signed short-lived `state` for CSRF, `access_type=online`).
+  Returns **503** `{ "error": "google_signin_not_configured" }` when the Google env vars are
+  not all set (the app still boots without them).
+- **`GET /auth/google/callback?code=&state=`** (public) → validates `state`, exchanges the
+  `code`, **verifies the Google ID token** (`OAuth2Client.verifyIdToken`, requires
+  `email_verified`), matches an **existing active** user by email (case-insensitive) and
+  returns the **same** `{ accessToken, actor, mfaRequired }` shape as `POST /auth/login`.
+  No auto-provisioning: an unknown/disabled/expired/MFA-enabled account → **401** (audited as
+  `NO_MATCHING_USER` / `ACCOUNT_DISABLED` / `ACCOUNT_EXPIRED` / `MFA_REQUIRED`). **503** when
+  unconfigured. Google-authenticated users get exactly the role/scope on their user record —
+  the authorisation model is unchanged. Full flow + Google Cloud setup: `google-signin.md`.
 - Send the token on every other request: `Authorization: Bearer <accessToken>`.
-- A global `JwtAuthGuard` protects **every** route. Only `POST /auth/login` and `GET /health`
-  are `@Public()`. Swagger (`/docs`, `/docs-json`) is served by the adapter and is open.
+- A global `JwtAuthGuard` protects **every** route. Only `POST /auth/login`, `GET /auth/google`,
+  `GET /auth/google/callback` and `GET /health` are `@Public()`. Swagger (`/docs`, `/docs-json`)
+  is served by the adapter and is open.
 - The guard verifies the token, then **reconstructs the full `Actor` from the persisted user**
   (not the token body), so a scope/role change lands on the next request and a
   disabled/expired principal is refused even mid-token. Partner-account expiry is honoured.
@@ -177,6 +190,8 @@ only authenticates; the service authorises + masks. `(scoped)` = object-scope is
 |---|---|---|---|
 | GET | `/health` | public | DB ping |
 | POST | `/auth/login` | public | issues the token + `Actor` |
+| GET | `/auth/google` | public | 302 → Google consent (signed `state`); 503 if unconfigured |
+| GET | `/auth/google/callback` | public | verifies Google ID token, matches existing user, issues token + `Actor`; 401 on deny, 503 if unconfigured |
 | POST | `/identity/organisations` \| `/identity/offices` \| `/identity/employees` \| `/identity/partners` \| `/identity/users/:id/roles` | authenticated only — see risk below | `IdentityService` (takes no `Actor`; no service-layer authz) |
 
 ---
