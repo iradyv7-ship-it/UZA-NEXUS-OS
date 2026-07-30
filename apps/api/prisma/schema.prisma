@@ -81,6 +81,14 @@ model User {
   expiresAt  DateTime?
   disabledAt DateTime?
 
+  // Alternate credentials. Google/OIDC sign-in matches an EXISTING active user by email
+  // and issues the same app JWT + Actor as password login — it never changes a user's
+  // role or scope, and it never auto-provisions. `googleSub` records the verified Google
+  // subject on first Google login so later logins can be strengthened; `authProvider`
+  // records which credential last authenticated. Both are additive and nullable/defaulted.
+  googleSub    String? @unique
+  authProvider String  @default("password")
+
   office          Office           @relation(fields: [officeId], references: [id])
   roleAssignments RoleAssignment[]
 
