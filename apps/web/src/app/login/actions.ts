@@ -3,6 +3,7 @@
 import { redirect } from 'next/navigation';
 import { apiCall } from '@/lib/api';
 import { setSession, type Actor } from '@/lib/session';
+import { homePathFor } from '@/lib/permissions';
 
 export interface LoginState {
   error?: 'invalid' | 'network';
@@ -27,5 +28,5 @@ export async function loginAction(_prev: LoginState, formData: FormData): Promis
   if (res.kind !== 'ok' || !res.data.accessToken) return { error: 'invalid' };
 
   await setSession(res.data.accessToken, res.data.actor);
-  redirect('/dashboard');
+  redirect(homePathFor(res.data.actor));
 }

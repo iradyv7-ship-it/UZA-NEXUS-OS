@@ -112,6 +112,61 @@ Seeded users: `ceo@uza.rw`, `vm@uza.rw`, `agent@uza.rw`, `finance@uza.rw` (all `
 Sign in as `agent@uza.rw` to see the same list **scoped to the agent's own records with margins
 masked**; as `finance@uza.rw` to see the Quotations section denied while Orders still render.
 
+## External portals — Customer + Imari partner (branch `portals-web`)
+
+Two role-scoped external portals, built on the same session/api/promise/States helpers.
+**Role-aware navigation** is centralised in `src/lib/permissions.ts`: `homePathFor(actor)`
+sends a `logistics_partner` to `/partner/shipments` and everyone else to `/dashboard`;
+`isPartner()` gates the partner routes; `showSeedTools()` hides the VM dev toolbar from
+external personas. Login, the index redirect and the app-shell logo all route through
+`homePathFor` so each persona lands only in its own area. The API remains the security
+boundary — these are UI conveniences; every read is scoped + masked server-side.
+
+### Customer portal (reuses the scoped commercial endpoints)
+| Route | Purpose | API calls (all live, scoped to the customer) |
+|---|---|---|
+| `/dashboard` (customer-framed) | Home: the customer's **projects, quotations and orders** with stage · next action · owner. VM toolbar (seed / track) hidden. | `GET /projects`, `/quotations`, `/orders` (all scoped to `scope.customerId`) via `lib/queue.ts` |
+| `/orders/[ref]` | Existing order screen, reused unchanged. A `customer` holds `payment:create`, so a due installment shows the **upload-payment-proof** form → `POST /payments` (pending Finance verify). | `GET /orders/:ref`, `GET /invoices/order/:orderRef`, `POST /payments` |
+
+The dashboard now loads the session, redirects a partner out, and — for a `customer` —
+retitles to "Your orders", renders a read-only **Projects** section (from the same
+best-effort `GET /projects`, since there is no project-detail route yet) and hides the
+seed/track toolbar. Confidential fields already render `***` for a customer (API-enforced);
+the customer's own quotation shows margins masked.
+
+### Imari partner portal (read-only, scoped + masked) — new
+| Route | Purpose | API calls |
+|---|---|---|
+| `/partner/shipments` | The partner's assigned shipments (destination, carrier, container, ETD/ETA, status) with stage · next action · owner (`shipmentPromise`). | `GET /partner-portal/shipments?limit=100` |
+| `/partner/shipments/[ref]` | Shipment detail: carrier/container/ETD/ETA/days-waiting + **freight cost rendered `***`**; **Packages** (kg/CBM, QC state) ; **Delivery** (POD + status, 404 → "not delivered yet"); **Tracking timeline** with a **provenance chip** (carrier/partner/uza = confirmed ● vs estimated ◌, CF-022). | `GET /partner-portal/shipments/:ref`, `/:ref/packages`, `/:ref/delivery`, `GET /tracking/:ref/timeline` |
+
+Freight cost (`freightPaidMinor`/`billedRevenueTon`/`measuredRevenueTon`) arrives masked
+`***` from the API; the freight row renders `<Masked/>` (honest, not omitted) with a note
+that freight is not shared with partners. Weight/CBM are shown. New shipment promise mapping
+in `lib/promise.ts`; new partner-portal read-types in `lib/types.ts`.
+
+### Verified (live stack, cookie method — see run instructions)
+Minted real sessions via `POST /auth/login`, curled the web server with `uza_token` +
+`uza_actor` cookies, grepped the server-rendered HTML:
+- `partner@uza.rw` → `/partner/shipments` lists `SHP-WEB-2026-0001`; detail shows packages
+  (kg/CBM), delivery (`DEL-WEB-2026-0001` POD), tracking timeline, and freight `***`.
+- `customer@uza.rw` → `/dashboard` shows `ORD-WEB-2026-0001` + Projects, no seed toolbar;
+  `/orders/ORD-WEB-2026-0001` shows invoice `INV-WEB-2026-0001` and the upload-proof form.
+- **Isolation:** a `customer` hitting `/partner/shipments` is redirected to `/dashboard`
+  (soft/streaming redirect — 200 with `meta refresh` + RSC `NEXT_REDIRECT` to `/dashboard`;
+  **zero** shipment data in the body); a `logistics_partner` hitting `/dashboard` is
+  redirected to `/partner/shipments`; a partner on `/orders/:ref` gets the 403 denied panel.
+- FR locale renders (e.g. "Mes expéditions"). `next build` passes with both partner routes.
+
+### Stubbed / honest notes for the portals
+- **Soft redirect, not a hard 3xx.** The partner/customer route guards run inside the page
+  (after the shared layout shell has streamed), so cross-role access returns HTTP 200 with a
+  client redirect (meta-refresh + RSC directive), not a 307. It navigates the user away and
+  leaks no data; if a hard status is required, move the guard to `middleware` or the layout.
+- **No project-detail route** — customer projects render read-only (name · stage · owner).
+- **Payment proof is a text reference**, not a file upload (same as the existing order screen).
+- **RW/ZH** partner/portal strings fall back to EN via the i18n loader (key-ready, not translated).
+
 ## Next screens to build (suggested order)
 
 1. **Payment capture** (`POST /payments`, `/payments/:ref/verify`) so the awaiting_payment →

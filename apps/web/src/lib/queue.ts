@@ -35,8 +35,12 @@ export type QueueResult =
       kind: 'loaded';
       quotations: QueueCard[];
       orders: QueueCard[];
+      /** The caller's in-scope projects (best-effort). Rendered as its own section on the
+       *  customer home; the VM dashboard reads names off these but shows no project section. */
+      projects: ProjectListRow[];
       quotationsState: ListState;
       ordersState: ListState;
+      projectsState: ListState;
       /** True when either list returned a full page — more may exist within the API cap. */
       hasMore: boolean;
       count: number;
@@ -107,8 +111,10 @@ export async function loadQueue(requested: number): Promise<QueueResult> {
     kind: 'loaded',
     quotations,
     orders,
+    projects: pRes.kind === 'ok' ? pRes.data : [],
     quotationsState: stateOf(qRes.kind),
     ordersState: stateOf(oRes.kind),
+    projectsState: stateOf(pRes.kind),
     hasMore,
     count,
   };

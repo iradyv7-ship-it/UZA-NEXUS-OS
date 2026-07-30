@@ -25,3 +25,32 @@ const PAYMENT_GRANTS: Record<Role, readonly string[]> = {
 export function can(actor: Actor, resource: 'payment', action: 'create' | 'read' | 'approve'): boolean {
   return PAYMENT_GRANTS[actor.role]?.includes(`${resource}:${action}`) ?? false;
 }
+
+/**
+ * Where a role's home lives. Role-aware navigation (charter): each persona lands only in
+ * its own area. A `logistics_partner` holds none of the commercial grants the work queue
+ * needs (`quotation:read`/`order:read`/`project:read`), so it would only see denials there
+ * — send it to its shipments portal instead. Everyone else uses the shared queue, scoped
+ * server-side to what they own (a `customer` sees only their own projects/orders there).
+ *
+ * This is a UI convenience, NOT a security boundary — the API still scopes every read.
+ */
+export function homePathFor(actor: Actor): string {
+  return actor.role === 'logistics_partner' ? '/partner/shipments' : '/dashboard';
+}
+
+/** Only the logistics partner belongs in the partner portal — used to redirect others out
+ *  (the API also scopes it to an empty set for a non-partner, so this is UX, not the guard). */
+export function isPartner(actor: Actor): boolean {
+  return actor.role === 'logistics_partner';
+}
+
+/**
+ * The dashboard's "Generate demo deal" + "track by reference" toolbar is internal VM
+ * scaffolding (it logs in as a seed agent, then runs the VM clarify→project→quotation half
+ * with the caller's own grants). Never offer it to an external persona (customer/partner):
+ * they hold none of those grants and it is not part of their story.
+ */
+export function showSeedTools(actor: Actor): boolean {
+  return actor.role === 'venture_manager' || actor.role === 'ceo';
+}

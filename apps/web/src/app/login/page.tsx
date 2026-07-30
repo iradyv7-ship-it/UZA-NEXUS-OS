@@ -1,12 +1,13 @@
 import { redirect } from 'next/navigation';
 import { translator } from '@/i18n';
 import { getLocale, getSession } from '@/lib/session';
+import { homePathFor } from '@/lib/permissions';
 import LoginForm from './LoginForm';
 import { LocaleSwitch } from '@/components/LocaleSwitch';
 
 export default async function LoginPage() {
   const session = await getSession();
-  if (session) redirect('/dashboard');
+  if (session) redirect(homePathFor(session.actor));
 
   const locale = await getLocale();
   const t = translator(locale);

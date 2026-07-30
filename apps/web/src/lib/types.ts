@@ -133,3 +133,79 @@ export interface ProjectListRow {
   stage: string;
   health: string;
 }
+
+/**
+ * Imari partner-portal read-shapes (GET /partner-portal/**). A `logistics_partner` sees
+ * weight/CBM and delivery, but NEVER freight cost: the three freight figures arrive masked
+ * as "***" (CONFIDENTIAL_FIELDS + the accepted partner-freight-mask contract request). We
+ * type them Maskable and render the mask honestly — the UI is not the security boundary.
+ */
+
+export type ShipmentStatus = 'planned' | 'in_transit' | 'delayed' | 'arrived' | 'delivered';
+export type Destination = 'KIGALI' | 'GOMA' | 'BUKAVU' | 'UZA_STOCK' | 'OTHER';
+
+export interface ShipmentView {
+  ref: string;
+  container: string;
+  carrier: string;
+  destination: Destination;
+  etd: string;
+  eta: string;
+  status: ShipmentStatus;
+  partnerId: string | null;
+  daysWaitingForConsolidation: number;
+  /** Freight cost figures — masked "***" for a logistics_partner, never a number. */
+  billedRevenueTon: Maskable<number | null>;
+  measuredRevenueTon: Maskable<number | null>;
+  freightPaidMinor: Maskable<number | null>;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type WarehouseZone =
+  | 'AWAITING_INSPECTION' | 'QC_HOLD' | 'RELEASED' | 'STAGED' | 'LOADED' | string;
+
+/** A package on the partner's shipment. Weight/CBM are visible; no cost field exists here. */
+export interface PackageView {
+  ref: string;
+  orderRef: string;
+  customerRef: string;
+  poRef: string;
+  lotRef: string;
+  kg: number;
+  cbm: number;
+  destination: Destination | null;
+  zone: WarehouseZone;
+  qcReleased: boolean;
+  varianceHold: boolean;
+  shipmentRef: string | null;
+  delivered: boolean;
+}
+
+export type DeliveryStatus = 'planned' | 'in_progress' | 'delivered' | 'failed';
+
+export interface DeliveryView {
+  ref: string;
+  shipmentRef: string;
+  orderRef: string;
+  customerRef: string;
+  packageRefs: string[];
+  podRef: string;
+  status: DeliveryStatus;
+  createdAt: string;
+}
+
+export type TrackingSource = 'carrier' | 'partner' | 'uza' | 'estimated';
+
+/** A tracking milestone. `confirmed` is derived server-side from the source (carrier/partner/
+ *  uza = confirmed; estimated = a guess) — a customer/partner must never read an estimate as
+ *  fact (CF-022). We render the provenance chip from it. */
+export interface TrackingEventView {
+  ref: string;
+  shipmentRef: string;
+  milestone: string;
+  source: TrackingSource;
+  occurredAt: string;
+  note: string | null;
+  confirmed: boolean;
+}
