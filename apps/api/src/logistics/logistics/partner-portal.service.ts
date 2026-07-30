@@ -2,6 +2,12 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { type Actor } from '@uza/contracts';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AuthorizationService } from '../../platform/authorization/authorization.service';
+import { shipmentScopeWhere } from '../list-scope';
+
+export interface ListPage {
+  readonly limit: number;
+  readonly offset: number;
+}
 
 /**
  * The Imari partner portal. A `logistics_partner` sees ONLY the shipments assigned to it
@@ -26,6 +32,26 @@ export class PartnerPortalService {
   /** Cost masking is entirely driven by @uza/contracts CONFIDENTIAL_FIELDS + maskFields. */
   private maskForPartner<T extends Record<string, unknown>>(actor: Actor, record: T) {
     return this.authz.mask(actor, record);
+  }
+
+  /**
+   * The caller's in-scope shipments (constitution rule 12: a partner lists ONLY its
+   * assigned shipments, i.e. `ref ∈ scope.shipmentRefs`). Role grant is checked first
+   * (no object → 403 if the role holds no `shipment:read`); object-scope is a WHERE
+   * predicate via `shipmentScopeWhere`, mirroring `inScope` so a listed shipment is always
+   * one the by-ref read would also admit. Stable sort: updatedAt desc. Each row is masked
+   * exactly like the by-ref read, so freight cost (`freightPaidMinor`, `billedRevenueTon`,
+   * `measuredRevenueTon`) reaches a partner as `***`, never as a number.
+   */
+  async listShipments(actor: Actor, page: ListPage) {
+    await this.authz.authorize(actor, 'shipment', 'read');
+    const rows = await this.prisma.shipment.findMany({
+      where: shipmentScopeWhere(actor),
+      orderBy: { updatedAt: 'desc' },
+      take: page.limit,
+      skip: page.offset,
+    });
+    return rows.map((row) => this.maskForPartner(actor, row));
   }
 
   async readShipment(actor: Actor, shipmentRef: string) {
