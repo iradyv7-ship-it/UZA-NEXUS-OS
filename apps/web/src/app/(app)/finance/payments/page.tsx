@@ -5,7 +5,7 @@ import { getLocale, getSession } from '@/lib/session';
 import { authedCall } from '@/lib/api';
 import { money } from '@/lib/format';
 import type { PaymentView } from '@/lib/types';
-import { Badge, Card } from '@/components/ui';
+import { Badge, Card, CardGrid } from '@/components/ui';
 import { StatePanel } from '@/components/States';
 import { verifyPaymentAction, rejectPaymentAction } from './actions';
 
@@ -61,11 +61,11 @@ export default async function VerifyQueuePage({
       ) : res.data.length === 0 ? (
         <StatePanel title={t('verify.empty.title')} body={t('verify.empty.body')} />
       ) : (
-        <ul className="space-y-3">
+        <CardGrid>
           {res.data.map((p) => (
             <PaymentCard key={p.ref} p={p} t={t} locale={locale} />
           ))}
-        </ul>
+        </CardGrid>
       )}
     </div>
   );
@@ -73,8 +73,8 @@ export default async function VerifyQueuePage({
 
 function PaymentCard({ p, t, locale }: { p: PaymentView; t: Translate; locale: Locale }) {
   return (
-    <li>
-      <Card>
+    <li className="h-full">
+      <Card className="h-full">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
             <p className="text-base font-semibold text-slate-900">{money(p.amountMinor, locale)}</p>

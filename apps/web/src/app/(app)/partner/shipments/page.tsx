@@ -6,7 +6,7 @@ import { homePathFor, isPartner } from '@/lib/permissions';
 import { authedCall } from '@/lib/api';
 import { shipmentPromise } from '@/lib/promise';
 import type { ShipmentView } from '@/lib/types';
-import { Badge } from '@/components/ui';
+import { Badge, CardGrid } from '@/components/ui';
 import { StatePanel } from '@/components/States';
 
 export const dynamic = 'force-dynamic';
@@ -52,11 +52,11 @@ export default async function PartnerShipmentsPage() {
       ) : res.data.length === 0 ? (
         <StatePanel title={t('partner.empty.title')} body={t('partner.empty.body')} />
       ) : (
-        <ul className="space-y-3">
+        <CardGrid>
           {res.data.map((s) => (
             <ShipmentCard key={s.ref} s={s} t={t} locale={locale} />
           ))}
-        </ul>
+        </CardGrid>
       )}
     </div>
   );
@@ -66,8 +66,8 @@ function ShipmentCard({ s, t, locale }: { s: ShipmentView; t: Translate; locale:
   void locale;
   const promise = shipmentPromise(s.status);
   return (
-    <li className="rounded-xl border border-slate-200 bg-white shadow-sm">
-      <Link href={`/partner/shipments/${s.ref}`} className="block p-4">
+    <li className="h-full rounded-xl border border-slate-200 bg-white shadow-sm">
+      <Link href={`/partner/shipments/${s.ref}`} className="flex h-full flex-col p-4">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
             <p className="truncate text-base font-semibold text-slate-900">{t(`dest.${s.destination}`)}</p>
@@ -98,7 +98,7 @@ function ShipmentCard({ s, t, locale }: { s: ShipmentView; t: Translate; locale:
           </p>
         </div>
 
-        <p className="mt-2 font-mono text-[11px] text-slate-400">{s.ref}</p>
+        <p className="mt-auto pt-2 font-mono text-[11px] text-slate-400">{s.ref}</p>
       </Link>
     </li>
   );
