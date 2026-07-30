@@ -1,4 +1,4 @@
-import type { OrderStatus, QuotationStatus } from './types';
+import type { OrderStatus, QuotationStatus, ShipmentStatus } from './types';
 
 /**
  * The product promise: every record shows its stage, the next action, and WHO owns that
@@ -9,7 +9,8 @@ import type { OrderStatus, QuotationStatus } from './types';
  */
 
 export type OwnerRole =
-  | 'venture_manager' | 'finance' | 'china_sourcing' | 'logistics' | 'front_office' | 'none';
+  | 'venture_manager' | 'finance' | 'china_sourcing' | 'logistics' | 'front_office'
+  | 'logistics_partner' | 'none';
 
 export interface Promise {
   /** i18n key for the human-readable stage label. */
@@ -44,5 +45,25 @@ export function orderPromise(status: OrderStatus): Promise {
       return { stageKey: 'stage.order.delivered', nextKey: 'next.order.delivered', ownerRole: 'front_office' };
     case 'cancelled':
       return { stageKey: 'stage.order.cancelled', nextKey: 'next.order.cancelled', ownerRole: 'none' };
+  }
+}
+
+/**
+ * The partner-facing shipment promise. The Imari partner owns the leg in motion; on arrival
+ * the responsible party shifts to Front office for the last-mile delivery. Same product
+ * rule as everywhere: never a status without an owner.
+ */
+export function shipmentPromise(status: ShipmentStatus): Promise {
+  switch (status) {
+    case 'planned':
+      return { stageKey: 'stage.shipment.planned', nextKey: 'next.shipment.planned', ownerRole: 'logistics_partner' };
+    case 'in_transit':
+      return { stageKey: 'stage.shipment.in_transit', nextKey: 'next.shipment.in_transit', ownerRole: 'logistics_partner' };
+    case 'delayed':
+      return { stageKey: 'stage.shipment.delayed', nextKey: 'next.shipment.delayed', ownerRole: 'logistics_partner' };
+    case 'arrived':
+      return { stageKey: 'stage.shipment.arrived', nextKey: 'next.shipment.arrived', ownerRole: 'front_office' };
+    case 'delivered':
+      return { stageKey: 'stage.shipment.delivered', nextKey: 'next.shipment.delivered', ownerRole: 'none' };
   }
 }

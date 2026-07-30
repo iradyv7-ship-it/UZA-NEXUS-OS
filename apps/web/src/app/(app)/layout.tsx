@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { translator } from '@/i18n';
 import { getLocale, getSession } from '@/lib/session';
-import { can } from '@/lib/permissions';
+import { can, homePathFor } from '@/lib/permissions';
 import { LocaleSwitch } from '@/components/LocaleSwitch';
 import { logoutAction } from '@/app/actions';
 
@@ -12,14 +12,15 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
   const locale = await getLocale();
   const t = translator(locale);
-  const roleLabel = t(`owner.${session.actor.role === 'venture_manager' ? 'venture_manager' : session.actor.role}`);
+  const roleLabel = t(`role.${session.actor.role}`);
   const showVerifyQueue = can(session.actor, 'payment', 'read');
+  const home = homePathFor(session.actor);
 
   return (
     <div className="mx-auto min-h-screen max-w-md bg-slate-50">
       <header className="sticky top-0 z-10 border-b border-slate-200 bg-white/95 px-4 py-3 backdrop-blur">
         <div className="flex items-center justify-between gap-2">
-          <Link href="/dashboard" className="flex flex-col leading-tight">
+          <Link href={home} className="flex flex-col leading-tight">
             <span className="text-lg font-bold text-brand">{t('app.name')}</span>
             <span className="text-[11px] text-slate-500">{t('app.tagline')}</span>
           </Link>
