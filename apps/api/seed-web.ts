@@ -1,4 +1,4 @@
-import type { Actor } from '@uza/contracts';
+import { emptyLadder, type Actor } from '@uza/contracts';
 import { PrismaClient } from '@prisma/client';
 import { IdentityService } from './src/platform/identity/identity.service';
 import { AuditService } from './src/platform/audit/audit.service';
@@ -23,7 +23,7 @@ const DEMO_DELIVERY_REF = 'DEL-WEB-2026-0001';
 const DEMO_AGENT_ID = 'AGT-GOM-0021';
 
 // A simple 50/30/20 schedule (confirmation / pre_loading / pre_release).
-const ORDER_TOTAL_MINOR = 500_000_000; // 5,000,000.00
+const ORDER_TOTAL_MINOR = 5_000_000; // $50,000.00 (200 units × $250.00)
 const SCHEDULE: Array<[string, number]> = [
   ['confirmation', 0.5],
   ['pre_loading', 0.3],
@@ -104,6 +104,17 @@ async function seedCommercialDemo(prisma: PrismaClient): Promise<void> {
     },
   });
 
+  // A COMPLETE, correctly-keyed cost ladder (all 9 rungs via emptyLadder), the way the real
+  // QuotationService.build produces it — a partial/mis-keyed ladder crashes dapMargin over
+  // the full LADDER. Per-unit estimates ($ minor): shows the CIF (~19%) vs DAP (~3%) gap.
+  const demoLadder = emptyLadder();
+  demoLadder.exw.estMinor = 18_000;        // supplier cost $180/unit
+  demoLadder.ocean.estMinor = 2_000;       // CIF rung
+  demoLadder.insurance.estMinor = 200;     // CIF rung
+  demoLadder.destCharges.estMinor = 900;   // DAP rung
+  demoLadder.dutyVat.estMinor = 2_500;     // DAP rung
+  demoLadder.inlandDest.estMinor = 600;    // DAP rung
+
   await prisma.quotation.upsert({
     where: { ref: DEMO_QUOTATION_REF },
     update: {},
@@ -114,12 +125,12 @@ async function seedCommercialDemo(prisma: PrismaClient): Promise<void> {
       agentId: DEMO_AGENT_ID,
       qty: 200,
       sellIncoterm: 'CIF',
-      ladder: { EXW: { estMinor: 1_800_000, actMinor: 0 } },
-      supplierUnitCostMinor: 1_800_000,
-      targetPriceMinor: 2_400_000,
-      walkawayPriceMinor: 2_100_000,
-      customerUnitPriceMinor: 2_500_000,
-      marginPct: 0.28,
+      ladder: demoLadder as unknown as object,
+      supplierUnitCostMinor: 18_000,
+      targetPriceMinor: 16_560,   // 18_000 × TARGET_PRICE_FACTOR (0.92)
+      walkawayPriceMinor: 18_900, // 18_000 × WALKAWAY_FACTOR (1.05)
+      customerUnitPriceMinor: 25_000, // $250.00/unit → $50,000 order
+      marginPct: 0.192,           // quoted margin at CIF
       status: 'approved',
     },
   });
