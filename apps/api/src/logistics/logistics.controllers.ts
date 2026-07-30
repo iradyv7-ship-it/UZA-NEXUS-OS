@@ -1,5 +1,5 @@
-import { Body, Controller, Get, Param, Post } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiProperty, ApiTags } from '@nestjs/swagger';
+import { Body, Controller, Get, Param, Post, Query } from '@nestjs/common';
+import { ApiBearerAuth, ApiOperation, ApiProperty, ApiPropertyOptional, ApiTags } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import {
   ArrayNotEmpty,
@@ -10,6 +10,8 @@ import {
   IsNumber,
   IsOptional,
   IsString,
+  Max,
+  Min,
   MinLength,
   ValidateNested,
 } from 'class-validator';
@@ -95,6 +97,16 @@ class DelayDto {
   @ApiProperty({ required: false }) @IsOptional() @IsString() agentId?: string;
   @ApiProperty({ required: false }) @IsOptional() @IsString() ownerId?: string;
   @ApiProperty({ required: false }) @IsOptional() @IsString() frontOfficeId?: string;
+}
+
+class PartnerShipmentsQueryDto {
+  @ApiPropertyOptional({ minimum: 1, maximum: 100, default: 20 })
+  @IsOptional() @Type(() => Number) @IsInt() @Min(1) @Max(100)
+  limit = 20;
+
+  @ApiPropertyOptional({ minimum: 0, default: 0 })
+  @IsOptional() @Type(() => Number) @IsInt() @Min(0)
+  offset = 0;
 }
 
 class DeliverDto {
@@ -232,6 +244,12 @@ export class DeliveryController {
 @Controller('partner-portal')
 export class PartnerPortalController {
   constructor(private readonly portal: PartnerPortalService) {}
+
+  @Get('shipments')
+  @ApiOperation({ summary: 'List the caller’s assigned shipments (shipment:read, scoped; freight cost masked)' })
+  listShipments(@CurrentActor() actor: Actor, @Query() q: PartnerShipmentsQueryDto) {
+    return this.portal.listShipments(actor, { limit: q.limit, offset: q.offset });
+  }
 
   @Get('shipments/:ref')
   @ApiOperation({ summary: 'Read an assigned shipment (shipment:read, scoped; freight cost masked)' })
