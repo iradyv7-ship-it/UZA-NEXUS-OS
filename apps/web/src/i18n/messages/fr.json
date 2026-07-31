@@ -15,6 +15,11 @@
   "login.submitting": "Connexion…",
   "login.error.invalid": "E-mail ou mot de passe incorrect.",
   "login.error.network": "Serveur injoignable. Vérifiez votre connexion et réessayez.",
+  "login.error.unauthorized": "Ce compte Google n'est pas autorisé — demandez à un administrateur d'ajouter votre e-mail.",
+  "login.error.google": "La connexion Google n'a pas abouti. Réessayez ou utilisez votre e-mail et mot de passe.",
+  "login.google.or": "ou",
+  "login.google.submit": "Se connecter avec Google",
+  "login.google.unavailable": "La connexion Google n'est pas encore configurée.",
   "login.hint": "Démo responsable : vm@uza.rw / password1",
 
   "dash.title": "Ma file de travail",
