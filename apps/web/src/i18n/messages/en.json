@@ -15,6 +15,11 @@
   "login.submitting": "Signing in…",
   "login.error.invalid": "Wrong email or password.",
   "login.error.network": "Cannot reach the server. Check your connection and try again.",
+  "login.error.unauthorized": "This Google account isn't authorised — ask an admin to add your email.",
+  "login.error.google": "Google sign-in didn't complete. Please try again, or use your email and password.",
+  "login.google.or": "or",
+  "login.google.submit": "Sign in with Google",
+  "login.google.unavailable": "Google sign-in isn't set up yet.",
   "login.hint": "Venture manager demo: vm@uza.rw / password1",
 
   "dash.title": "My work queue",
