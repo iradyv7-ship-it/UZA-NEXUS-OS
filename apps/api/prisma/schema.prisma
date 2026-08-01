@@ -1152,3 +1152,121 @@ model InspectionOutcome {
   minor          Int      @default(0)
   updatedAt      DateTime @updatedAt
 }
+
+// ===========================================================================
+// Nexas Command Center (v1) — the structured foundation of the business-
+// management brain. Owns: Departments + light org (EmployeeProfile links an
+// internal User to a department + optional manager), management Tasks (distinct
+// from trade's RACI project Task), and the Grant pipeline. Authorisation is a
+// MODULE-LOCAL policy (command-access.ts) enforced at the service layer, audited
+// on denial — @uza/contracts ROLE_GRANTS does not cover these resources.
+//
+// Money (grant amounts) is integer MINOR units, never a Float. Cross-module
+// links (linkedRef) are free readable-ref strings, mirroring the rest of the app.
+// ===========================================================================
+
+enum CommandTaskPriority {
+  low
+  medium
+  high
+  urgent
+}
+
+enum CommandTaskStatus {
+  todo
+  in_progress
+  blocked
+  done
+  cancelled
+}
+
+enum GrantStatus {
+  identified
+  preparing
+  submitted
+  awarded
+  rejected
+  closed
+}
+
+/// A department in the org (e.g. Trade, Sourcing, Finance). Lightweight: name + a
+/// unique short code. Gives management visibility of who sits where.
+model Department {
+  id        String   @id @default(uuid())
+  ref       String   @unique // readable id, e.g. DPT-TRADE
+  code      String   @unique // short code, e.g. TRADE
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  members EmployeeProfile[]
+}
+
+/// Links an internal User (by their readable `ref`, the Actor.userId) to a department
+/// and an optional manager (also a User ref). Additive to the platform User — no column
+/// was added to User, keeping identity's schema pristine. One profile per user.
+model EmployeeProfile {
+  id           String   @id @default(uuid())
+  userId       String   @unique // User.ref / Actor.userId
+  departmentId String?
+  managerId    String? // manager's User.ref / Actor.userId
+  title        String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  department Department? @relation(fields: [departmentId], references: [id])
+
+  @@index([departmentId])
+  @@index([managerId])
+}
+
+/// A management task — the executive-layer unit of "what needs doing". Distinct from
+/// trade's RACI project Task: this one carries a single assignee, cross-department reach,
+/// priority/status, an optional due date, an optional free `linkedRef` to any UZA Nexus
+/// record (order/supplier/…), and optional subtasks via `parentTaskId`.
+model CommandTask {
+  ref          String              @id // readable id, e.g. CTSK-2026-0001
+  title        String
+  description  String?
+  assigneeId   String // User.ref of the assignee (may be anyone, cross-department)
+  departmentId String?
+  priority     CommandTaskPriority @default(medium)
+  status       CommandTaskStatus   @default(todo)
+  dueAt        DateTime?
+  createdById  String // User.ref of the creator
+  linkedRef    String? // free ref to any UZA Nexus record (order/supplier/etc.)
+  parentTaskId String? // parent CommandTask.ref for subtasks
+  completedAt  DateTime?
+  createdAt    DateTime            @default(now())
+  updatedAt    DateTime            @updatedAt
+
+  @@index([assigneeId])
+  @@index([departmentId])
+  @@index([createdById])
+  @@index([status])
+  @@index([parentTaskId])
+}
+
+/// A grant-pipeline opportunity with deadline awareness. `amountMinor` is integer minor
+/// units of `currency`. `requirements` is a JSON checklist ([{item, done}]). `ownerId` is
+/// the assigned owner's User.ref — an owner may see/update their own grant even without
+/// the ceo/venture_manager role.
+model Grant {
+  ref          String      @id // readable id, e.g. GRNT-2026-0001
+  name         String
+  funder       String
+  amountMinor  Int
+  currency     String // e.g. USD, RWF
+  deadlineAt   DateTime?
+  status       GrantStatus @default(identified)
+  fitNotes     String?
+  nextAction   String?
+  ownerId      String? // assigned owner's User.ref
+  requirements Json     @default("[]") // [{ item: string, done: boolean }]
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+
+  @@index([status])
+  @@index([ownerId])
+  @@index([deadlineAt])
+}
