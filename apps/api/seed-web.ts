@@ -283,6 +283,42 @@ async function seedLogisticsDemo(prisma: PrismaClient): Promise<void> {
   console.log(`created  logistics demo (shipment ${DEMO_SHIPMENT_REF} + ${packages.length} packages + delivery ${DEMO_DELIVERY_REF})`);
 }
 
+/**
+ * Nexas Command Center demo: 2 departments, 3 tasks (one due soon, one OVERDUE, one BLOCKED)
+ * and 2 grants (one near deadline) so the CEO overview shows real data on a fresh DB.
+ * Idempotent — guarded by the first task ref.
+ */
+async function seedCommandDemo(prisma: PrismaClient): Promise<void> {
+  if (await prisma.commandTask.findUnique({ where: { ref: 'CTSK-WEB-0001' } })) {
+    console.log('exists   command demo (tasks + grants)');
+    return;
+  }
+  const now = Date.now();
+  const day = 86_400_000;
+  for (const [ref, code, name] of [
+    ['DPT-OPS', 'OPS', 'Operations'],
+    ['DPT-FIN', 'FIN', 'Finance'],
+  ] as const) {
+    await prisma.department.upsert({ where: { ref }, update: {}, create: { ref, code, name } });
+  }
+  const tasks = [
+    { ref: 'CTSK-WEB-0001', title: 'Prepare Q3 supplier review', assigneeId: 'VM-RW-0001', priority: 'high', status: 'todo', dueAt: new Date(now + 3 * day) },
+    { ref: 'CTSK-WEB-0002', title: 'Reconcile July petty cash', assigneeId: 'FIN-RW-0001', priority: 'medium', status: 'todo', dueAt: new Date(now - 2 * day) }, // OVERDUE
+    { ref: 'CTSK-WEB-0003', title: 'Resolve customs delay on SHP-WEB-2026-0001', assigneeId: 'VM-RW-0001', priority: 'urgent', status: 'blocked', dueAt: new Date(now + day), linkedRef: 'SHP-WEB-2026-0001' }, // BLOCKED
+  ] as const;
+  for (const t of tasks) {
+    await prisma.commandTask.create({ data: { ...t, createdById: 'CEO-RW-0001' } });
+  }
+  const grants = [
+    { ref: 'GRNT-WEB-0001', name: 'AfDB Trade Facilitation Grant', funder: 'African Development Bank', amountMinor: 25_000_000, currency: 'USD', deadlineAt: new Date(now + 5 * day), status: 'preparing', nextAction: 'Draft concept note', requirements: [{ item: 'Concept note', done: false }, { item: 'Company registration', done: true }] },
+    { ref: 'GRNT-WEB-0002', name: 'Rwanda Green Fund window', funder: 'FONERWA', amountMinor: 15_000_000, currency: 'USD', deadlineAt: new Date(now + 30 * day), status: 'identified', requirements: [] },
+  ] as const;
+  for (const g of grants) {
+    await prisma.grant.create({ data: { ...g, ownerId: 'CEO-RW-0001', requirements: g.requirements as unknown as object } });
+  }
+  console.log('created  command demo (2 departments, 3 tasks incl. overdue+blocked, 2 grants)');
+}
+
 async function main() {
   const prisma = new PrismaClient();
   const authz = new AuthorizationService(new AuditService(prisma as never));
@@ -322,6 +358,7 @@ async function main() {
   // Demo data must exist BEFORE the portal users that scope onto it.
   await seedCommercialDemo(prisma);
   await seedLogisticsDemo(prisma);
+  await seedCommandDemo(prisma);
 
   // Customer portal user — scoped to the demo customer (sees their order + invoice, can pay).
   const customerEmail = 'customer@uza.rw';
