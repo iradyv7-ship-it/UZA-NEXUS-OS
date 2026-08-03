@@ -15,6 +15,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const t = translator(locale);
   const roleLabel = t(`role.${session.actor.role}`);
   const showVerifyQueue = can(session.actor, 'payment', 'read');
+  const showCommand = session.actor.role === 'ceo' || session.actor.role === 'venture_manager';
   const home = homePathFor(session.actor);
 
   return (
@@ -29,6 +30,14 @@ export default async function AppLayout({ children }: { children: React.ReactNod
               <span className="text-[11px] text-slate-500">{t('app.tagline')}</span>
             </Link>
             <div className="flex flex-wrap items-center justify-end gap-2">
+              {showCommand && (
+                <Link
+                  href="/command"
+                  className="rounded-lg border border-brand/40 bg-brand-soft px-3 py-2 text-sm font-semibold text-brand"
+                >
+                  Command
+                </Link>
+              )}
               {showVerifyQueue && (
                 <Link
                   href="/finance/payments"
