@@ -1291,6 +1291,10 @@ model Grant {
 enum InitiativeKind {
   internal
   client
+  /// A line of business in its own right — charging, the garage, Tunga Taxi. Neither an
+  /// internal project nor a single client engagement, and it needs to be countable
+  /// separately or the register cannot tell a venture from a to-do. (added 2026-08-21)
+  venture
 }
 
 enum InitiativeStatus {
@@ -1353,7 +1357,12 @@ model Initiative {
 
   artifactUrl String? // the published document that settles this initiative
 
+  /// Set when status moves to done or cancelled. Kept separate from updatedAt so
+  /// "when did we stop" survives later edits to the record.
+  closedAt DateTime?
+
   decisions ExecDecision[]
+  checkins  InitiativeCheckin[]
 
   @@index([kind])
   @@index([status])
@@ -1463,6 +1472,39 @@ model KpiValue {
 //   ExecDecision   — what is waiting on the CEO. This table IS the bottleneck
 //                    metric, and nothing else in the system reports it honestly.
 // ===========================================================================
+
+/// A weekly line from the person accountable for an initiative.
+///
+/// The Planning module already has `WeeklyReport`, but that one hangs off a week `Plan`
+/// and cannot exist until a plan does. The register needs a check-in per initiative with
+/// no such precondition — otherwise the honest answer to "did anything move?" is blocked
+/// behind paperwork. Both are readable by the CEO review.
+///
+/// Unique on [initiativeRef, weekOf]: two filings in the same week collide and the second
+/// updates the first, rather than both landing and the register showing double progress.
+model InitiativeCheckin {
+  ref           String   @id // readable id, e.g. CHK-2026-0001
+  initiativeRef String
+  ownerId       String // User.ref of whoever filed it
+  weekOf        DateTime // the Monday of that week, UTC midnight
+
+  /// What actually moved. Required — a check-in that says nothing is not a check-in.
+  moved String
+
+  blocked      String?
+  /// What this owner needs from the CEO. When set, the review surfaces it next to the
+  /// decision queue, because a blocker nobody escalated is the same as no blocker.
+  needsFromCeo String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  initiative Initiative @relation(fields: [initiativeRef], references: [ref], onDelete: Cascade)
+
+  @@unique([initiativeRef, weekOf])
+  @@index([weekOf])
+  @@index([ownerId])
+}
 
 enum AttentionState {
   runs // gets weekly time and headcount

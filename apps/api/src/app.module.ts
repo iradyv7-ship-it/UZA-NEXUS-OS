@@ -8,6 +8,7 @@ import { QualityModule } from './quality/quality.module';
 import { FinanceModule } from './finance/finance.module';
 import { LogisticsModule } from './logistics/logistics.module';
 import { CommandModule } from './command/command.module';
+import { PlanningModule } from './planning/planning.module';
 import { EventDispatchModule } from './integration/event-dispatch.module';
 import { HealthController } from './health.controller';
 
@@ -22,6 +23,7 @@ import { HealthController } from './health.controller';
     FinanceModule,
     LogisticsModule,
     CommandModule,
+    PlanningModule,
     // Composition root for cross-module event fan-out: starts the BullMQ consumer that
     // delivers published outbox events to each module's idempotent handlers.
     EventDispatchModule,

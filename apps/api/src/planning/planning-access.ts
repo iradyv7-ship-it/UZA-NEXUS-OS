@@ -40,6 +40,10 @@ export type PlanningCapability =
   | 'initiative:read'
   | 'initiative:write'
   | 'initiative:all' // unrestricted initiative visibility (ceo/venture_manager)
+  | 'decision:create' // raise a decision that needs the CEO — any internal role may
+  | 'decision:read'
+  | 'decision:answer' // answer or defer — executive only
+  | 'advisor' // ask the Claude advisor over the register — executive only
   | 'review';
 
 const FULL: readonly PlanningCapability[] = [
@@ -47,6 +51,8 @@ const FULL: readonly PlanningCapability[] = [
   'report:create', 'report:read', 'report:all',
   'kpi:create', 'kpi:read', 'kpi:write', 'kpi:all',
   'initiative:create', 'initiative:read', 'initiative:write', 'initiative:all',
+  'decision:create', 'decision:read', 'decision:answer',
+  'advisor',
   'review',
 ];
 
@@ -56,6 +62,10 @@ const INTERNAL: readonly PlanningCapability[] = [
   'report:create', 'report:read',
   'kpi:read',
   'initiative:read',
+  // Anyone internal may put a question in front of the CEO — that queue is the
+  // bottleneck metric, and it only works if raising is friction-free. Answering is not
+  // granted here: `decision:answer` stays executive.
+  'decision:create', 'decision:read',
 ];
 
 /** No Planning access — external / commercial roles. */
@@ -83,3 +93,6 @@ export const seesAllPlans = (role: Role): boolean => hasPlanningCapability(role,
 export const seesAllReports = (role: Role): boolean => hasPlanningCapability(role, 'report:all');
 export const seesAllKpis = (role: Role): boolean => hasPlanningCapability(role, 'kpi:all');
 export const seesAllInitiatives = (role: Role): boolean => hasPlanningCapability(role, 'initiative:all');
+/** Only the executive may answer/defer a decision or query the advisor. */
+export const mayAnswerDecisions = (role: Role): boolean => hasPlanningCapability(role, 'decision:answer');
+export const mayUseAdvisor = (role: Role): boolean => hasPlanningCapability(role, 'advisor');
