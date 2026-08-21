@@ -1334,10 +1334,34 @@ model Initiative {
   createdAt    DateTime         @default(now())
   updatedAt    DateTime         @updatedAt
 
+  // --- the register (added 2026-08-21) -------------------------------------
+  // `status` is LIFECYCLE (is this thing alive?). `attention` is ALLOCATION
+  // (is it getting weekly time?). They are genuinely different: an initiative
+  // can be active and on hold at the same time, and conflating them is how a
+  // register stops telling the truth.
+  attention   AttentionState @default(holds)
+  ventureCode String? // GROUP | BULK | MOBILITY | EMPOWER | CLOUD | NEXUS
+
+  /// One line. An initiative without a next action is a wish — the service
+  /// refuses to set attention=runs while this is empty, and the index below
+  /// makes "which initiatives have no next action" a one-query report.
+  nextAction String?
+
+  /// When a held initiative is looked at again. On that date it is started or
+  /// the date moves; it is never simply forgotten. Null while attention=runs.
+  reviewAt DateTime?
+
+  artifactUrl String? // the published document that settles this initiative
+
+  decisions ExecDecision[]
+
   @@index([kind])
   @@index([status])
   @@index([ownerId])
   @@index([departmentId])
+  @@index([attention])
+  @@index([reviewAt])
+  @@index([ventureCode, attention])
 }
 
 /// A plan in the cascade. An employee (`ownerId`) owns a `quarter`, `month` or
@@ -1424,4 +1448,59 @@ model KpiValue {
   @@unique([kpiRef, periodKey]) // one value per KPI per period
   @@index([kpiRef])
   @@index([periodKey])
+}
+
+
+// ===========================================================================
+// The register's two additions (2026-08-21)
+//
+// Planning already models Initiative, Plan, WeeklyReport and KPIs. Two things
+// the operating model needs were missing, and both are added here rather than
+// in a competing module:
+//
+//   AttentionState — three initiatives run at a time; everything else HOLDS
+//                    with a named owner, a next action and a review date.
+//   ExecDecision   — what is waiting on the CEO. This table IS the bottleneck
+//                    metric, and nothing else in the system reports it honestly.
+// ===========================================================================
+
+enum AttentionState {
+  runs // gets weekly time and headcount
+  holds // named owner + next action + review date, no weekly time
+  parked // deliberately not now, written down so it stops taking up attention
+}
+
+enum DecisionStatus {
+  open
+  answered
+  deferred
+}
+
+/// Decisions waiting on the CEO. If rows sit open for more than a few days the
+/// founder is the constraint — measurably, not as an impression. Raised by
+/// anyone, answered only by ceo/venture_manager.
+model ExecDecision {
+  ref           String         @id // readable id, e.g. DEC-2026-0001
+  question      String // stated so it has a decidable answer
+  context       String?
+  initiativeRef String?
+  raisedById    String // User.ref
+  raisedAt      DateTime       @default(now())
+  status        DecisionStatus @default(open)
+
+  answer     String?
+  answeredById String?
+  answeredAt DateTime?
+
+  /// A decision may be postponed — but only to a date, never indefinitely.
+  deferredTo DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  initiative Initiative? @relation(fields: [initiativeRef], references: [ref])
+
+  @@index([status, raisedAt])
+  @@index([initiativeRef])
+  @@index([raisedById])
 }
