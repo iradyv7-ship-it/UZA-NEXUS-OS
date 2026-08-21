@@ -15,7 +15,8 @@
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate deploy",
     "prisma:migrate:dev": "prisma migrate dev",
-    "db:reset": "prisma migrate reset --force"
+    "db:reset": "prisma migrate reset --force",
+    "seed:register": "tsx prisma/seed-register.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.120.0",
