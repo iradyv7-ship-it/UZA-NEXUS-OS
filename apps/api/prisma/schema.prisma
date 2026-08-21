@@ -1270,3 +1270,158 @@ model Grant {
   @@index([ownerId])
   @@index([deadlineAt])
 }
+
+// ===========================================================================
+// Nexas Planning & Reviews (v1) — the OKR-style cascading-plan + weekly-rhythm
+// + KPI backbone that lets the CEO run the company ON PURPOSE and track growth.
+// Owns: Initiatives (the portfolio unit — the mother company + each project,
+// internal OR client), Plans (the quarter→month→week cascade of objectives),
+// WeeklyReports (the operating rhythm), and KPIs + their time-series values.
+// Authorisation is a MODULE-LOCAL policy (planning-access.ts) enforced at the
+// service layer and audited on denial — @uza/contracts ROLE_GRANTS does not
+// model these resources. Object-scope (own vs department vs all) mirrors the
+// Command Center: separate from the role gate, mirrored between read and list.
+//
+// KPI values are GENERIC floats (a KPI may be a count, a %, a rating, or money;
+// if it represents money the unit string is the caller's — no minor-unit
+// discipline is imposed on a free metric). Cross-module links (initiativeRef,
+// planRef, parentPlanRef) are free readable-ref strings like the rest of the app.
+// ===========================================================================
+
+enum InitiativeKind {
+  internal
+  client
+}
+
+enum InitiativeStatus {
+  active
+  paused
+  done
+  cancelled
+}
+
+enum PlanLevel {
+  quarter
+  month
+  week
+}
+
+enum PlanStatus {
+  draft
+  active
+  done
+}
+
+enum KpiDirection {
+  up_good
+  down_good
+}
+
+/// A portfolio unit: the UZA mother company or a single project (internal OR a
+/// client engagement). Plans, KPIs and (management) tasks can reference an
+/// initiative by its readable `ref`. `ownerId` is the accountable User.ref;
+/// `departmentId` optionally anchors it in the org for department-scoped reads.
+model Initiative {
+  ref          String           @id // readable id, e.g. INIT-2026-0001
+  name         String
+  kind         InitiativeKind
+  clientName   String? // set when kind = client
+  ownerId      String // accountable User.ref
+  departmentId String?
+  status       InitiativeStatus @default(active)
+  startedAt    DateTime?
+  targetDate   DateTime?
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+
+  @@index([kind])
+  @@index([status])
+  @@index([ownerId])
+  @@index([departmentId])
+}
+
+/// A plan in the cascade. An employee (`ownerId`) owns a `quarter`, `month` or
+/// `week` plan for a `periodKey` (e.g. 2026-Q3 / 2026-08 / 2026-W32). A week
+/// plan may name its month plan as `parentPlanRef`, a month plan its quarter
+/// plan — the cascade is validated (same owner, correct parent level) when the
+/// parent is supplied. `objectives` is a JSON list of { text, status } where
+/// status ∈ not_started | in_progress | done | dropped.
+model Plan {
+  ref           String     @id // readable id, e.g. PLAN-2026-0001
+  ownerId       String // the employee's User.ref
+  level         PlanLevel
+  periodKey     String // e.g. 2026-Q3, 2026-08, 2026-W32
+  parentPlanRef String? // week → month → quarter Plan.ref
+  initiativeRef String? // optional Initiative.ref this plan advances
+  objectives    Json       @default("[]") // [{ text: string, status: ObjectiveStatus }]
+  status        PlanStatus @default(draft)
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+
+  weeklyReport WeeklyReport?
+
+  @@unique([ownerId, level, periodKey]) // one plan per owner/level/period
+  @@index([ownerId])
+  @@index([level])
+  @@index([periodKey])
+  @@index([parentPlanRef])
+  @@index([initiativeRef])
+  @@index([status])
+}
+
+/// The weekly operating rhythm: exactly one report per week Plan. Captures what
+/// happened (`highlights`), what is stuck (`blockers`) and the intent for next
+/// week (`nextWeek`). `planRef` is unique so a week has a single report.
+model WeeklyReport {
+  ref         String   @id // readable id, e.g. WRPT-2026-0001
+  planRef     String   @unique // the week Plan.ref
+  ownerId     String // the employee's User.ref (mirrors the plan owner)
+  periodKey   String // the week key, e.g. 2026-W32
+  highlights  String
+  blockers    String?
+  nextWeek    String?
+  submittedAt DateTime @default(now())
+
+  plan Plan @relation(fields: [planRef], references: [ref], onDelete: Cascade)
+
+  @@index([ownerId])
+  @@index([periodKey])
+}
+
+/// A tracked metric. `direction` says which way is good (up_good | down_good).
+/// `target` is an optional threshold. Values are GENERIC floats (see the module
+/// header). `ownerId`/`departmentId`/`initiativeRef` anchor it for scoped reads.
+model Kpi {
+  ref           String       @id // readable id, e.g. KPI-2026-0001
+  name          String
+  unit          String // e.g. "USD", "%", "orders", "rating"
+  direction     KpiDirection @default(up_good)
+  target        Float?
+  ownerId       String?
+  departmentId  String?
+  initiativeRef String?
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  values KpiValue[]
+
+  @@index([ownerId])
+  @@index([departmentId])
+  @@index([initiativeRef])
+}
+
+/// One point in a KPI's time series: the metric's `value` (a generic Float) for
+/// a `periodKey`. Ordered by `recordedAt` to read the trend.
+model KpiValue {
+  ref        String   @id // readable id, e.g. KVAL-2026-00001
+  kpiRef     String
+  periodKey  String // e.g. 2026-08, 2026-Q3, 2026-W32
+  value      Float
+  recordedAt DateTime @default(now())
+
+  kpi Kpi @relation(fields: [kpiRef], references: [ref], onDelete: Cascade)
+
+  @@unique([kpiRef, periodKey]) // one value per KPI per period
+  @@index([kpiRef])
+  @@index([periodKey])
+}
