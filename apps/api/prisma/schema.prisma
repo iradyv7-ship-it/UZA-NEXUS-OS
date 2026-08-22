@@ -1506,6 +1506,84 @@ model InitiativeCheckin {
   @@index([ownerId])
 }
 
+/// Something that arrived from outside the register and might belong in it.
+///
+/// Intake watches the places ideas actually appear — Claude Code transcripts, published
+/// artifacts, email — and files each one here. A Signal is NEVER an initiative. It is a
+/// candidate, and a person promotes it. The advisor may propose; only a human writes to
+/// the register, and the same rule governs everything that flows through this table.
+///
+/// `externalId` is the source's own identifier (a message id, a transcript uuid + offset,
+/// an artifact url). Unique with `source` so a sweep that re-reads the same mailbox or the
+/// same transcript file does not file the same thing twice — sweeps are expected to
+/// overlap, and idempotence is what makes "run it again" safe.
+model Signal {
+  ref        String       @id // readable id, e.g. SIG-2026-0001
+  source     SignalSource
+  externalId String // the source's own id, whatever shape it takes
+  lane       SignalLane   @default(shared)
+
+  title      String
+  /// The raw text as captured. Never shown outside the lane it was classified into.
+  body       String
+  /// A redacted one-paragraph summary. Phone numbers and national IDs are stripped before
+  /// this is written, because this is the field that appears in shared views.
+  summary    String?
+
+  /// Terms that triggered a compartmentalisation rule. Recorded even when the signal ends
+  /// up shared, so the reason a lane was chosen is auditable after the fact.
+  wallTags String[] @default([])
+
+  status SignalStatus @default(new)
+
+  /// What triage thinks this belongs to. A proposal, not a link — note there is no
+  /// relation and no foreign key: the register must not gain rows as a side effect of
+  /// something arriving in a mailbox.
+  proposedInitiativeRef String?
+  proposedAction        String?
+  /// Model confidence 0..1 from triage. Low confidence is a reason to read it yourself,
+  /// not a reason to hide it.
+  proposedConfidence    Float?
+
+  /// Set when a human acts on it. `promotedRef` is whatever was created — an initiative,
+  /// a decision, a task — recorded as a free ref so intake never has to know which.
+  promotedRef     String?
+  resolvedById    String?
+  resolvedAt      DateTime?
+  dismissedReason String?
+
+  occurredAt DateTime // when the thing actually happened at the source
+  capturedAt DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@unique([source, externalId])
+  @@index([status, occurredAt])
+  @@index([lane])
+  @@index([proposedInitiativeRef])
+}
+
+enum SignalSource {
+  claude_code // a local Claude Code session transcript
+  artifact // a published artifact
+  email
+  manual // typed in by a person
+}
+
+enum SignalLane {
+  /// Visible to anyone holding intake:read.
+  shared
+  /// CEO only. Applied automatically by the compartmentalisation rules and never
+  /// downgraded except by an explicit executive act.
+  private
+}
+
+enum SignalStatus {
+  new // captured, not yet triaged
+  triaged // the advisor has proposed a home for it
+  promoted // a human turned it into something in the register
+  dismissed
+}
+
 enum AttentionState {
   runs // gets weekly time and headcount
   holds // named owner + next action + review date, no weekly time

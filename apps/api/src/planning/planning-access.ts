@@ -44,6 +44,9 @@ export type PlanningCapability =
   | 'decision:read'
   | 'decision:answer' // answer or defer — executive only
   | 'advisor' // ask the Claude advisor over the register — executive only
+  | 'intake:read' // see the shared intake queue
+  | 'intake:write' // add, triage, promote, dismiss a signal
+  | 'intake:declassify' // move a walled signal into the shared lane — CEO only
   | 'review';
 
 const FULL: readonly PlanningCapability[] = [
@@ -53,6 +56,7 @@ const FULL: readonly PlanningCapability[] = [
   'initiative:create', 'initiative:read', 'initiative:write', 'initiative:all',
   'decision:create', 'decision:read', 'decision:answer',
   'advisor',
+  'intake:read', 'intake:write', 'intake:declassify',
   'review',
 ];
 
@@ -66,14 +70,28 @@ const INTERNAL: readonly PlanningCapability[] = [
   // bottleneck metric, and it only works if raising is friction-free. Answering is not
   // granted here: `decision:answer` stays executive.
   'decision:create', 'decision:read',
+  // Read the shared queue and act on it. NOT `intake:declassify` — moving a walled
+  // signal into the shared lane is the one intake act that cannot be undone, because
+  // by the time you would undo it, it has been read.
+  'intake:read', 'intake:write',
 ];
 
 /** No Planning access — external / commercial roles. */
 const NONE: readonly PlanningCapability[] = [];
 
+/**
+ * `venture_manager` holds everything the CEO holds EXCEPT the ability to move a walled
+ * signal into the shared lane. The compartmentalisation walls exist to keep specific
+ * counterparties out of each other's view; the person who can dissolve one of those walls
+ * should be the person who agreed to it.
+ */
+const FULL_MINUS_DECLASSIFY: readonly PlanningCapability[] = FULL.filter(
+  (c) => c !== 'intake:declassify',
+);
+
 export const PLANNING_ACCESS: Record<Role, readonly PlanningCapability[]> = {
   ceo: FULL,
-  venture_manager: FULL,
+  venture_manager: FULL_MINUS_DECLASSIFY,
   finance: INTERNAL,
   china_sourcing: INTERNAL,
   china_warehouse: INTERNAL,
