@@ -184,7 +184,17 @@ export class ResponsibilityService {
     return {
       total: all.length,
       load,
-      noBackup: all.filter((r) => !r.backupId).map((r) => ({ ref: r.ref, name: r.name, ownerId: r.ownerId })),
+      /**
+       * Only gates and approvals. A standing duty with no backup is normal and expected —
+       * the rules exempt it — so counting those here would put 17 amber items on the
+       * dashboard on day one and teach everyone to ignore the number. What belongs here
+       * is the duty that BLOCKS someone else's work and has one name against it.
+       */
+      noBackup: all
+        .filter((r) => r.kind !== 'standing' && !r.backupId)
+        .map((r) => ({ ref: r.ref, name: r.name, ownerId: r.ownerId, kind: r.kind })),
+      /** Standing duties without cover. Worth knowing, not worth alarming about. */
+      standingNoBackup: all.filter((r) => r.kind === 'standing' && !r.backupId).length,
       notYetStarted: all
         .filter((r) => r.startsOn && r.startsOn > new Date())
         .map((r) => ({ ref: r.ref, name: r.name, ownerId: r.ownerId, startsOn: r.startsOn })),

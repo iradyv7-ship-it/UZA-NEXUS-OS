@@ -7,6 +7,9 @@ import { LocaleSwitch } from '@/components/LocaleSwitch';
 import { SHELL_PADDING_X, SHELL_WIDTH } from '@/components/ui';
 import { logoutAction } from '@/app/actions';
 
+/** One class for every secondary nav item, so the bar stays even as links are added. */
+const NAV = 'rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-700 hover:bg-slate-50';
+
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const session = await getSession();
   if (!session) redirect('/login');
@@ -30,32 +33,42 @@ export default async function AppLayout({ children }: { children: React.ReactNod
               <span className="text-[11px] text-slate-500">{t('app.tagline')}</span>
             </Link>
             <div className="flex flex-wrap items-center justify-end gap-2">
-              <Link
-                href="/week"
-                className="rounded-lg border border-brand/40 bg-brand-soft px-3 py-2 text-sm font-semibold text-brand"
-              >
-                My week
-              </Link>
               {showCommand && (
                 <Link
-                  href="/register"
-                  className="rounded-lg border border-brand/40 bg-brand-soft px-3 py-2 text-sm font-semibold text-brand"
+                  href="/nexus"
+                  className="rounded-lg bg-brand px-3 py-2 text-sm font-semibold text-white"
                 >
-                  Register
+                  Nexus
+                </Link>
+              )}
+              <Link href="/week" className={NAV}>
+                My week
+              </Link>
+              <Link href="/memos" className={NAV}>
+                Memos
+              </Link>
+              <Link href="/tasks" className={NAV}>
+                Tasks
+              </Link>
+              {showCommand && (
+                <Link href="/projects" className={NAV}>
+                  Projects
                 </Link>
               )}
               {showCommand && (
-                <Link
-                  href="/command"
-                  className="rounded-lg border border-brand/40 bg-brand-soft px-3 py-2 text-sm font-semibold text-brand"
-                >
+                <Link href="/register" className={NAV}>
+                  Review
+                </Link>
+              )}
+              {showCommand && (
+                <Link href="/command" className={NAV}>
                   Command
                 </Link>
               )}
               {showVerifyQueue && (
                 <Link
                   href="/finance/payments"
-                  className="rounded-lg border border-brand/40 bg-brand-soft px-3 py-2 text-sm font-semibold text-brand"
+                  className={NAV}
                 >
                   {t('nav.verifyQueue')}
                 </Link>

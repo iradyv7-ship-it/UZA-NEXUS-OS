@@ -1630,6 +1630,128 @@ enum ResponsibilityTrigger {
   ad_hoc
 }
 
+/// Every system UZA owns — a repository, a deployed app, a prototype.
+///
+/// The register says what the company is DOING; this says what it HAS. They are different
+/// questions and the second had no answer anywhere: seventeen repositories exist across
+/// two GitHub accounts, three of them duplicated, and the only record of which copy is
+/// canonical lived in one person's memory.
+///
+/// `initiativeRef` is a soft link with no foreign key on purpose. Most systems are not
+/// attached to a live initiative, and requiring one would either force fake initiatives
+/// into the register or keep real systems out of this table. Both are worse than a
+/// nullable string.
+model SystemRecord {
+  ref  String     @id // readable id, e.g. SYS-2026-0001
+  name String
+  kind SystemKind
+
+  ventureCode String? // GROUP | BULK | MOBILITY | EMPOWER | CLOUD | NEXUS
+  ownerId     String // User.ref of whoever answers for it
+  status      SystemStatus @default(building)
+
+  repoUrl String?
+  liveUrl String?
+  /// Whether the source is readable by the public. Recorded because it is a decision that
+  /// is almost always made by default rather than on purpose.
+  visibility SystemVisibility @default(unknown)
+
+  /// When someone last pushed to it. The single most honest signal of whether a system is
+  /// alive, and the only field here that cannot be talked up in a meeting.
+  lastPushAt DateTime?
+
+  /// The canonical copy, when the same system exists in more than one place. Set on the
+  /// duplicate, pointing at the one to keep.
+  supersededBy String?
+
+  initiativeRef String?
+  notes         String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([ventureCode, status])
+  @@index([ownerId])
+  @@index([status])
+}
+
+enum SystemKind {
+  repository
+  web_app
+  mobile_app
+  backend
+  admin_panel
+  prototype
+  document
+}
+
+enum SystemStatus {
+  live // in use by someone outside the team
+  building
+  prototype
+  dormant // nothing has happened for months and nobody is waiting on it
+  retired
+}
+
+enum SystemVisibility {
+  public
+  private
+  unknown
+}
+
+/// A message from the CEO or a project manager to the team, with proof it was read.
+///
+/// This is not chat, and it should not become chat. Chat is for conversation and UZA
+/// already has somewhere for that. A memo is for the thing chat is worst at: something
+/// that must reach specific people and be known to have reached them. The receipts are
+/// the entire point — an announcement nobody can show was read is a hope.
+model Memo {
+  ref     String @id // readable id, e.g. MEMO-2026-0001
+  subject String
+  body    String
+
+  fromId      String // User.ref of the sender
+  audience    MemoAudience
+  /// Set when audience = department.
+  departmentCode String?
+  /// Set when audience = person.
+  toId           String?
+  ventureCode    String?
+
+  /// When true the reader must acknowledge, not merely open it. Use for anything that
+  /// changes how someone works — a new rule, a threshold, a deadline.
+  needsAck Boolean @default(false)
+
+  /// A memo attached to an initiative or a decision, so the reason is one click away.
+  linkedRef String?
+
+  sentAt   DateTime @default(now())
+  receipts MemoReceipt[]
+
+  @@index([fromId])
+  @@index([sentAt])
+  @@index([audience])
+}
+
+model MemoReceipt {
+  id       String @id @default(uuid())
+  memoRef  String
+  userRef  String
+  readAt   DateTime?
+  ackedAt  DateTime?
+
+  memo Memo @relation(fields: [memoRef], references: [ref], onDelete: Cascade)
+
+  @@unique([memoRef, userRef])
+  @@index([userRef])
+}
+
+enum MemoAudience {
+  everyone
+  department
+  person
+}
+
 enum SignalSource {
   claude_code // a local Claude Code session transcript
   artifact // a published artifact

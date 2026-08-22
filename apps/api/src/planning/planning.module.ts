@@ -5,12 +5,16 @@ import { InitiativeService } from './initiative/initiative.service';
 import { DecisionService } from './decision/decision.service';
 import { ReviewService } from './review/review.service';
 import { ResponsibilityService } from './responsibility/responsibility.service';
+import { EstateService } from './estate/estate.service';
+import { MemoService } from './memo/memo.service';
 import { AdvisorService } from './advisor/advisor.service';
 import {
   PlanningInitiativeController,
   PlanningDecisionController,
   PlanningReviewController,
   PlanningResponsibilityController,
+  PlanningEstateController,
+  PlanningMemoController,
 } from './planning.controllers';
 
 /**
@@ -38,6 +42,8 @@ import {
     InitiativeService,
     DecisionService,
     ResponsibilityService,
+    EstateService,
+    MemoService,
     ReviewService,
     AdvisorService,
   ],
@@ -45,8 +51,18 @@ import {
     PlanningInitiativeController,
     PlanningDecisionController,
     PlanningResponsibilityController,
+    PlanningEstateController,
+    PlanningMemoController,
     PlanningReviewController,
   ],
-  exports: [InitiativeService, DecisionService, ResponsibilityService, ReviewService, AdvisorService],
+  exports: [
+    InitiativeService,
+    DecisionService,
+    ResponsibilityService,
+    EstateService,
+    MemoService,
+    ReviewService,
+    AdvisorService,
+  ],
 })
 export class PlanningModule {}

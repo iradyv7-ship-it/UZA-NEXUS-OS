@@ -36,7 +36,11 @@ export function can(actor: Actor, resource: 'payment', action: 'create' | 'read'
  * This is a UI convenience, NOT a security boundary — the API still scopes every read.
  */
 export function homePathFor(actor: Actor): string {
-  return actor.role === 'logistics_partner' ? '/partner/shipments' : '/dashboard';
+  if (actor.role === 'logistics_partner') return '/partner/shipments';
+  // Executives land on the group view; everyone else lands on their own week. Neither is a
+  // security boundary — the API scopes every read regardless.
+  if (actor.role === 'ceo' || actor.role === 'venture_manager') return '/nexus';
+  return '/week';
 }
 
 /** Only the logistics partner belongs in the partner portal — used to redirect others out

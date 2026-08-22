@@ -11,9 +11,15 @@ import { DecisionService } from './decision/decision.service';
 import { ReviewService } from './review/review.service';
 import { AdvisorService } from './advisor/advisor.service';
 import { ResponsibilityService } from './responsibility/responsibility.service';
+import { EstateService } from './estate/estate.service';
+import { MemoService } from './memo/memo.service';
 
 const ATTENTION = ['runs', 'holds', 'parked'] as const;
 const INITIATIVE_KIND = ['client', 'internal', 'venture'] as const;
+const SYS_KIND = ['repository', 'web_app', 'mobile_app', 'backend', 'admin_panel', 'prototype', 'document'] as const;
+const SYS_STATUS = ['live', 'building', 'prototype', 'dormant', 'retired'] as const;
+const SYS_VIS = ['public', 'private', 'unknown'] as const;
+const MEMO_AUDIENCE = ['everyone', 'department', 'person'] as const;
 const RESP_KIND = ['standing', 'gate', 'approval'] as const;
 const RESP_TRIGGER = ['per_shipment', 'per_deal', 'per_request', 'daily', 'weekly', 'monthly', 'ad_hoc'] as const;
 const INITIATIVE_STATUS = ['active', 'paused', 'done', 'cancelled'] as const;
@@ -102,6 +108,45 @@ class UpdateResponsibilityDto {
 class ListResponsibilityQuery {
   @IsOptional() @IsString() ventureCode?: string;
   @IsOptional() @IsIn(RESP_KIND) kind?: (typeof RESP_KIND)[number];
+}
+
+class CreateSystemDto {
+  @IsString() @MinLength(1) name!: string;
+  @IsIn(SYS_KIND) kind!: (typeof SYS_KIND)[number];
+  @IsString() ownerId!: string;
+  @IsOptional() @IsString() ventureCode?: string;
+  @IsOptional() @IsIn(SYS_STATUS) status?: (typeof SYS_STATUS)[number];
+  @IsOptional() @IsString() repoUrl?: string;
+  @IsOptional() @IsString() liveUrl?: string;
+  @IsOptional() @IsIn(SYS_VIS) visibility?: (typeof SYS_VIS)[number];
+  @IsOptional() @IsDateString() lastPushAt?: string;
+  @IsOptional() @IsString() supersededBy?: string;
+  @IsOptional() @IsString() initiativeRef?: string;
+  @IsOptional() @IsString() notes?: string;
+}
+class UpdateSystemDto {
+  @IsOptional() @IsString() name?: string;
+  @IsOptional() @IsIn(SYS_STATUS) status?: (typeof SYS_STATUS)[number];
+  @IsOptional() @IsString() ownerId?: string;
+  @IsOptional() @IsString() ventureCode?: string;
+  @IsOptional() @IsIn(SYS_VIS) visibility?: (typeof SYS_VIS)[number];
+  @IsOptional() @IsString() supersededBy?: string;
+  @IsOptional() @IsString() notes?: string;
+}
+class ListSystemQuery {
+  @IsOptional() @IsString() ventureCode?: string;
+  @IsOptional() @IsIn(SYS_STATUS) status?: (typeof SYS_STATUS)[number];
+}
+
+class SendMemoDto {
+  @IsString() @MinLength(1) subject!: string;
+  @IsString() @MinLength(1) body!: string;
+  @IsIn(MEMO_AUDIENCE) audience!: (typeof MEMO_AUDIENCE)[number];
+  @IsOptional() @IsString() departmentCode?: string;
+  @IsOptional() @IsString() toId?: string;
+  @IsOptional() @IsString() ventureCode?: string;
+  @IsOptional() @IsBoolean() needsAck?: boolean;
+  @IsOptional() @IsString() linkedRef?: string;
 }
 
 const date = (v?: string): Date | undefined => (v ? new Date(v) : undefined);
@@ -197,6 +242,63 @@ export class PlanningResponsibilityController {
   @Patch(':ref')
   update(@CurrentActor() actor: Actor, @Param('ref') ref: string, @Body() dto: UpdateResponsibilityDto) {
     return this.responsibilities.update(actor, ref, dto);
+  }
+}
+
+@ApiTags('planning')
+@ApiBearerAuth()
+@Controller('planning/systems')
+export class PlanningEstateController {
+  constructor(private readonly estate: EstateService) {}
+
+  @Post()
+  create(@CurrentActor() actor: Actor, @Body() dto: CreateSystemDto) {
+    return this.estate.create(actor, { ...dto, lastPushAt: date(dto.lastPushAt) });
+  }
+  @Get()
+  list(@CurrentActor() actor: Actor, @Query() q: ListSystemQuery) {
+    return this.estate.list(actor, q);
+  }
+  /** Duplicates, public source and silence — derived, not typed in. Before `:ref`. */
+  @Get('health')
+  health(@CurrentActor() actor: Actor) {
+    return this.estate.health(actor);
+  }
+  @Patch(':ref')
+  update(@CurrentActor() actor: Actor, @Param('ref') ref: string, @Body() dto: UpdateSystemDto) {
+    return this.estate.update(actor, ref, dto);
+  }
+}
+
+@ApiTags('planning')
+@ApiBearerAuth()
+@Controller('planning/memos')
+export class PlanningMemoController {
+  constructor(private readonly memos: MemoService) {}
+
+  @Post()
+  send(@CurrentActor() actor: Actor, @Body() dto: SendMemoDto) {
+    return this.memos.send(actor, dto);
+  }
+  @Get()
+  inbox(@CurrentActor() actor: Actor) {
+    return this.memos.inbox(actor);
+  }
+  @Get('sent')
+  sent(@CurrentActor() actor: Actor) {
+    return this.memos.sent(actor);
+  }
+  @Get(':ref/receipts')
+  receipts(@CurrentActor() actor: Actor, @Param('ref') ref: string) {
+    return this.memos.receipts(actor, ref);
+  }
+  @Post(':ref/read')
+  read(@CurrentActor() actor: Actor, @Param('ref') ref: string) {
+    return this.memos.markRead(actor, ref);
+  }
+  @Post(':ref/ack')
+  ack(@CurrentActor() actor: Actor, @Param('ref') ref: string) {
+    return this.memos.acknowledge(actor, ref);
   }
 }
 
