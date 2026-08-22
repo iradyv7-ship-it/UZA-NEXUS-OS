@@ -1,6 +1,8 @@
 import { Body, Controller, Get, Param, Patch, Post, Query } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
-import { IsArray, IsDateString, IsIn, IsOptional, IsString, MinLength, ValidateNested } from 'class-validator';
+import {
+  IsArray, IsBoolean, IsDateString, IsIn, IsInt, IsOptional, IsString, Min, MinLength, ValidateNested,
+} from 'class-validator';
 import { Type } from 'class-transformer';
 import type { Actor } from '@uza/contracts';
 import { CurrentActor } from '../platform/auth/current-actor.decorator';
@@ -8,9 +10,12 @@ import { InitiativeService } from './initiative/initiative.service';
 import { DecisionService } from './decision/decision.service';
 import { ReviewService } from './review/review.service';
 import { AdvisorService } from './advisor/advisor.service';
+import { ResponsibilityService } from './responsibility/responsibility.service';
 
 const ATTENTION = ['runs', 'holds', 'parked'] as const;
 const INITIATIVE_KIND = ['client', 'internal', 'venture'] as const;
+const RESP_KIND = ['standing', 'gate', 'approval'] as const;
+const RESP_TRIGGER = ['per_shipment', 'per_deal', 'per_request', 'daily', 'weekly', 'monthly', 'ad_hoc'] as const;
 const INITIATIVE_STATUS = ['active', 'paused', 'done', 'cancelled'] as const;
 
 // ---------- DTOs ----------
@@ -71,6 +76,32 @@ class AskDto {
   @IsString() @MinLength(1) question!: string;
   @IsOptional() @IsArray() @ValidateNested({ each: true }) @Type(() => AdvisorTurnDto)
   history?: AdvisorTurnDto[];
+}
+
+class CreateResponsibilityDto {
+  @IsString() @MinLength(1) name!: string;
+  @IsIn(RESP_KIND) kind!: (typeof RESP_KIND)[number];
+  @IsString() ownerId!: string;
+  @IsOptional() @IsString() backupId?: string;
+  @IsOptional() @IsString() ventureCode?: string;
+  @IsOptional() @IsIn(RESP_TRIGGER) trigger?: (typeof RESP_TRIGGER)[number];
+  @IsOptional() @Type(() => Number) @IsInt() @Min(1) responseHours?: number;
+  @IsOptional() @IsString() notes?: string;
+  @IsOptional() @IsDateString() startsOn?: string;
+}
+class UpdateResponsibilityDto {
+  @IsOptional() @IsString() name?: string;
+  @IsOptional() @IsIn(RESP_KIND) kind?: (typeof RESP_KIND)[number];
+  @IsOptional() @IsString() ownerId?: string;
+  @IsOptional() @IsString() backupId?: string;
+  @IsOptional() @IsIn(RESP_TRIGGER) trigger?: (typeof RESP_TRIGGER)[number];
+  @IsOptional() @Type(() => Number) @IsInt() @Min(1) responseHours?: number;
+  @IsOptional() @IsString() notes?: string;
+  @IsOptional() @IsBoolean() active?: boolean;
+}
+class ListResponsibilityQuery {
+  @IsOptional() @IsString() ventureCode?: string;
+  @IsOptional() @IsIn(RESP_KIND) kind?: (typeof RESP_KIND)[number];
 }
 
 const date = (v?: string): Date | undefined => (v ? new Date(v) : undefined);
@@ -137,6 +168,35 @@ export class PlanningDecisionController {
   @Post(':ref/defer')
   defer(@CurrentActor() actor: Actor, @Param('ref') ref: string, @Body() dto: DeferDecisionDto) {
     return this.decisions.defer(actor, ref, { deferredTo: new Date(dto.deferredTo) });
+  }
+}
+
+@ApiTags('planning')
+@ApiBearerAuth()
+@Controller('planning/responsibilities')
+export class PlanningResponsibilityController {
+  constructor(private readonly responsibilities: ResponsibilityService) {}
+
+  @Post()
+  create(@CurrentActor() actor: Actor, @Body() dto: CreateResponsibilityDto) {
+    return this.responsibilities.create(actor, { ...dto, startsOn: date(dto.startsOn) });
+  }
+  @Get()
+  list(@CurrentActor() actor: Actor, @Query() q: ListResponsibilityQuery) {
+    return this.responsibilities.list(actor, q);
+  }
+  /** Where the organisation is concentrated, and where it has no backup. Before `:userRef`. */
+  @Get('concentration')
+  concentration(@CurrentActor() actor: Actor) {
+    return this.responsibilities.concentration(actor);
+  }
+  @Get('person/:userRef')
+  forPerson(@CurrentActor() actor: Actor, @Param('userRef') userRef: string) {
+    return this.responsibilities.forPerson(actor, userRef);
+  }
+  @Patch(':ref')
+  update(@CurrentActor() actor: Actor, @Param('ref') ref: string, @Body() dto: UpdateResponsibilityDto) {
+    return this.responsibilities.update(actor, ref, dto);
   }
 }
 

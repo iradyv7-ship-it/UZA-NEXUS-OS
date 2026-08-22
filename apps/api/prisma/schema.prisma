@@ -1562,6 +1562,74 @@ model Signal {
   @@index([proposedInitiativeRef])
 }
 
+/// A standing duty that belongs to a person — not a task, not a project.
+///
+/// "Francois verifies documents on every shipment" is true continuously and is never
+/// finished. Modelling it as a task produces a hundred identical tasks; modelling it as an
+/// initiative produces an initiative that can never be closed. It is a third thing, and
+/// the register was missing it: the question "who does document verification, and what
+/// happens when they are away" had no answer anywhere in the system.
+///
+/// Two fields carry the weight:
+///
+///  - `backupId`. A duty with one name against it is a single point of failure that only
+///    reveals itself the week that person is unreachable.
+///  - `responseHours`. This is the clock. The observed failure at UZA is not that work is
+///    unassigned — it is that work sits waiting on an answer with no agreed time by which
+///    the answer is due. An approval without a response time is not a control, it is a
+///    queue, and the service refuses to create one.
+model Responsibility {
+  ref         String @id // readable id, e.g. RESP-2026-0001
+  name        String
+  ventureCode String? // GROUP | BULK | MOBILITY | EMPOWER | CLOUD | NEXUS
+
+  ownerId  String // User.ref of the person accountable
+  backupId String? // who covers when the owner is unreachable
+
+  kind    ResponsibilityKind
+  trigger ResponsibilityTrigger @default(ad_hoc)
+
+  /// Hours within which the owner must respond once triggered. Required when
+  /// kind = approval; optional elsewhere, where it reads as a service standard.
+  responseHours Int?
+
+  notes String?
+
+  /// Set when a duty does not start today — Francois's China verifications begin when he
+  /// lands in September. A future-dated duty is visible in the register now, which is the
+  /// point: it can be prepared for rather than discovered.
+  startsOn DateTime?
+  endsOn   DateTime?
+  active   Boolean   @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([ownerId])
+  @@index([backupId])
+  @@index([ventureCode, active])
+  @@index([kind])
+}
+
+enum ResponsibilityKind {
+  /// A continuous duty: run this, watch this, answer this.
+  standing
+  /// A check that must pass before work is allowed to proceed.
+  gate
+  /// Someone has to say yes. Always carries a response time.
+  approval
+}
+
+enum ResponsibilityTrigger {
+  per_shipment
+  per_deal
+  per_request
+  daily
+  weekly
+  monthly
+  ad_hoc
+}
+
 enum SignalSource {
   claude_code // a local Claude Code session transcript
   artifact // a published artifact
