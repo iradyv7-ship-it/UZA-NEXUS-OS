@@ -141,6 +141,28 @@ const REGISTER: Row[] = [
     nextAction: 'Quote panels, inverters and mounting through the same corridor as the chargers. Same suppliers, same terms.',
   },
 
+  {
+    ref: 'INIT-2026-0023',
+    name: 'UZA Bulk mobile app — UI design',
+    kind: 'internal',
+    ventureCode: 'BULK',
+    ownerId: ABIJURU,
+    attention: 'runs',
+    targetDate: d('2026-08-28'),
+    nextAction:
+      'Six screens by 25 August with none started, and wireframing was due 22 August and is still in progress. Either the 28 August project deadline moves or the scope does — say which, this week.',
+  },
+  {
+    ref: 'INIT-2026-0024',
+    name: 'UZA Bulk platform — build and deployment',
+    kind: 'internal',
+    ventureCode: 'BULK',
+    ownerId: GAD,
+    attention: 'runs',
+    nextAction:
+      'The 21 August milestone shipped — search results, chatbot and the Alibaba Cloud deployment are all closed. Name the next milestone and its date, or the team has nothing to aim at.',
+  },
+
   // ── UZA MOBILITY ─────────────────────────────────────────────────────────
   {
     ref: 'INIT-2026-0009',
@@ -368,6 +390,30 @@ const DECISIONS = [
     context:
       'Today an enquiry stays open until someone decides to close it, which is why 16 are still on the books. Reversing the default — Badiane closes it, the CEO may reopen — moves the effort from closing to keeping, which is the correct direction.',
     initiativeRef: 'INIT-2026-0122',
+    raisedAt: d('2026-08-22'),
+  },
+  {
+    ref: 'DEC-2026-0017',
+    question: 'Do day-to-day tasks live in Trippo or in Nexus?',
+    context:
+      'Both have a task model and they now overlap directly. Trippo already has a working board that the engineering team uses — 14 done, deadlines carried, subtasks, completion notes. Nexus has CommandTask, which nobody uses. Recommendation: tasks live in Trippo, Nexus keeps only initiatives, decisions and responsibilities, and CommandTask is retired rather than competed with.',
+    initiativeRef: 'INIT-2026-0020',
+    raisedAt: d('2026-08-22'),
+  },
+  {
+    ref: 'DEC-2026-0018',
+    question: 'Is Trippo the system of record for money — invoices, bills, vendors, expenditure?',
+    context:
+      'Trippo carries Customers, Invoices, Income, Vendors, Bills and Expenditure. If those are in use, that is the accounting layer and nothing should be rebuilt. If they are empty, that is a decision not to use a module you are already paying for. Either answer is fine; not knowing is not.',
+    initiativeRef: 'INIT-2026-0020',
+    raisedAt: d('2026-08-22'),
+  },
+  {
+    ref: 'DEC-2026-0019',
+    question: 'How does Trippo get used by anyone outside the tech team?',
+    context:
+      'Every task on the board was created by Gad or Abijuru and every one is engineering or design. Nothing from Cecilia, Badiane, Scorah, Adeline or the 21 Bulk enquiries. The tool is not the problem and neither is training — the tech team adopted it without either. Rolling out a second system to people who do not use the first would repeat the outcome.',
+    initiativeRef: 'INIT-2026-0004',
     raisedAt: d('2026-08-22'),
   },
   {

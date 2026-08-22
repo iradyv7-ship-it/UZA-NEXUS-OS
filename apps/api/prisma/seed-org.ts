@@ -466,6 +466,79 @@ const RESPONSIBILITIES: Resp[] = [
     notes:
       'Library choices, schema shape, deployment. What still goes to the CEO is anything that changes what a customer sees, what is claimed publicly, or what is spent.',
   },
+  // ── PM SCOPE, WIDENED 22 AUGUST ──────────────────────────────────────────
+  // The founder's instruction: a project manager works on sourcing, sales and marketing,
+  // and social content — with support, not alone. Recorded per venture rather than as one
+  // generic line, because "marketing" owned by two people is owned by neither.
+  {
+    ref: 'RESP-2026-0038',
+    name: 'UZA Mobility — sourcing direction: what to buy, from where, at what landed cost',
+    venture: 'MOBILITY',
+    owner: SCORAH,
+    kind: 'standing',
+    trigger: 'per_deal',
+    notes:
+      'Scorah decides what Mobility needs and the commercial shape; Cecilia executes it in China. Two different jobs, and confusing them is how the China desk ends up setting strategy by default.',
+  },
+  {
+    ref: 'RESP-2026-0039',
+    name: 'UZA Bulk — sourcing direction and supplier strategy',
+    venture: 'BULK',
+    owner: BADIANE,
+    kind: 'standing',
+    trigger: 'per_deal',
+    notes: 'Same split: Badiane sets what and why, Cecilia finds who and how much.',
+  },
+  {
+    ref: 'RESP-2026-0040',
+    name: 'UZA Mobility — social content and campaigns',
+    venture: 'MOBILITY',
+    owner: SCORAH,
+    kind: 'standing',
+    trigger: 'weekly',
+    notes: 'Abijuru supports on brand and artwork. Scorah owns what gets said and when.',
+  },
+  {
+    ref: 'RESP-2026-0041',
+    name: 'UZA Bulk — social content and campaigns',
+    venture: 'BULK',
+    owner: BADIANE,
+    kind: 'standing',
+    trigger: 'weekly',
+    notes: 'Abijuru supports on brand and artwork.',
+  },
+  {
+    ref: 'RESP-2026-0042',
+    name: 'Brand, artwork and content production support to both ventures',
+    venture: 'CLOUD',
+    owner: ABIJURU,
+    kind: 'standing',
+    trigger: 'weekly',
+    notes:
+      'The support the PMs are entitled to. Abijuru produces; the PM decides the message. Note this is on top of the UZA Bulk mobile app design, which is his own deadline.',
+  },
+  {
+    ref: 'RESP-2026-0043',
+    name: 'IT — platform vendors, tooling and cloud spend',
+    venture: 'CLOUD',
+    owner: GAD,
+    backup: SADDOCK,
+    kind: 'standing',
+    trigger: 'monthly',
+    notes: 'The Bulk platform already runs on Alibaba Cloud. Somebody has to own what that costs.',
+  },
+  {
+    ref: 'RESP-2026-0044',
+    name: 'Every task carries an aim, an owner and a deadline before it is assigned',
+    venture: 'GROUP',
+    owner: YVES,
+    backup: SCORAH,
+    kind: 'gate',
+    trigger: 'per_request',
+    hours: 24,
+    notes:
+      "The founder's working rule of 22 August: set up a group per task with a clear aim and a deadline. Recorded as a gate because a task without those three is the thing that becomes an 'awaiting' row three weeks later.",
+  },
 ];
 
 async function main() {
