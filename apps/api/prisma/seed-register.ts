@@ -93,7 +93,8 @@ const REGISTER: Row[] = [
     ventureCode: 'GROUP',
     ownerId: YVES,
     attention: 'runs',
-    nextAction: 'Name owners for charging, grants, Cloud and Empower. Four holes, and three of them are blocking other initiatives.',
+    nextAction:
+      'Three project managers named on 22 August — Scorah (Mobility), Badiane (Bulk), Gad (IT). Two holes remain and both are blocking: UZA Empower has no PM, and grants has no owner.',
     artifactUrl: 'https://claude.ai/code/artifact/d60231b0-805a-4cd2-8cb2-364df0ff69b8',
   },
 
@@ -122,10 +123,11 @@ const REGISTER: Row[] = [
     name: 'Charging pile wholesale line',
     kind: 'venture',
     ventureCode: 'BULK',
-    ownerId: UNASSIGNED,
+    ownerId: BADIANE,
     attention: 'holds',
     reviewAt: d('2026-09-15'),
-    nextAction: 'Haidira is the cheapest quote at $4,655 EXW for 120kW. Nothing moves until charging has an owner.',
+    nextAction:
+      'Held behind the five live enquiries, not behind an owner. Haidira quotes $4,655 EXW for 120kW; the first real question is whether Charge buys internally at the third-party price (DEC-2026-0003).',
     artifactUrl: 'https://claude.ai/code/artifact/75856dd2-0493-4bae-83a4-2fe464a7ce86',
   },
   {
@@ -133,7 +135,7 @@ const REGISTER: Row[] = [
     name: 'Solar hardware import line',
     kind: 'venture',
     ventureCode: 'BULK',
-    ownerId: UNASSIGNED,
+    ownerId: BADIANE,
     attention: 'holds',
     reviewAt: d('2026-10-01'),
     nextAction: 'Quote panels, inverters and mounting through the same corridor as the chargers. Same suppliers, same terms.',
@@ -145,9 +147,10 @@ const REGISTER: Row[] = [
     name: 'RURA taxi cab company licence',
     kind: 'internal',
     ventureCode: 'MOBILITY',
-    ownerId: YVES,
+    ownerId: SCORAH,
     attention: 'runs',
-    nextAction: 'File the application. 681 days of zero-tax EV imports remain and the operator-of-record position depends on this.',
+    nextAction:
+      'File the application. 681 days of zero-tax EV imports remain and the operator-of-record position depends on it. Scorah drives; the CEO signs.',
     targetDate: d('2026-09-30'),
     artifactUrl: 'https://claude.ai/code/artifact/f5703915-9521-412a-83c8-11add5919420',
   },
@@ -178,10 +181,11 @@ const REGISTER: Row[] = [
     name: 'Charging network — three sites',
     kind: 'venture',
     ventureCode: 'MOBILITY',
-    ownerId: UNASSIGNED,
+    ownerId: SCORAH,
     attention: 'holds',
     reviewAt: d('2026-09-15'),
-    nextAction: 'Gatenga, Nature Kigali and Elite Paradise are identified. This needs a named owner before a site is committed.',
+    nextAction:
+      'Gatenga, Nature Kigali and Elite Paradise are identified. Pick one and cost it properly. Held behind DEC-2026-0002 — whether UZA Charge is incorporated before the licence application.',
     artifactUrl: 'https://claude.ai/code/artifact/75856dd2-0493-4bae-83a4-2fe464a7ce86',
   },
   {
@@ -189,7 +193,7 @@ const REGISTER: Row[] = [
     name: 'Solar canopy at Gatenga',
     kind: 'venture',
     ventureCode: 'MOBILITY',
-    ownerId: UNASSIGNED,
+    ownerId: SCORAH,
     attention: 'holds',
     reviewAt: d('2026-10-01'),
     nextAction:
@@ -294,6 +298,25 @@ const REGISTER: Row[] = [
 ];
 
 /**
+ * Decisions already settled. Seeded answered rather than omitted, so the register shows
+ * that the queue moves — a decision log with only open items reads like a company that
+ * never decides anything.
+ */
+const ANSWERED = [
+  {
+    ref: 'DEC-2026-0005',
+    question: 'Who owns charging?',
+    context:
+      'Four initiatives were held solely because nobody was named: the wholesale line, the three sites, the solar canopy, and by extension the licence timing.',
+    initiativeRef: 'INIT-2026-0004',
+    raisedAt: d('2026-08-14'),
+    answer:
+      'Scorah, as project manager for UZA Mobility. The PM owns the whole venture — charging, solar, vehicle supply, Tunga Taxi and the garage — including the thinking, planning and sales, not a slice of it. The wholesale pile line sits under Badiane instead, because selling equipment to a business is a Bulk transaction.',
+    answeredAt: d('2026-08-22'),
+  },
+];
+
+/**
  * The decisions that are genuinely waiting on the CEO right now. Seeded open, with
  * `raisedAt` backdated so the bottleneck metric reports the truth on day one rather
  * than starting everything at zero days.
@@ -332,14 +355,6 @@ const DECISIONS = [
     raisedAt: d('2026-08-21'),
   },
   {
-    ref: 'DEC-2026-0005',
-    question: 'Who owns charging?',
-    context:
-      'Four initiatives are held solely because nobody is named: the wholesale line, the three sites, the solar canopy, and by extension the licence timing.',
-    initiativeRef: 'INIT-2026-0004',
-    raisedAt: d('2026-08-14'),
-  },
-  {
     ref: 'DEC-2026-0011',
     question: 'Do we delegate sample and courier approval below a threshold, and if so what is the threshold?',
     context:
@@ -353,6 +368,22 @@ const DECISIONS = [
     context:
       'Today an enquiry stays open until someone decides to close it, which is why 16 are still on the books. Reversing the default — Badiane closes it, the CEO may reopen — moves the effort from closing to keeping, which is the correct direction.',
     initiativeRef: 'INIT-2026-0122',
+    raisedAt: d('2026-08-22'),
+  },
+  {
+    ref: 'DEC-2026-0015',
+    question: 'When Badiane and Scorah both need Cecilia in the same week, who sequences her?',
+    context:
+      'Cecilia runs the China desk for both ventures and reports to the CEO, so neither project manager can prioritise her. Today that is invisible because Bulk is idle; from September, with vehicle supply running and Francois to supervise, it becomes the constraint. Options: she reports to one PM, or she holds a published weekly capacity split, or the CEO sequences her and accepts being asked.',
+    initiativeRef: 'INIT-2026-0004',
+    raisedAt: d('2026-08-22'),
+  },
+  {
+    ref: 'DEC-2026-0016',
+    question: 'Who is the project manager for UZA Empower?',
+    context:
+      'Mobility, Bulk and IT each have one. Empower does not, and two initiatives are frozen behind that: the training restructure and impact measurement. Impact measurement is also what every grant application depends on, so this hole has a price attached to it.',
+    initiativeRef: 'INIT-2026-0016',
     raisedAt: d('2026-08-22'),
   },
   {
@@ -391,6 +422,21 @@ async function main() {
     await prisma.initiative.upsert({ where: { ref: r.ref }, create: { ref: r.ref, ...data }, update: data });
   }
 
+  for (const dec of ANSWERED) {
+    const data = {
+      question: dec.question,
+      context: dec.context,
+      initiativeRef: dec.initiativeRef,
+      raisedById: YVES,
+      raisedAt: dec.raisedAt,
+      status: 'answered' as const,
+      answer: dec.answer,
+      answeredById: YVES,
+      answeredAt: dec.answeredAt,
+    };
+    await prisma.execDecision.upsert({ where: { ref: dec.ref }, create: { ref: dec.ref, ...data }, update: data });
+  }
+
   for (const dec of DECISIONS) {
     await prisma.execDecision.upsert({
       where: { ref: dec.ref },
@@ -414,7 +460,7 @@ async function main() {
 
   console.log(`register seeded: ${REGISTER.length} initiatives — ${runs} running, ${holds} held, ${parked} parked`);
   console.log(`${orphans} have no named owner. That is the finding, not a gap in the data.`);
-  console.log(`${DECISIONS.length} decisions open and waiting on the CEO.`);
+  console.log(`${DECISIONS.length} decisions open and waiting on the CEO, ${ANSWERED.length} answered.`);
 }
 
 main()

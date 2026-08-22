@@ -36,15 +36,19 @@ const DEPARTMENTS = [
 
 const PEOPLE = [
   { userId: YVES, title: 'Founder & CEO', dept: 'GROUP', managerId: null },
-  { userId: SCORAH, title: 'Mobility lead', dept: 'MOBILITY', managerId: YVES },
-  { userId: BADIANE, title: 'Sales — Rwanda', dept: 'BULK', managerId: YVES },
-  { userId: CECILIA, title: 'China operations lead', dept: 'BULK', managerId: YVES },
+  { userId: SCORAH, title: 'Project manager — UZA Mobility', dept: 'MOBILITY', managerId: YVES },
+  { userId: BADIANE, title: 'Project manager — UZA Bulk', dept: 'BULK', managerId: YVES },
+  { userId: GAD, title: 'Project manager — IT and platform', dept: 'CLOUD', managerId: YVES },
+  // Cecilia runs the China desk for BOTH ventures, which is why she reports to the CEO
+  // rather than to either project manager. That is a deliberate choice and it has a cost:
+  // when Badiane and Scorah both need her in the same week, nobody but the CEO can
+  // sequence her. See DEC-2026-0015.
+  { userId: CECILIA, title: 'China operations lead (Bulk and Mobility)', dept: 'BULK', managerId: YVES },
   { userId: FRANCOIS, title: 'China verification officer (from September)', dept: 'BULK', managerId: CECILIA },
-  { userId: ADELINE, title: 'Customer care', dept: 'GROUP', managerId: YVES },
+  { userId: ADELINE, title: 'Customer care — all ventures', dept: 'GROUP', managerId: YVES },
   { userId: TRESOR, title: 'Garage & high-voltage technician', dept: 'MOBILITY', managerId: SCORAH },
-  { userId: GAD, title: 'Engineering', dept: 'CLOUD', managerId: YVES },
-  { userId: SADDOCK, title: 'Engineering', dept: 'CLOUD', managerId: YVES },
-  { userId: ABIJURU, title: 'Web & brand', dept: 'CLOUD', managerId: YVES },
+  { userId: SADDOCK, title: 'Engineering', dept: 'CLOUD', managerId: GAD },
+  { userId: ABIJURU, title: 'Web & brand', dept: 'CLOUD', managerId: GAD },
 ];
 
 interface Resp {
@@ -349,6 +353,118 @@ const RESPONSIBILITIES: Resp[] = [
     backup: SADDOCK,
     kind: 'standing',
     trigger: 'ad_hoc',
+  },
+  // ── PROJECT MANAGERS ─────────────────────────────────────────────────────
+  // Named 22 August. A project manager here owns the venture end to end — thinking,
+  // planning, sales, marketing, delivery — not a slice of it. Recording that as four
+  // duties rather than one line is what makes it checkable: a PM who has not set a
+  // quarterly target, or whose initiatives filed no check-in, is visibly not managing
+  // the project, and the register says so without anyone having to raise it.
+  {
+    ref: 'RESP-2026-0027',
+    name: 'UZA Mobility — venture plan, targets and quarterly review',
+    venture: 'MOBILITY',
+    owner: SCORAH,
+    kind: 'standing',
+    trigger: 'monthly',
+    notes: 'Vehicle supply, Tunga Taxi, charging, solar and the garage. The whole venture, not a slice of it.',
+  },
+  {
+    ref: 'RESP-2026-0028',
+    name: 'UZA Mobility — sales and marketing',
+    venture: 'MOBILITY',
+    owner: SCORAH,
+    kind: 'standing',
+    trigger: 'weekly',
+  },
+  {
+    ref: 'RESP-2026-0029',
+    name: 'UZA Mobility — weekly check-in on every initiative in the venture',
+    venture: 'MOBILITY',
+    owner: SCORAH,
+    kind: 'standing',
+    trigger: 'weekly',
+    notes:
+      "Files for the venture, chases the owners who have not. A missing check-in is the PM's finding before it is the CEO's.",
+  },
+  {
+    ref: 'RESP-2026-0030',
+    name: 'UZA Mobility — spend approval inside the venture, below the CEO ceiling',
+    venture: 'MOBILITY',
+    owner: SCORAH,
+    backup: YVES,
+    kind: 'approval',
+    trigger: 'per_request',
+    hours: 24,
+    notes:
+      'Proposed, pending DEC-2026-0011. The ceiling is the whole point: without one this is not delegation, it is a second queue. Deposit release on vehicles stays with the CEO regardless.',
+  },
+  {
+    ref: 'RESP-2026-0031',
+    name: 'UZA Bulk — venture plan, targets and the sales pipeline',
+    venture: 'BULK',
+    owner: BADIANE,
+    kind: 'standing',
+    trigger: 'monthly',
+    notes:
+      'Includes breaking a monthly revenue target into named projects with expected value, probability and a client decision date. A target without that breakdown is not a plan.',
+  },
+  {
+    ref: 'RESP-2026-0032',
+    name: 'UZA Bulk — sales and marketing',
+    venture: 'BULK',
+    owner: BADIANE,
+    kind: 'standing',
+    trigger: 'weekly',
+  },
+  {
+    ref: 'RESP-2026-0033',
+    name: 'UZA Bulk — weekly check-in on every enquiry and initiative in the venture',
+    venture: 'BULK',
+    owner: BADIANE,
+    kind: 'standing',
+    trigger: 'weekly',
+  },
+  {
+    ref: 'RESP-2026-0034',
+    name: 'UZA Bulk — close or continue a dormant enquiry',
+    venture: 'BULK',
+    owner: BADIANE,
+    backup: YVES,
+    kind: 'approval',
+    trigger: 'per_deal',
+    hours: 48,
+    notes:
+      'Proposed, pending DEC-2026-0012. Moving this from the CEO to the Bulk PM is the single change that most reduces the approval queue, because it is the approval that fires most often.',
+  },
+  {
+    ref: 'RESP-2026-0035',
+    name: 'IT and platform — roadmap, priorities and release decisions',
+    venture: 'CLOUD',
+    owner: GAD,
+    kind: 'standing',
+    trigger: 'weekly',
+    notes: 'Nexus, the portals, the mobility backend and the website. Saddock and Abijuru report here.',
+  },
+  {
+    ref: 'RESP-2026-0036',
+    name: 'IT and platform — weekly check-in on every engineering initiative',
+    venture: 'CLOUD',
+    owner: GAD,
+    kind: 'standing',
+    trigger: 'weekly',
+  },
+  {
+    ref: 'RESP-2026-0037',
+    name: 'IT and platform — technical decisions that do not need the CEO',
+    venture: 'CLOUD',
+    owner: GAD,
+    backup: SADDOCK,
+    kind: 'approval',
+    trigger: 'per_request',
+    hours: 24,
+    notes:
+      'Library choices, schema shape, deployment. What still goes to the CEO is anything that changes what a customer sees, what is claimed publicly, or what is spent.',
   },
 ];
 
