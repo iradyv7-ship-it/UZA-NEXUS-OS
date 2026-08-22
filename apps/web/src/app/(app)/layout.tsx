@@ -30,6 +30,20 @@ export default async function AppLayout({ children }: { children: React.ReactNod
               <span className="text-[11px] text-slate-500">{t('app.tagline')}</span>
             </Link>
             <div className="flex flex-wrap items-center justify-end gap-2">
+              <Link
+                href="/week"
+                className="rounded-lg border border-brand/40 bg-brand-soft px-3 py-2 text-sm font-semibold text-brand"
+              >
+                My week
+              </Link>
+              {showCommand && (
+                <Link
+                  href="/register"
+                  className="rounded-lg border border-brand/40 bg-brand-soft px-3 py-2 text-sm font-semibold text-brand"
+                >
+                  Register
+                </Link>
+              )}
               {showCommand && (
                 <Link
                   href="/command"
