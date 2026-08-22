@@ -339,6 +339,30 @@ const DECISIONS = [
     initiativeRef: 'INIT-2026-0004',
     raisedAt: d('2026-08-14'),
   },
+  {
+    ref: 'DEC-2026-0011',
+    question: 'Do we delegate sample and courier approval below a threshold, and if so what is the threshold?',
+    context:
+      'Every approval in the company currently routes through the CEO — measured concentration is 1.00. This one and the close-or-continue decision are the two that fire most often, so delegating them is what actually changes the response time. A ceiling of about USD 300 with Cecilia deciding inside it would remove the majority of the waiting without giving away anything that matters.',
+    initiativeRef: 'INIT-2026-0004',
+    raisedAt: d('2026-08-22'),
+  },
+  {
+    ref: 'DEC-2026-0012',
+    question: 'Do dormant enquiries close by default after 30 days of client silence?',
+    context:
+      'Today an enquiry stays open until someone decides to close it, which is why 16 are still on the books. Reversing the default — Badiane closes it, the CEO may reopen — moves the effort from closing to keeping, which is the correct direction.',
+    initiativeRef: 'INIT-2026-0122',
+    raisedAt: d('2026-08-22'),
+  },
+  {
+    ref: 'DEC-2026-0013',
+    question: 'Do listings and website prices display in RWF only, and do we drop the exchange-rate API?',
+    context:
+      'Raised by Gad on the team platform and unanswered since. His own words: we have not concluded what to do with this. It is a small decision holding a shipped feature, which is the cheapest kind to answer and the most annoying kind to leave.',
+    initiativeRef: 'INIT-2026-0003',
+    raisedAt: d('2026-08-21'),
+  },
 ];
 
 async function main() {
