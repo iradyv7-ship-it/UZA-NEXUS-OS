@@ -19,10 +19,11 @@
     "seed:register": "tsx prisma/seed-register.ts",
     "seed:org": "tsx prisma/seed-org.ts",
     "seed:bulk": "tsx prisma/seed-bulk-pipeline.ts",
-    "seed:all": "tsx prisma/seed-org.ts && tsx prisma/seed-bulk-pipeline.ts && tsx prisma/seed-register.ts && tsx prisma/seed-estate.ts && tsx prisma/seed-mobility.ts",
+    "seed:all": "tsx prisma/seed-org.ts && tsx prisma/seed-bulk-pipeline.ts && tsx prisma/seed-register.ts && tsx prisma/seed-estate.ts && tsx prisma/seed-mobility.ts && tsx prisma/seed-funding.ts",
     "seed:users": "tsx prisma/seed-users.ts",
     "seed:estate": "tsx prisma/seed-estate.ts",
-    "seed:mobility": "tsx prisma/seed-mobility.ts"
+    "seed:mobility": "tsx prisma/seed-mobility.ts",
+    "seed:funding": "tsx prisma/seed-funding.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.120.0",

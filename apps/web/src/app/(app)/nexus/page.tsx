@@ -29,6 +29,12 @@ interface EstateHealth {
   silent: { ref: string; name: string; daysSincePush: number | null }[];
   unassigned: { ref: string; name: string }[];
 }
+interface Funding {
+  totalSought: number;
+  liveTracks: number;
+  unlocksNothing: { ref: string }[];
+  tracks: { ref: string; blocker: string | null; heldReleases: number }[];
+}
 interface Inbox {
   unread: number;
 }
@@ -91,12 +97,13 @@ export default async function NexusPage() {
   if (!session) return null;
   const isExec = session.actor.role === 'ceo' || session.actor.role === 'venture_manager';
 
-  const [reviewRes, concRes, estateRes, inboxRes, initRes] = await Promise.all([
+  const [reviewRes, concRes, estateRes, inboxRes, initRes, fundRes] = await Promise.all([
     authedCall<Review>('/planning/review'),
     authedCall<Concentration>('/planning/responsibilities/concentration'),
     authedCall<EstateHealth>('/planning/systems/health'),
     authedCall<Inbox>('/planning/memos'),
     authedCall<Initiative[]>('/planning/initiatives?attention=runs'),
+    authedCall<Funding>('/planning/funding/unlocks'),
   ]);
 
   const r = reviewRes.kind === 'ok' ? reviewRes.data : null;
@@ -104,6 +111,7 @@ export default async function NexusPage() {
   const estate = estateRes.kind === 'ok' ? estateRes.data : null;
   const inbox = inboxRes.kind === 'ok' ? inboxRes.data : null;
   const running = initRes.kind === 'ok' ? initRes.data : [];
+  const fund = fundRes.kind === 'ok' ? fundRes.data : null;
 
   if (!isExec) {
     return (
@@ -153,6 +161,9 @@ export default async function NexusPage() {
           </Link>
           <Link href="/tasks" className="rounded-lg border border-slate-300 px-3 py-1.5 text-slate-700 hover:bg-slate-50">
             Tasks
+          </Link>
+          <Link href="/funding" className="rounded-lg border border-slate-300 px-3 py-1.5 text-slate-700 hover:bg-slate-50">
+            Funding
           </Link>
           <Link href="/memos" className="rounded-lg border border-slate-300 px-3 py-1.5 text-slate-700 hover:bg-slate-50">
             Memos{inbox && inbox.unread > 0 ? ` (${inbox.unread})` : ''}
@@ -209,6 +220,32 @@ export default async function NexusPage() {
             hint={conc ? `${conc.standingNoBackup} standing duties uncovered too` : undefined}
           />
           <Metric label="duties that start in September" value={conc?.notYetStarted.length ?? '—'} hint="François lands" />
+        </div>
+      </section>
+
+      <section>
+        <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-slate-500">What is being raised</h2>
+        <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+          <Metric
+            label="sought across live tracks"
+            value={fund ? (fund.totalSought >= 1e9 ? `${(fund.totalSought / 1e9).toFixed(1)}bn` : `${Math.round(fund.totalSought / 1e6)}M`) : '—'}
+            hint="RWF"
+            href="/funding"
+          />
+          <Metric label="live funding tracks" value={fund?.liveTracks ?? '—'} href="/funding" />
+          <Metric
+            label="tracks with no owner"
+            value={fund ? fund.tracks.filter((t) => t.blocker?.toLowerCase().includes('no owner')).length : '—'}
+            tone={fund && fund.tracks.some((t) => t.blocker?.toLowerCase().includes('no owner')) ? 'amber' : 'slate'}
+            hint="an unowned conversation does not happen"
+            href="/funding"
+          />
+          <Metric
+            label="raises that release nothing held"
+            value={fund?.unlocksNothing.length ?? '—'}
+            tone={(fund?.unlocksNothing.length ?? 0) > 0 ? 'amber' : 'slate'}
+            href="/funding"
+          />
         </div>
       </section>
 

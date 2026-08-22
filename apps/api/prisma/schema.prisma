@@ -1752,6 +1752,81 @@ enum MemoAudience {
   person
 }
 
+/// Money being raised, for one thing, from one counterparty.
+///
+/// The register says what UZA is doing and the estate says what it owns. Neither says what
+/// is being raised, from whom, and — the part that has never been written down anywhere —
+/// **what unblocks if it closes**.
+///
+/// That last field is the whole reason this model exists. The founder's strategy is that
+/// each venture must stand alone to a funder, and whichever closes first pushes the others
+/// forward. That only works if the push is written down before the money arrives, because
+/// afterwards everyone has an opinion about where it should go.
+///
+/// `Grant` already models a grant application and its requirement checklist. This does not
+/// replace it: when `instrument = grant`, `grantRef` points at that record and the two are
+/// read together. Debt, revolvers, facilities and equity had no home at all.
+model FundingTrack {
+  ref  String @id // readable id, e.g. FUND-2026-0001
+  name String
+
+  instrument  FundingInstrument
+  funder      String
+  ventureCode String? // which venture it belongs to — null means group-level
+
+  /// Whole currency units, not minor. These are facility-sized numbers where a cent is
+  /// noise, and storing 430,000,000 as 43,000,000,000 helps nobody read it.
+  amountSought Float
+  currency     String  @default("RWF")
+
+  stage   FundingStage @default(identified)
+  ownerId String
+
+  /// The initiative refs this money releases. Soft refs, no foreign key: a funding track
+  /// routinely unblocks work that has not been entered in the register yet, and refusing
+  /// to record the intent until it has is how the intent gets lost.
+  unlocks String[] @default([])
+
+  /// What UZA can actually evidence to this funder today. Written honestly or the track is
+  /// worthless — the gap between this and what they will ask for IS the work.
+  evidence String?
+  /// The single thing standing in the way right now.
+  blocker  String?
+
+  decisionBy DateTime? // when the funder is expected to decide
+  closedAt   DateTime?
+  grantRef   String? // set when instrument = grant
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([stage])
+  @@index([ventureCode, stage])
+  @@index([ownerId])
+}
+
+enum FundingInstrument {
+  grant
+  concessional // blended or below-market, e.g. a green facility
+  debt // a term loan
+  revolver // short-cycle working capital, repaid each turn
+  facility // a lender line the programme draws against, e.g. an LC line
+  equity
+  offtake // not money, but a commitment that makes money raisable
+}
+
+enum FundingStage {
+  identified
+  qualifying // finding out whether UZA is eligible at all
+  preparing
+  submitted
+  in_diligence
+  approved
+  closed // money available
+  declined
+  parked
+}
+
 enum SignalSource {
   claude_code // a local Claude Code session transcript
   artifact // a published artifact

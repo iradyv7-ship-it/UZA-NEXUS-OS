@@ -56,6 +56,11 @@ export default async function AppLayout({ children }: { children: React.ReactNod
                 </Link>
               )}
               {showCommand && (
+                <Link href="/funding" className={NAV}>
+                  Funding
+                </Link>
+              )}
+              {showCommand && (
                 <Link href="/register" className={NAV}>
                   Review
                 </Link>

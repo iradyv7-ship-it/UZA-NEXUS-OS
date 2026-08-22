@@ -1,7 +1,7 @@
 import { Body, Controller, Get, Param, Patch, Post, Query } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import {
-  IsArray, IsBoolean, IsDateString, IsIn, IsInt, IsOptional, IsString, Min, MinLength, ValidateNested,
+  IsArray, IsBoolean, IsDateString, IsIn, IsInt, IsNumber, IsOptional, IsString, Min, MinLength, ValidateNested,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import type { Actor } from '@uza/contracts';
@@ -13,9 +13,12 @@ import { AdvisorService } from './advisor/advisor.service';
 import { ResponsibilityService } from './responsibility/responsibility.service';
 import { EstateService } from './estate/estate.service';
 import { MemoService } from './memo/memo.service';
+import { FundingService } from './funding/funding.service';
 
 const ATTENTION = ['runs', 'holds', 'parked'] as const;
 const INITIATIVE_KIND = ['client', 'internal', 'venture'] as const;
+const FUND_INSTRUMENT = ['grant', 'concessional', 'debt', 'revolver', 'facility', 'equity', 'offtake'] as const;
+const FUND_STAGE = ['identified', 'qualifying', 'preparing', 'submitted', 'in_diligence', 'approved', 'closed', 'declined', 'parked'] as const;
 const SYS_KIND = ['repository', 'web_app', 'mobile_app', 'backend', 'admin_panel', 'prototype', 'document'] as const;
 const SYS_STATUS = ['live', 'building', 'prototype', 'dormant', 'retired'] as const;
 const SYS_VIS = ['public', 'private', 'unknown'] as const;
@@ -147,6 +150,36 @@ class SendMemoDto {
   @IsOptional() @IsString() ventureCode?: string;
   @IsOptional() @IsBoolean() needsAck?: boolean;
   @IsOptional() @IsString() linkedRef?: string;
+}
+
+class CreateFundingDto {
+  @IsString() @MinLength(1) name!: string;
+  @IsIn(FUND_INSTRUMENT) instrument!: (typeof FUND_INSTRUMENT)[number];
+  @IsString() @MinLength(1) funder!: string;
+  @Type(() => Number) @IsNumber() @Min(1) amountSought!: number;
+  @IsOptional() @IsString() currency?: string;
+  @IsOptional() @IsString() ventureCode?: string;
+  @IsString() ownerId!: string;
+  @IsOptional() @IsIn(FUND_STAGE) stage?: (typeof FUND_STAGE)[number];
+  @IsOptional() @IsArray() @IsString({ each: true }) unlocks?: string[];
+  @IsOptional() @IsString() evidence?: string;
+  @IsOptional() @IsString() blocker?: string;
+  @IsOptional() @IsDateString() decisionBy?: string;
+  @IsOptional() @IsString() grantRef?: string;
+}
+class UpdateFundingDto {
+  @IsOptional() @IsString() name?: string;
+  @IsOptional() @IsIn(FUND_STAGE) stage?: (typeof FUND_STAGE)[number];
+  @IsOptional() @Type(() => Number) @IsNumber() @Min(1) amountSought?: number;
+  @IsOptional() @IsString() ownerId?: string;
+  @IsOptional() @IsArray() @IsString({ each: true }) unlocks?: string[];
+  @IsOptional() @IsString() evidence?: string;
+  @IsOptional() @IsString() blocker?: string;
+  @IsOptional() @IsDateString() decisionBy?: string;
+}
+class ListFundingQuery {
+  @IsOptional() @IsString() ventureCode?: string;
+  @IsOptional() @IsIn(FUND_STAGE) stage?: (typeof FUND_STAGE)[number];
 }
 
 const date = (v?: string): Date | undefined => (v ? new Date(v) : undefined);
@@ -299,6 +332,36 @@ export class PlanningMemoController {
   @Post(':ref/ack')
   ack(@CurrentActor() actor: Actor, @Param('ref') ref: string) {
     return this.memos.acknowledge(actor, ref);
+  }
+}
+
+@ApiTags('planning')
+@ApiBearerAuth()
+@Controller('planning/funding')
+export class PlanningFundingController {
+  constructor(private readonly funding: FundingService) {}
+
+  @Post()
+  create(@CurrentActor() actor: Actor, @Body() dto: CreateFundingDto) {
+    return this.funding.create(actor, { ...dto, decisionBy: date(dto.decisionBy) });
+  }
+  @Get()
+  list(@CurrentActor() actor: Actor, @Query() q: ListFundingQuery) {
+    return this.funding.list(actor, q);
+  }
+  /** Which money releases which work. Static path, so it precedes `:ref`. */
+  @Get('unlocks')
+  unlocks(@CurrentActor() actor: Actor) {
+    return this.funding.unlockMap(actor);
+  }
+  /** One venture, presentable on its own — nothing from any other venture is returned. */
+  @Get('venture/:code')
+  venture(@CurrentActor() actor: Actor, @Param('code') code: string) {
+    return this.funding.byVenture(actor, code.toUpperCase());
+  }
+  @Patch(':ref')
+  update(@CurrentActor() actor: Actor, @Param('ref') ref: string, @Body() dto: UpdateFundingDto) {
+    return this.funding.update(actor, ref, { ...dto, decisionBy: date(dto.decisionBy) });
   }
 }
 

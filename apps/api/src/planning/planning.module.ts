@@ -7,6 +7,7 @@ import { ReviewService } from './review/review.service';
 import { ResponsibilityService } from './responsibility/responsibility.service';
 import { EstateService } from './estate/estate.service';
 import { MemoService } from './memo/memo.service';
+import { FundingService } from './funding/funding.service';
 import { AdvisorService } from './advisor/advisor.service';
 import {
   PlanningInitiativeController,
@@ -15,6 +16,7 @@ import {
   PlanningResponsibilityController,
   PlanningEstateController,
   PlanningMemoController,
+  PlanningFundingController,
 } from './planning.controllers';
 
 /**
@@ -44,6 +46,7 @@ import {
     ResponsibilityService,
     EstateService,
     MemoService,
+    FundingService,
     ReviewService,
     AdvisorService,
   ],
@@ -53,6 +56,7 @@ import {
     PlanningResponsibilityController,
     PlanningEstateController,
     PlanningMemoController,
+    PlanningFundingController,
     PlanningReviewController,
   ],
   exports: [
@@ -61,6 +65,7 @@ import {
     ResponsibilityService,
     EstateService,
     MemoService,
+    FundingService,
     ReviewService,
     AdvisorService,
   ],
