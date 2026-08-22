@@ -1,0 +1,35 @@
+# Caddy obtains and renews the TLS certificate itself. Nothing else is exposed: the API,
+# the web app and Postgres have no published ports, so this file is the entire front door.
+
+{$NEXUS_DOMAIN} {
+	encode gzip
+
+	# The API is reachable from the browser only under /api/*, and only because the
+	# OpenAPI docs and any future client-side call need it. Everything the pages render
+	# today is fetched server-to-server inside the compose network and never crosses here.
+	handle_path /api/* {
+		reverse_proxy api:3000
+	}
+
+	handle {
+		reverse_proxy web:3100
+	}
+
+	# The register names every employee, their duties and every open decision. It should
+	# not be indexed, cached by an intermediary, or framed by another site.
+	header {
+		X-Robots-Tag "noindex, nofollow"
+		X-Frame-Options "DENY"
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "same-origin"
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		-Server
+	}
+
+	log {
+		output file /data/access.log {
+			roll_size 10mb
+			roll_keep 5
+		}
+	}
+}

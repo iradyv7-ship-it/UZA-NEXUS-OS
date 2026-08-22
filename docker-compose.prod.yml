@@ -1,0 +1,115 @@
+# UZA Nexus in production — one host, five containers.
+#
+#   docker compose -f docker-compose.prod.yml --env-file .env.prod up -d --build
+#
+# Deliberately one machine. A managed database and a load balancer are the right answer
+# at a scale UZA is nowhere near; today the whole company is ten people and the cost of
+# operating three cloud services is paid every week while the benefit arrives never.
+# When the register has a year of history and somebody depends on it hourly, move the
+# database out first — that is the piece whose loss is not recoverable.
+#
+# Only Caddy is exposed. Postgres, the API and the web app talk over the internal network
+# and publish nothing to the host, so the only way in is through TLS on 443.
+#
+# Redis is required, which the first smoke test proved rather than the design predicting.
+# The API opens a BullMQ connection at boot; without Redis it starts and serves, but logs
+# ECONNREFUSED every few seconds — and a service that shouts constantly is one whose logs
+# nobody reads, so the alarm that matters gets lost. A 15 MB container is cheaper.
+#
+# The project name is explicit so this stack can never merge with the development
+# docker-compose.yml, which takes its project name from the directory and would otherwise
+# share containers and volumes with production on any machine that holds both.
+
+name: uza-nexus-prod
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      # Dumps land on the host so a backup survives `docker compose down -v`.
+      - ./backups:/backups
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}']
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}?schema=public
+      JWT_SECRET: ${JWT_SECRET}
+      REDIS_URL: redis://redis:6379
+      # Optional. Absent, the register works and only the two advisor routes return 503.
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      # Intake sources. Leave blank on the server — transcripts and the documents
+      # repository live on the founder's laptop, not here.
+      UZA_DOCS_DIR: ${UZA_DOCS_DIR:-}
+      CLAUDE_PROJECTS_DIR: ${CLAUDE_PROJECTS_DIR:-}
+      GMAIL_CLIENT_ID: ${GMAIL_CLIENT_ID:-}
+      GMAIL_CLIENT_SECRET: ${GMAIL_CLIENT_SECRET:-}
+      GMAIL_REFRESH_TOKEN: ${GMAIL_REFRESH_TOKEN:-}
+      GMAIL_QUERY: ${GMAIL_QUERY:-}
+
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+      args:
+        # Baked at build time — next.config.mjs inlines it rather than reading at runtime.
+        UZA_API_URL: http://api:3000
+    restart: unless-stopped
+    depends_on:
+      - api
+    environment:
+      NODE_ENV: production
+      PORT: 3100
+      UZA_API_URL: http://api:3000
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    depends_on:
+      - web
+    ports:
+      - '80:80'
+      - '443:443'
+    environment:
+      NEXUS_DOMAIN: ${NEXUS_DOMAIN}
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+
+volumes:
+  pgdata:
+  redisdata:
+  caddy_data:
+  caddy_config:

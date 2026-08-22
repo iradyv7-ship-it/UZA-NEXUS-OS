@@ -443,6 +443,27 @@ const DECISIONS = [
 ];
 
 async function main() {
+  // Decisions carry a foreign key to Initiative, and DEC-2026-0012 points at
+  // INIT-2026-0122, which lives in seed-bulk-pipeline.ts. On an empty database this file
+  // must therefore run AFTER that one. Checked explicitly, because the alternative is a
+  // raw Prisma foreign-key error that says nothing about ordering — which is exactly what
+  // it produced the first time this was run against a fresh container.
+  const referenced = [...new Set(DECISIONS.map((d) => d.initiativeRef).filter(Boolean) as string[])];
+  const present = await prisma.initiative.findMany({
+    where: { ref: { in: referenced } },
+    select: { ref: true },
+  });
+  const missing = referenced.filter((r) => !present.some((p) => p.ref === r));
+  const ours = new Set(REGISTER.map((r) => r.ref));
+  const notOurs = missing.filter((m) => !ours.has(m));
+  if (notOurs.length) {
+    throw new Error(
+      `these initiatives are referenced by decisions here but created elsewhere: ${notOurs.join(', ')}.
+` +
+        'Run the seeds in order:  seed-org  ->  seed-bulk-pipeline  ->  seed-register',
+    );
+  }
+
   // The invariants the service enforces, checked here too — a seed that writes a
   // register the API would have rejected is worse than a seed that fails.
   for (const r of REGISTER) {

@@ -11,3 +11,8 @@ build/
 .DS_Store
 
 .claude/agent-memory/
+
+# production environment, filled in on the server only
+.env.prod
+backups/*
+!backups/.gitkeep

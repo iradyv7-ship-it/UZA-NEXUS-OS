@@ -19,7 +19,7 @@
     "seed:register": "tsx prisma/seed-register.ts",
     "seed:org": "tsx prisma/seed-org.ts",
     "seed:bulk": "tsx prisma/seed-bulk-pipeline.ts",
-    "seed:all": "tsx prisma/seed-org.ts && tsx prisma/seed-register.ts && tsx prisma/seed-bulk-pipeline.ts",
+    "seed:all": "tsx prisma/seed-org.ts && tsx prisma/seed-bulk-pipeline.ts && tsx prisma/seed-register.ts",
     "seed:users": "tsx prisma/seed-users.ts"
   },
   "dependencies": {
