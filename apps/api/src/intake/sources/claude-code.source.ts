@@ -85,6 +85,7 @@ export class ClaudeCodeSource {
       // A tool result is delivered as a user turn. It is output, not something anyone said.
       if (row.toolUseResult !== undefined) continue;
       if (row.isSidechain) continue; // a subagent's prompt, not the founder's
+      if (!this.humanAuthored(row)) continue;
 
       const at = new Date(row.timestamp);
       if (Number.isNaN(at.getTime()) || at <= since) continue;
@@ -103,6 +104,25 @@ export class ClaudeCodeSource {
       });
     }
     return out;
+  }
+
+  /**
+   * Did a person type this?
+   *
+   * A great deal arrives as a "user" turn without a person involved: task notifications,
+   * skill instructions loaded into the turn, and the summary written when a conversation
+   * is compacted. All three read exactly like the founder speaking, and all three would
+   * otherwise be filed as his intent — the compaction summary especially, because it
+   * restates the whole business and would be walled, triaged and acted on as if new.
+   *
+   * The transcript already distinguishes them. `origin.kind` is authoritative where it is
+   * present; older transcripts predate it, so the explicit markers are checked as a
+   * fallback rather than trusting the absence of a field.
+   */
+  private humanAuthored(row: Record<string, any>): boolean {
+    const origin = row.origin?.kind;
+    if (typeof origin === 'string') return origin === 'human';
+    return row.isMeta !== true && row.isCompactSummary !== true;
   }
 
   private textOf(content: unknown): string | null {
