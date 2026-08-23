@@ -73,6 +73,24 @@ const STEPS: Step[] = [
       'Built and merged into the branch. It generates what exists and refuses what does not, which is the point. Wire it to run after every upload, then add the CRB fetch — that is the only one of the eleven with no path at all today.',
   },
   {
+    ref: 'INIT-2026-0215',
+    name: 'Charging points leased to local operators',
+    owner: SCORAH,
+    attention: 'holds',
+    reviewAt: d('2026-09-15'),
+    nextAction:
+      'The one line where UZA growing makes other people money. Build one and run it yourself — you cannot lease a model you have never operated — then sign one outside operator for the second before it becomes a strategy.',
+  },
+  {
+    ref: 'INIT-2026-0216',
+    name: 'Moto associations — the cheapest route to volume',
+    owner: UNASSIGNED,
+    attention: 'holds',
+    reviewAt: d('2026-09-08'),
+    nextAction:
+      'An association with two thousand members is a distribution channel, a credit screen and a constituency in one. Kigali moto taxis are public transport, and the operator-of-record position was built for exactly this. Open the conversation before approaching more banks.',
+  },
+  {
     ref: 'INIT-2026-0213',
     name: 'First cohort into the academy — the referrals have no training',
     owner: UNASSIGNED,
@@ -165,6 +183,38 @@ const STEPS: Step[] = [
 ];
 
 const DECISIONS = [
+  {
+    ref: 'DEC-2026-0024',
+    question: 'Do we set one connector standard across every bike we import?',
+    context:
+      'Free, and it decides whether a battery swap network is buildable at all. It gets made by accident with the first bike order and cannot be unmade afterwards — a mixed fleet has no swap network, ever.',
+    initiativeRef: 'INIT-2026-0206',
+    raisedAt: d('2026-08-23'),
+  },
+  {
+    ref: 'DEC-2026-0025',
+    question: 'Do we refuse to manufacture our own bike brand, and specify instead?',
+    context:
+      'Recommendation is refuse, for now. Manufacturing is six capabilities UZA does not have, and badge-engineering takes on the warranty liability without any control over the quality that drives it. At sixty bikes a week no factory rewrites its bill of materials for you; at five hundred it will. Specifying — geometry, chemistry, connector, service interval, diagnostics — is free and delivers most of what the brand was wanted for.',
+    initiativeRef: 'INIT-2026-0004',
+    raisedAt: d('2026-08-23'),
+  },
+  {
+    ref: 'DEC-2026-0026',
+    question: 'What is the ceiling on charging sites UZA operates itself?',
+    context:
+      'An enabler does not compete with the people it enables. If UZA runs the best site on the street it is also selling software to, the software stops being infrastructure. Own enough to learn and to prove; lease the rest. The number matters because without one, owning drifts upward by default.',
+    initiativeRef: 'INIT-2026-0012',
+    raisedAt: d('2026-08-23'),
+  },
+  {
+    ref: 'DEC-2026-0027',
+    question: 'How many days may a financed vehicle be off the road before it is a credit problem?',
+    context:
+      'Parts for financed vehicles are credit risk control, not a retail line. The answer sizes the inventory against the loan book rather than against expected sales, which is a different number and usually a larger one. Parts sold to the wider market belong to Bulk, which already has the corridor.',
+    initiativeRef: 'INIT-2026-0011',
+    raisedAt: d('2026-08-23'),
+  },
   {
     ref: 'DEC-2026-0020',
     question: 'Does UZA Charge stay a separate platform and a separate database from UZA Mobility?',
