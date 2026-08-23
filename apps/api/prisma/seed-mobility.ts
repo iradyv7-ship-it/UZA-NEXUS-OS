@@ -91,6 +91,33 @@ const STEPS: Step[] = [
       'An association with two thousand members is a distribution channel, a credit screen and a constituency in one. Kigali moto taxis are public transport, and the operator-of-record position was built for exactly this. Open the conversation before approaching more banks.',
   },
   {
+    ref: 'INIT-2026-0220',
+    name: 'The rate, not the contribution — reprice or reroute',
+    owner: SCORAH,
+    attention: 'runs',
+    targetDate: d('2026-09-12'),
+    nextAction:
+      'The collateral bridge closes RWF 43M across the cohort. The rate gap is RWF 444M. Put the repricing case to Unguka with the number that makes it their interest: 24% held for the full term earns them RWF 10.2M against RWF 6.1M from one year at 36% and then losing the file.',
+  },
+  {
+    ref: 'INIT-2026-0221',
+    name: 'BK appointed representative — apply',
+    owner: YVES,
+    attention: 'runs',
+    targetDate: d('2026-09-12'),
+    nextAction:
+      'BK lends through direct dealerships and appointed representatives, which today favours whoever can produce the paperwork. UZA imports, inspects, clears and registers vehicles — that is what a dealer is. Find out what BK actually requires; nobody has asked.',
+  },
+  {
+    ref: 'INIT-2026-0222',
+    name: 'Start the trading-history clock at enrolment',
+    owner: UNASSIGNED,
+    attention: 'holds',
+    reviewAt: d('2026-09-08'),
+    nextAction:
+      'Register the business, fit the tracker, open the fleet-app account and route fares to the bank on day one rather than at application. Four of five BK requirements are forms; only the twelve months is time, and every month of delay is a month of expensive borrowing later.',
+  },
+  {
     ref: 'INIT-2026-0217',
     name: "Re-screen the 42 against Unguka's own criteria",
     owner: SCORAH,
@@ -210,6 +237,30 @@ const STEPS: Step[] = [
 ];
 
 const DECISIONS = [
+  {
+    ref: 'DEC-2026-0031',
+    question: 'Do we make the rate — not the contribution — the thing UZA Empower sells?',
+    context:
+      'On a RWF 20M vehicle the contribution gap is RWF 2,000,000 and the interest gap between 36% and 14% is RWF 10,585,000 — 5.3x larger, and RWF 8,482 per working day, which is 57% of a driver grossing 15,000. Across the 42 referrals: RWF 43M of contribution shortfall against RWF 444M of rate penalty. Recommendation: keep the collateral bridge, it is real and needed, but lead with the rate. "Ten weeks of work and the same vehicle costs you ten million less" is a proposition a driver can act on without persuasion.',
+    initiativeRef: 'INIT-2026-0220',
+    raisedAt: d('2026-08-23'),
+  },
+  {
+    ref: 'DEC-2026-0032',
+    question: 'Will BK refinance an existing vehicle loan from another lender, and does Unguka charge for early settlement?',
+    context:
+      'Two phone calls, and the entire drive-and-refinance path depends on both. Twelve months of clean Unguka repayment IS the trading history BK requires, so refinancing at month 12 recovers about 61% of the rate gap without anyone repricing anything. Refinancing later is worse, not better — at month 18 it captures only 45%. If either answer is unfavourable the path collapses and only the twelve-month pool route survives.',
+    initiativeRef: 'INIT-2026-0220',
+    raisedAt: d('2026-08-23'),
+  },
+  {
+    ref: 'DEC-2026-0033',
+    question: 'Is the Drivers Pool described as the qualification route rather than the consolation?',
+    context:
+      "Four of BK's five requirements are administration — a registration, an app account, a bank settlement instruction and a tracker. Only twelve months of trading history cannot be manufactured, and the Drivers Pool produces exactly that while the driver earns. It was designed to generate a verified earnings record for the readiness score; nobody has said out loud that it also manufactures the single irreducible barrier to cheap money. Same mechanism, second buyer.",
+    initiativeRef: 'INIT-2026-0222',
+    raisedAt: d('2026-08-23'),
+  },
   {
     ref: 'DEC-2026-0028',
     question: 'What is the contribution Unguka actually requires?',
