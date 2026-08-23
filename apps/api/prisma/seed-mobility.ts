@@ -91,6 +91,33 @@ const STEPS: Step[] = [
       'An association with two thousand members is a distribution channel, a credit screen and a constituency in one. Kigali moto taxis are public transport, and the operator-of-record position was built for exactly this. Open the conversation before approaching more banks.',
   },
   {
+    ref: 'INIT-2026-0217',
+    name: "Re-screen the 42 against Unguka's own criteria",
+    owner: SCORAH,
+    attention: 'runs',
+    targetDate: d('2026-09-05'),
+    nextAction:
+      'The referral list says the bank set them aside; it does not say why, person by person. Half a day with Unguka staff using the eligibility-gap form converts a hypothesis into a work plan. Without it the programme is guessing at what it has to fix.',
+  },
+  {
+    ref: 'INIT-2026-0218',
+    name: 'The six already at the contribution threshold',
+    owner: SCORAH,
+    attention: 'runs',
+    targetDate: d('2026-09-05'),
+    nextAction:
+      'Six of the 42 have already saved the working threshold. Run them first as a pilot-within-a-pilot: if Unguka funds even two without collateral, the whole programme has a reference case, and if it declines them the reason names the real barrier.',
+  },
+  {
+    ref: 'INIT-2026-0219',
+    name: 'Cohort 1 — 25 seats, 42 waiting',
+    owner: UNASSIGNED,
+    attention: 'holds',
+    reviewAt: d('2026-09-08'),
+    nextAction:
+      'Publish the selection rule BEFORE selecting. Readiness, not application date. Seventeen people will be told no or later, and a criterion invented afterwards will be read as favouritism. Still blocked on DEC-2026-0016 — Empower has no PM.',
+  },
+  {
     ref: 'INIT-2026-0213',
     name: 'First cohort into the academy — the referrals have no training',
     owner: UNASSIGNED,
@@ -183,6 +210,30 @@ const STEPS: Step[] = [
 ];
 
 const DECISIONS = [
+  {
+    ref: 'DEC-2026-0028',
+    question: 'What is the contribution Unguka actually requires?',
+    context:
+      'Every shortfall figure in the platform is computed against a working RWF 2,000,000 taken from your account of the conversation. It is the single constant that scales the entire collateral ask — RWF 43,000,000 across 36 people today — and it is unverified. The nexus evidence base is explicit that the commonly quoted 10-30% has no published Rwandan source: Muganga SACCO publishes 10%, BK taxi terms are 5-10%, BK private terms are 0%. Get it in the term sheet before quoting the 43M to anyone.',
+    initiativeRef: 'INIT-2026-0011',
+    raisedAt: d('2026-08-23'),
+  },
+  {
+    ref: 'DEC-2026-0029',
+    question: 'Does the BRD E-Moto Credit Enhancement Facility cover four-wheelers?',
+    context:
+      'EUR 8.3m of first-loss guarantees already exists, managed by BRD, Phase 2 running to June 2030, with BK, I&M and Equity already engaged. If it covers four-wheel taxis, UZA may not need its own collateral facility at all and should be an origination channel into it instead. The nexus ranks this as the highest-priority open verification question and nobody has asked it.',
+    initiativeRef: 'INIT-2026-0011',
+    raisedAt: d('2026-08-23'),
+  },
+  {
+    ref: 'DEC-2026-0030',
+    question: 'Who selects which 25 of the 42 enter cohort one?',
+    context:
+      'Seventeen people will be told no or later. Publish the rule before selecting — readiness rather than application date — because a criterion invented after the fact will be read as favouritism by people who have already been set aside once.',
+    initiativeRef: 'INIT-2026-0219',
+    raisedAt: d('2026-08-23'),
+  },
   {
     ref: 'DEC-2026-0024',
     question: 'Do we set one connector standard across every bike we import?',
