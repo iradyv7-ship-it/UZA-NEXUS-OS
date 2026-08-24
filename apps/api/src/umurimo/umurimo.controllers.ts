@@ -8,11 +8,13 @@ import { CommentService } from './comment/comment.service';
 import { BlockerService } from './blocker/blocker.service';
 import { DigestService } from './digest/digest.service';
 import { WeekService } from './week/week.service';
+import { WorkspaceService } from './workspace/workspace.service';
 import { COMMENT_SUBJECTS } from './umurimo-access';
 
 const COMMENT_KIND = ['comment', 'request'] as const;
 const OBJECTIVE_STATUS = ['todo', 'done', 'dropped'] as const;
 const OBJECTIVE_SOURCE = ['minutes', 'self'] as const;
+const TASK_STATUS = ['todo', 'in_progress', 'done'] as const;
 
 // ---------- DTOs ----------
 class PostCommentDto {
@@ -62,6 +64,22 @@ class ObjectiveDto {
 class ConfirmWeekDto {
   @IsArray() @ValidateNested({ each: true }) @Type(() => ObjectiveDto) objectives!: ObjectiveDto[];
   @IsOptional() @IsDateString() week?: string;
+}
+class PushTaskDto {
+  @IsString() @MinLength(1) externalId!: string;
+  @IsString() @MinLength(1) title!: string;
+  @IsIn(TASK_STATUS) status!: (typeof TASK_STATUS)[number];
+  @IsOptional() @IsString() assigneeEmail?: string;
+  @IsOptional() @IsString() project?: string;
+  @IsOptional() @IsString() priority?: string;
+  @IsOptional() @IsString() url?: string;
+  @IsOptional() @IsDateString() createdAt?: string;
+  @IsOptional() @IsDateString() deadline?: string;
+  @IsOptional() @IsDateString() completedAt?: string;
+  @IsOptional() @IsString() completionNote?: string;
+}
+class PushTasksDto {
+  @IsArray() @ValidateNested({ each: true }) @Type(() => PushTaskDto) tasks!: PushTaskDto[];
 }
 class FileReportDto {
   @IsString() @MinLength(1) highlights!: string;
@@ -211,5 +229,33 @@ export class UmurimoWeekController {
   @Get('nudges')
   nudges(@CurrentActor() actor: Actor, @Query() q: WeekQuery) {
     return this.week.nudges(actor, q.week ? new Date(q.week) : undefined);
+  }
+}
+
+/**
+ * The bridge from the team workspace. Push in, read out, never write back.
+ */
+@ApiTags('umurimo')
+@ApiBearerAuth()
+@Controller('umurimo/workspace')
+export class UmurimoWorkspaceController {
+  constructor(private readonly workspace: WorkspaceService) {}
+
+  /** Receive a batch of tasks. Idempotent on externalId. Unmatched assignees are returned. */
+  @Post('tasks')
+  push(@CurrentActor() actor: Actor, @Body() dto: PushTasksDto) {
+    return this.workspace.pushTasks(actor, dto.tasks);
+  }
+
+  /** My open tasks, as the workspace knows them. */
+  @Get('mine')
+  mine(@CurrentActor() actor: Actor) {
+    return this.workspace.mine(actor);
+  }
+
+  /** Is the bridge alive, and is anybody's work invisible to it? */
+  @Get('health')
+  health(@CurrentActor() actor: Actor) {
+    return this.workspace.health(actor);
   }
 }

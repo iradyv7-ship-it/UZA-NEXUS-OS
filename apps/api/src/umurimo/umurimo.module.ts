@@ -5,11 +5,13 @@ import { CommentService } from './comment/comment.service';
 import { BlockerService } from './blocker/blocker.service';
 import { DigestService } from './digest/digest.service';
 import { WeekService } from './week/week.service';
+import { WorkspaceService } from './workspace/workspace.service';
 import {
   UmurimoCommentController,
   UmurimoBlockerController,
   UmurimoDigestController,
   UmurimoWeekController,
+  UmurimoWorkspaceController,
 } from './umurimo.controllers';
 
 /**
@@ -61,13 +63,15 @@ import {
     BlockerService,
     DigestService,
     WeekService,
+    WorkspaceService,
   ],
   controllers: [
     UmurimoCommentController,
     UmurimoBlockerController,
     UmurimoDigestController,
     UmurimoWeekController,
+    UmurimoWorkspaceController,
   ],
-  exports: [CommentService, BlockerService, DigestService, WeekService],
+  exports: [CommentService, BlockerService, DigestService, WeekService, WorkspaceService],
 })
 export class UmurimoModule {}

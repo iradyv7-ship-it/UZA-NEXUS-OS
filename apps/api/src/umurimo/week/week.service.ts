@@ -2,6 +2,7 @@ import { BadRequestException, Injectable, NotFoundException } from '@nestjs/comm
 import type { Actor } from '@uza/contracts';
 import { PrismaService } from '../../prisma/prisma.service';
 import { UmurimoAccessService } from '../umurimo-authz.service';
+import { WorkspaceService } from '../workspace/workspace.service';
 import { seesAllWeeks } from '../umurimo-access';
 import { blockerRef } from '../umurimo-ids';
 import { mondayOf, weekKey, planRef, weeklyReportRef } from '../../planning/planning-ids';
@@ -61,6 +62,7 @@ export class WeekService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly access: UmurimoAccessService,
+    private readonly workspace: WorkspaceService,
   ) {}
 
   // ------------------------------------------------------------------ minutes in
@@ -388,6 +390,14 @@ export class WeekService {
 
     const pct = (a: number, b: number) => (b === 0 ? null : Math.round((a / b) * 100));
 
+    // The measured half. Self-declared ticks say what a person believes they did; the mirrored
+    // workspace tasks say what was actually closed, with a date on it. Where both exist the
+    // measurement is the one to trust, and it is reported separately rather than blended so
+    // nobody has to wonder which they are looking at.
+    const nextWeek = new Date(weekOf);
+    nextWeek.setUTCDate(nextWeek.getUTCDate() + 7);
+    const tasks = await this.workspace.completion(actor.userId, weekOf, nextWeek);
+
     await this.access.allow(actor, RESOURCE, 'read', period);
 
     return {
@@ -401,11 +411,21 @@ export class WeekService {
       cleared: { solved: mineCleared, stillOpen: mineOpen.length, late },
       answered: { answered, of: requests.length, pct: pct(answered, requests.length) },
       /**
+       * From the workspace, not from a tick. Empty until the bridge is pushing, and empty is
+       * honest — see `/umurimo/workspace/health` for whether it is alive at all.
+       */
+      tasks,
+      /**
        * A word, not a number out of a hundred. A precise-looking score invites comparison
        * between people, which is the one thing this must not become - and a number computed
        * from four small counts is not precise enough to deserve one.
        */
-      standing: this.standing(pct(done, objectives.length), plan?.status === 'active', Boolean(plan?.weeklyReport), late),
+      standing: this.standing(
+        pct(done, objectives.length),
+        plan?.status === 'active',
+        Boolean(plan?.weeklyReport),
+        late + tasks.overdue,
+      ),
     };
   }
 

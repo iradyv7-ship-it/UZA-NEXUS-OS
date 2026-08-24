@@ -41,7 +41,9 @@ export type UmurimoCapability =
   | 'week:read' // my own week, and the nudges aimed at me
   | 'week:confirm' // agree to, edit or drop my objectives; file my report
   | 'week:all' // see everyone's confirmation and filing state — executive
-  | 'minutes:ingest'; // post the minutes of a weekly review into the register
+  | 'minutes:ingest' // post the minutes of a weekly review into the register
+  | 'workspace:read' // my mirrored tasks, and whether the bridge is alive
+  | 'workspace:sync'; // receive a batch from the workspace — the integration account only
 
 const FULL: readonly UmurimoCapability[] = [
   'comment:read',
@@ -58,6 +60,8 @@ const FULL: readonly UmurimoCapability[] = [
   'week:confirm',
   'week:all',
   'minutes:ingest',
+  'workspace:read',
+  'workspace:sync',
 ];
 
 /**
@@ -84,6 +88,10 @@ const INTERNAL: readonly UmurimoCapability[] = [
   // a person every nudge aimed at them.
   'week:read',
   'week:confirm',
+  // Everyone sees their own mirrored tasks. Nobody but the executive pushes a batch in:
+  // a write that rewrites what the register believes about everyone's work is not a
+  // participation right.
+  'workspace:read',
 ];
 
 /** No Umurimo access — external / commercial roles. */
@@ -116,6 +124,10 @@ export const seesAllBlockers = (role: Role): boolean => hasUmurimoCapability(rol
  * within a month.
  */
 export const seesAllWeeks = (role: Role): boolean => hasUmurimoCapability(role, 'week:all');
+
+/** Who may push a batch of workspace tasks in. */
+export const maySyncWorkspace = (role: Role): boolean =>
+  hasUmurimoCapability(role, 'workspace:sync');
 
 /** Only the executive may rewrite or remove another person's comment. */
 export const mayModerate = (role: Role): boolean => hasUmurimoCapability(role, 'comment:moderate');

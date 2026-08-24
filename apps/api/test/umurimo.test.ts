@@ -6,6 +6,7 @@ import {
   mayModerate,
   isCommentSubject,
   seesAllWeeks,
+  maySyncWorkspace,
   COMMENT_SUBJECTS,
 } from '../src/umurimo/umurimo-access';
 import { blockerRef, commentRef, extractMentions } from '../src/umurimo/umurimo-ids';
@@ -135,6 +136,32 @@ describe('the weekly loop', () => {
       expect(hasUmurimoCapability(role, 'week:read')).toBe(false);
       expect(hasUmurimoCapability(role, 'week:confirm')).toBe(false);
       expect(hasUmurimoCapability(role, 'minutes:ingest')).toBe(false);
+    }
+  });
+});
+
+describe('the workspace bridge', () => {
+  it('lets everyone see their own mirrored tasks', () => {
+    for (const role of ['finance', 'china_sourcing', 'china_warehouse', 'front_office'] as const) {
+      expect(hasUmurimoCapability(role, 'workspace:read')).toBe(true);
+    }
+  });
+
+  it('does not let an ordinary role push a batch in', () => {
+    // A write that rewrites what the register believes about everyone's work is not a
+    // participation right, however wide the rest of this module is.
+    for (const role of ['finance', 'china_sourcing', 'front_office'] as const) {
+      expect(maySyncWorkspace(role)).toBe(false);
+      expect(hasUmurimoCapability(role, 'workspace:sync')).toBe(false);
+    }
+    expect(maySyncWorkspace('ceo')).toBe(true);
+    expect(maySyncWorkspace('venture_manager')).toBe(true);
+  });
+
+  it('keeps external roles out of the bridge entirely', () => {
+    for (const role of ['customer', 'sales_agent', 'logistics_partner'] as const) {
+      expect(hasUmurimoCapability(role, 'workspace:read')).toBe(false);
+      expect(hasUmurimoCapability(role, 'workspace:sync')).toBe(false);
     }
   });
 });

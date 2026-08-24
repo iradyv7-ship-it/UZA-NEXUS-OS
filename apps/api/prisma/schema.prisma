@@ -1989,3 +1989,53 @@ enum CommentKind {
   /// weekly digest until it is.
   request
 }
+
+
+/// A task mirrored FROM the team workspace.
+///
+/// Nexus does not own this row and must never write a change back into it. The workspace is
+/// where work is done; this is a read-only shadow so that Nexus can answer questions a task
+/// board structurally cannot — did the week's commitments actually complete, who is silent,
+/// what recurs. Observing a system is a different thing from acting in it, and the second
+/// requires a decision nobody has made.
+///
+/// Pushed in rather than fetched out. Push needs no credentials stored in Nexus, works
+/// whether the workspace is a UZA build or a third-party product, and fails loudly instead of
+/// silently going stale the way a broken poller does.
+model WorkspaceTask {
+  /// The workspace's own id. Upserts key on this, so re-pushing is safe and idempotent.
+  externalId String @id
+
+  title       String
+  status      WorkspaceTaskStatus
+  project     String?
+  priority    String?
+  url         String?
+
+  /// Whose it is, as the workspace knows them. Kept verbatim even when it maps to nobody,
+  /// because an unmapped assignee is a finding to report, not a row to drop.
+  assigneeEmail String?
+  /// Resolved User.ref, when an active employee has that email. Null is normal and visible.
+  assigneeRef   String?
+
+  createdAtSource DateTime?
+  deadline        DateTime?
+  completedAt     DateTime?
+  /// What the person wrote when they finished it. The most useful field on the whole row.
+  completionNote  String?
+
+  /// When Nexus last heard about it. A task that stops being pushed goes stale and is
+  /// answerable as such, rather than quietly looking current forever.
+  syncedAt DateTime @default(now())
+
+  @@index([assigneeRef, status])
+  @@index([status, deadline])
+  @@index([project])
+  @@index([syncedAt])
+}
+
+enum WorkspaceTaskStatus {
+  todo
+  in_progress
+  done
+}
