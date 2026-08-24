@@ -14,6 +14,14 @@ export interface Objective {
   status: 'todo' | 'done' | 'dropped';
   /** Where it came from. A line the person wrote themselves outranks one the meeting gave them. */
   source: 'minutes' | 'self';
+  /**
+   * How it was finished, or why it was dropped. Free text, one line.
+   *
+   * Borrowed from the task board the team already uses, where a completed card carries a
+   * completion note. It is the difference between a record that says something happened and
+   * one that says what happened, and it costs the writer five seconds.
+   */
+  note?: string;
 }
 
 const OBJECTIVE_STATUS = ['todo', 'done', 'dropped'] as const;
@@ -239,6 +247,7 @@ export class WeekService {
         text: (o.text ?? '').trim(),
         status: OBJECTIVE_STATUS.includes(o.status) ? o.status : ('todo' as const),
         source: o.source === 'minutes' ? ('minutes' as const) : ('self' as const),
+        ...((o.note ?? '').trim() ? { note: (o.note ?? '').trim() } : {}),
       }))
       .filter((o) => o.text);
 
@@ -327,6 +336,86 @@ export class WeekService {
         overdueBlockers: overdue.length,
       },
     };
+  }
+
+  /**
+   * The week, scored.
+   *
+   * Graded against **what this person said they would do** — never against a target somebody
+   * set for them, and never against anybody else. That is the only basis on which a weekly
+   * score is fair, and it is also the only one that survives being shown to the person, which
+   * it always is: every number here is visible to its subject, computed from records they
+   * wrote, and every one of them is contestable by editing the record.
+   *
+   * Four parts, and each answers a question a person can act on:
+   *
+   *   kept    - of what you committed to, how much did you finish?
+   *   onTime  - did you agree your week and send your report?
+   *   cleared - of the problems you took, how many did you solve, and how many went past?
+   *   answered- of the requests aimed at you, how many did you answer?
+   *
+   * There is deliberately no measure of VOLUME. Counting objectives rewards writing many
+   * small ones, and within a month that is exactly what the register would fill up with.
+   */
+  async scorecard(actor: Actor, forWeek?: Date) {
+    await this.access.assertRole(actor, 'week:read', RESOURCE, 'read');
+
+    const weekOf = mondayOf(forWeek ?? new Date());
+    const period = weekKey(weekOf);
+    const now = new Date();
+
+    const plan = await this.prisma.plan.findUnique({
+      where: { ownerId_level_periodKey: { ownerId: actor.userId, level: 'week', periodKey: period } },
+      include: { weeklyReport: true },
+    });
+    const objectives = ((plan?.objectives ?? []) as unknown as Objective[]).filter(
+      (o) => o.status !== 'dropped',
+    );
+    const done = objectives.filter((o) => o.status === 'done').length;
+
+    const [mineOpen, mineCleared, requests] = await Promise.all([
+      this.prisma.blocker.findMany({ where: { ownerId: actor.userId, clearedAt: null } }),
+      this.prisma.blocker.count({
+        where: { ownerId: actor.userId, clearedAt: { gte: weekOf } },
+      }),
+      this.prisma.comment.findMany({
+        where: { kind: 'request', mentions: { has: actor.userId } },
+        select: { resolvedAt: true },
+      }),
+    ]);
+    const late = mineOpen.filter((b) => b.dueAt && b.dueAt < now).length;
+    const answered = requests.filter((r) => r.resolvedAt).length;
+
+    const pct = (a: number, b: number) => (b === 0 ? null : Math.round((a / b) * 100));
+
+    await this.access.allow(actor, RESOURCE, 'read', period);
+
+    return {
+      weekOf,
+      periodKey: period,
+      kept: { done, of: objectives.length, pct: pct(done, objectives.length) },
+      onTime: {
+        planAgreed: plan?.status === 'active',
+        reportSent: Boolean(plan?.weeklyReport),
+      },
+      cleared: { solved: mineCleared, stillOpen: mineOpen.length, late },
+      answered: { answered, of: requests.length, pct: pct(answered, requests.length) },
+      /**
+       * A word, not a number out of a hundred. A precise-looking score invites comparison
+       * between people, which is the one thing this must not become - and a number computed
+       * from four small counts is not precise enough to deserve one.
+       */
+      standing: this.standing(pct(done, objectives.length), plan?.status === 'active', Boolean(plan?.weeklyReport), late),
+    };
+  }
+
+  private standing(keptPct: number | null, agreed: boolean, sent: boolean, late: number) {
+    if (!agreed && !sent) return 'nothing recorded';
+    if (late > 0) return 'something is late';
+    if (keptPct === null) return 'in progress';
+    if (keptPct >= 80 && sent) return 'a good week';
+    if (keptPct >= 50) return 'partly done';
+    return 'behind';
   }
 
   /** File the weekly report against my own plan. */

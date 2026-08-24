@@ -57,6 +57,7 @@ class ObjectiveDto {
   @IsString() @MinLength(1) text!: string;
   @IsIn(OBJECTIVE_STATUS) status!: (typeof OBJECTIVE_STATUS)[number];
   @IsIn(OBJECTIVE_SOURCE) source!: (typeof OBJECTIVE_SOURCE)[number];
+  @IsOptional() @IsString() note?: string;
 }
 class ConfirmWeekDto {
   @IsArray() @ValidateNested({ each: true }) @Type(() => ObjectiveDto) objectives!: ObjectiveDto[];
@@ -198,6 +199,12 @@ export class UmurimoWeekController {
   @Post('report')
   report(@CurrentActor() actor: Actor, @Body() dto: FileReportDto) {
     return this.week.fileReport(actor, dto, dto.week ? new Date(dto.week) : undefined);
+  }
+
+  /** My week, scored against what I said I would do. Visible to me, always. */
+  @Get('scorecard')
+  scorecard(@CurrentActor() actor: Actor, @Query() q: WeekQuery) {
+    return this.week.scorecard(actor, q.week ? new Date(q.week) : undefined);
   }
 
   /** What the system should be asking for, and of whom. Includes the founder. */
