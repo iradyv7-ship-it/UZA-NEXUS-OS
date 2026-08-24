@@ -3,7 +3,7 @@ import type { AttentionState, InitiativeKind, InitiativeStatus } from '@prisma/c
 import type { Actor } from '@uza/contracts';
 import { PrismaService } from '../../prisma/prisma.service';
 import { PlanningAccessService } from '../planning-authz.service';
-import { initiativeRef, weeklyReportRef, mondayOf, weekKey } from '../planning-ids';
+import { initiativeRef, weeklyReportRef, mondayOf, weekKey, nextSequence, refPrefix } from '../planning-ids';
 
 const RESOURCE = 'initiative';
 
@@ -97,7 +97,7 @@ export class InitiativeService {
     this.assertRegisterRules(attention, nextAction, reviewAt);
 
     const departmentId = await this.resolveDepartmentId(input.departmentCode);
-    const seq = (await this.prisma.initiative.count()) + 1;
+    const seq = await nextSequence(this.prisma.initiative, refPrefix('INIT'));
     const ref = initiativeRef(seq);
 
     const created = await this.prisma.initiative.create({
@@ -198,7 +198,7 @@ export class InitiativeService {
     if (!input.moved.trim()) throw new BadRequestException('a check-in must say what moved');
 
     const weekOf = mondayOf(input.weekOf ?? new Date());
-    const seq = (await this.prisma.initiativeCheckin.count()) + 1;
+    const seq = await nextSequence(this.prisma.initiativeCheckin, refPrefix('CHK'));
     const ref = weeklyReportRef(seq).replace('WRPT', 'CHK');
 
     const created = await this.prisma.initiativeCheckin.upsert({

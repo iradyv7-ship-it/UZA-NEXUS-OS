@@ -10,6 +10,7 @@ import {
   COMMENT_SUBJECTS,
 } from '../src/umurimo/umurimo-access';
 import { blockerRef, commentRef, extractMentions } from '../src/umurimo/umurimo-ids';
+import { nextSequence, refPrefix } from '../src/planning/planning-ids';
 
 /**
  * These tests guard the three decisions in this module that would be silently reversed by a
@@ -163,5 +164,30 @@ describe('the workspace bridge', () => {
       expect(hasUmurimoCapability(role, 'workspace:read')).toBe(false);
       expect(hasUmurimoCapability(role, 'workspace:sync')).toBe(false);
     }
+  });
+});
+
+describe('readable refs survive a gap in the sequence', () => {
+  // The bug this guards: `count() + 1` was the original scheme, and it collides the moment a
+  // row is deleted or seeded out of order. On 24 August 2026 there were 32 decisions in the
+  // database and the highest ref was DEC-2026-0033, so count()+1 produced a ref that already
+  // existed and every attempt to raise a decision returned a 500.
+  const model = (ref: string | null) => ({ findFirst: async () => (ref ? { ref } : null) });
+
+  it('continues from the highest ref, not from the row count', async () => {
+    expect(await nextSequence(model('DEC-2026-0033'), 'DEC-2026-')).toBe(34);
+    expect(await nextSequence(model('INIT-2026-0222'), 'INIT-2026-')).toBe(223);
+  });
+
+  it('starts at 1 when nothing exists yet', async () => {
+    expect(await nextSequence(model(null), 'DEC-2026-')).toBe(1);
+  });
+
+  it('falls back to 1 rather than NaN on a ref it cannot parse', async () => {
+    expect(await nextSequence(model('DEC-2026-legacy'), 'DEC-2026-')).toBe(1);
+  });
+
+  it('scopes the prefix by year, so January starts again at 1', () => {
+    expect(refPrefix('DEC')).toBe(`DEC-${new Date().getFullYear()}-`);
   });
 });

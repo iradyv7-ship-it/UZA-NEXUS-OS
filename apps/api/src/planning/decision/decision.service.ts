@@ -2,7 +2,7 @@ import { Injectable, NotFoundException, BadRequestException } from '@nestjs/comm
 import type { Actor } from '@uza/contracts';
 import { PrismaService } from '../../prisma/prisma.service';
 import { PlanningAccessService } from '../planning-authz.service';
-import { decisionRef } from '../planning-ids';
+import { decisionRef, nextSequence, refPrefix } from '../planning-ids';
 
 const RESOURCE = 'execDecision';
 
@@ -51,7 +51,7 @@ export class DecisionService {
       if (!init) throw new NotFoundException(`initiative ${input.initiativeRef} not found`);
     }
 
-    const seq = (await this.prisma.execDecision.count()) + 1;
+    const seq = await nextSequence(this.prisma.execDecision, refPrefix('DEC'));
     const ref = decisionRef(seq);
     const created = await this.prisma.execDecision.create({
       data: {

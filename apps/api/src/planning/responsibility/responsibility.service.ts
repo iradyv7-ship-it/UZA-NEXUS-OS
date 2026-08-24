@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import type { ResponsibilityKind, ResponsibilityTrigger } from '@prisma/client';
 import type { Actor } from '@uza/contracts';
+import { nextSequence, refPrefix } from '../planning-ids';
 import { PrismaService } from '../../prisma/prisma.service';
 import { PlanningAccessService } from '../planning-authz.service';
 
@@ -76,7 +77,7 @@ export class ResponsibilityService {
     if (!input.name.trim()) throw new BadRequestException('a responsibility needs a name');
     this.assertRules(input);
 
-    const seq = (await this.prisma.responsibility.count()) + 1;
+    const seq = await nextSequence(this.prisma.responsibility, refPrefix('RESP'));
     const ref = `RESP-${new Date().getFullYear()}-${String(seq).padStart(4, '0')}`;
     const created = await this.prisma.responsibility.create({
       data: {

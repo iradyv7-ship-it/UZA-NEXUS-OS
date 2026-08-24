@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import type { MemoAudience } from '@prisma/client';
 import type { Actor } from '@uza/contracts';
+import { nextSequence, refPrefix } from '../planning-ids';
 import { PrismaService } from '../../prisma/prisma.service';
 import { PlanningAccessService } from '../planning-authz.service';
 
@@ -73,7 +74,7 @@ export class MemoService {
     const recipients = await this.resolveRecipients(input, actor.userId);
     if (!recipients.length) throw new BadRequestException('that audience resolves to nobody');
 
-    const seq = (await this.prisma.memo.count()) + 1;
+    const seq = await nextSequence(this.prisma.memo, refPrefix('MEMO'));
     const ref = `MEMO-${new Date().getFullYear()}-${String(seq).padStart(4, '0')}`;
 
     const created = await this.prisma.memo.create({

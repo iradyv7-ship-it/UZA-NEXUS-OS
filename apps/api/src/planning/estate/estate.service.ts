@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import type { SystemKind, SystemStatus, SystemVisibility } from '@prisma/client';
 import type { Actor } from '@uza/contracts';
+import { nextSequence, refPrefix } from '../planning-ids';
 import { PrismaService } from '../../prisma/prisma.service';
 import { PlanningAccessService } from '../planning-authz.service';
 
@@ -50,7 +51,7 @@ export class EstateService {
     await this.access.assertRole(actor, 'initiative:create', RESOURCE, 'create');
     if (!input.name.trim()) throw new BadRequestException('a system needs a name');
 
-    const seq = (await this.prisma.systemRecord.count()) + 1;
+    const seq = await nextSequence(this.prisma.systemRecord, refPrefix('SYS'));
     const ref = `SYS-${new Date().getFullYear()}-${String(seq).padStart(4, '0')}`;
     const created = await this.prisma.systemRecord.create({
       data: {

@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import type { FundingInstrument, FundingStage } from '@prisma/client';
 import type { Actor } from '@uza/contracts';
+import { nextSequence, refPrefix } from '../planning-ids';
 import { PrismaService } from '../../prisma/prisma.service';
 import { PlanningAccessService } from '../planning-authz.service';
 
@@ -54,7 +55,7 @@ export class FundingService {
     if (!input.funder.trim()) throw new BadRequestException('name the counterparty — "investors" is not a funder');
     if (!(input.amountSought > 0)) throw new BadRequestException('amountSought must be greater than zero');
 
-    const seq = (await this.prisma.fundingTrack.count()) + 1;
+    const seq = await nextSequence(this.prisma.fundingTrack, refPrefix('FUND'));
     const ref = `FUND-${new Date().getFullYear()}-${String(seq).padStart(4, '0')}`;
     const created = await this.prisma.fundingTrack.create({
       data: {

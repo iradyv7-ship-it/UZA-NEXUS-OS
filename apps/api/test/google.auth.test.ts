@@ -167,9 +167,17 @@ describe('Google sign-in — alternate credential', () => {
   });
 });
 
+/**
+ * NOTE: the unconfigured service is built from a STUB, not from `new ConfigService({})`.
+ *
+ * Nest's ConfigService falls through to `process.env` for any key its own map does not hold,
+ * so on a machine whose .env has GOOGLE_CLIENT_ID set — which is every machine where Google
+ * sign-in actually works — `new ConfigService({})` reported itself configured and this test
+ * failed. It was asserting a property of the developer's environment rather than of the code.
+ */
 describe('Google sign-in — controller / env gating', () => {
   it('unconfigured env → 503 { error: google_signin_not_configured } on both endpoints', async () => {
-    const unconfigured = new GoogleAuthService(new ConfigService({}), jwt, auth);
+    const unconfigured = new GoogleAuthService(({ get: () => undefined } as unknown as ConfigService), jwt, auth);
     expect(unconfigured.isConfigured()).toBe(false);
     const controller = new AuthController(auth, unconfigured);
 
