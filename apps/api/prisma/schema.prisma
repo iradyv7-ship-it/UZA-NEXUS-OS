@@ -1413,9 +1413,15 @@ model WeeklyReport {
   highlights  String
   blockers    String?
   nextWeek    String?
+  /// What this person needs FROM someone else this week. Free text, deliberately separate
+  /// from `blockers`: a blocker is something in the way, an ask is a trade. The ask is the
+  /// field that turns a status meeting into one people want to attend, so it is captured
+  /// even when nothing is blocked.
+  asking      String?
   submittedAt DateTime @default(now())
 
-  plan Plan @relation(fields: [planRef], references: [ref], onDelete: Cascade)
+  plan     Plan      @relation(fields: [planRef], references: [ref], onDelete: Cascade)
+  raised   Blocker[]
 
   @@index([ownerId])
   @@index([periodKey])
@@ -1888,4 +1894,98 @@ model ExecDecision {
   @@index([status, raisedAt])
   @@index([initiativeRef])
   @@index([raisedById])
+}
+
+
+// ============================================================
+// UMURIMO — the people-and-work layer.
+//
+// A module INSIDE Nexus with a clean boundary, not a separate deployment: its own access
+// policy (`umurimo-access.ts`), its own readable ids (`umurimo-ids.ts`), no direct joins
+// across into planning beyond a ref. If it is ever split into its own service, the seam is
+// already cut and the move is a folder plus a connection string.
+//
+// Nexus answers "what is the company doing". Umurimo answers "who is doing it, and how are
+// they". These two models are the smallest thing that makes the second question answerable.
+// ============================================================
+
+/// One thing standing in someone's way, raised in a weekly review.
+///
+/// The whole point of this model is `ownerId` and `dueAt` being NULLABLE and SURFACED. A
+/// blocker with neither is a complaint; a blocker with both is work. `unowned()` returns the
+/// first kind, and the discipline is that none should survive the end of the meeting it was
+/// raised in. Storing blockers only as free text on the report — which is what the schema did
+/// before — makes that check impossible, which is why this table exists.
+model Blocker {
+  ref       String @id // readable id, e.g. BLK-2026-0001
+  reportRef String // the WeeklyReport it was raised in
+  raisedBy  String // User.ref
+  summary   String
+
+  /// Who will clear it. NULL is the finding, not an omission.
+  ownerId String?
+  /// By when. NULL is the finding, not an omission.
+  dueAt   DateTime?
+  /// Set when someone accepts it, so "raised on Monday, owned on Thursday" stays visible.
+  ownedAt DateTime?
+
+  clearedAt   DateTime?
+  clearedBy   String?
+  clearedNote String?
+
+  createdAt DateTime @default(now())
+
+  report WeeklyReport @relation(fields: [reportRef], references: [ref], onDelete: Cascade)
+
+  @@index([reportRef])
+  @@index([ownerId])
+  @@index([clearedAt])
+  @@index([dueAt])
+}
+
+/// Why a thing is the way it is, attached to the thing.
+///
+/// This is NOT chat. The test applied throughout the module: if the message would be
+/// meaningless without knowing which record it concerns, it belongs here; if it makes sense on
+/// its own, it belongs in WhatsApp. Polymorphic by (`subjectType`, `subjectRef`) so one table
+/// serves initiatives, decisions, reports, blockers and candidate files — but `subjectType` is
+/// validated against an allowlist in the service, because an unconstrained polymorphic key
+/// becomes a dumping ground within a month.
+model Comment {
+  ref         String      @id // readable id, e.g. CMT-2026-000123
+  subjectType String // validated allowlist — see COMMENT_SUBJECTS
+  subjectRef  String // the target record's readable ref
+  parentRef   String? // threading; NULL is a root comment
+  authorId    String // User.ref
+  body        String
+  kind        CommentKind @default(comment)
+
+  /// User.refs explicitly asked to look. Drives notification; does not grant access — a
+  /// mention never widens what someone may read.
+  mentions String[] @default([])
+
+  /// Only meaningful for `kind = request`: an open request is one the team still owes an
+  /// answer to, and that set is what the weekly digest surfaces.
+  resolvedAt   DateTime?
+  resolvedBy   String?
+  resolvedNote String?
+
+  createdAt DateTime  @default(now())
+  editedAt  DateTime?
+
+  parent  Comment?  @relation("CommentThread", fields: [parentRef], references: [ref], onDelete: Cascade)
+  replies Comment[] @relation("CommentThread")
+
+  @@index([subjectType, subjectRef, createdAt])
+  @@index([authorId])
+  @@index([parentRef])
+  @@index([kind, resolvedAt])
+}
+
+enum CommentKind {
+  /// An observation. Nobody owes a reply.
+  comment
+  /// An explicit request for the team to weigh in. Open until resolved, and surfaced in the
+  /// weekly digest until it is.
+  request
 }
