@@ -1,14 +1,18 @@
 import { Body, Controller, Get, Param, Patch, Post, Query } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
-import { IsDateString, IsIn, IsOptional, IsString, MinLength } from 'class-validator';
+import { IsArray, IsDateString, IsIn, IsOptional, IsString, MinLength, ValidateNested } from 'class-validator';
+import { Type } from 'class-transformer';
 import type { Actor } from '@uza/contracts';
 import { CurrentActor } from '../platform/auth/current-actor.decorator';
 import { CommentService } from './comment/comment.service';
 import { BlockerService } from './blocker/blocker.service';
 import { DigestService } from './digest/digest.service';
+import { WeekService } from './week/week.service';
 import { COMMENT_SUBJECTS } from './umurimo-access';
 
 const COMMENT_KIND = ['comment', 'request'] as const;
+const OBJECTIVE_STATUS = ['todo', 'done', 'dropped'] as const;
+const OBJECTIVE_SOURCE = ['minutes', 'self'] as const;
 
 // ---------- DTOs ----------
 class PostCommentDto {
@@ -36,6 +40,33 @@ class ClearBlockerDto {
   @IsString() @MinLength(1) note!: string;
 }
 class WeekQuery {
+  @IsOptional() @IsDateString() week?: string;
+}
+class MinuteEntryDto {
+  @IsString() @MinLength(1) ownerId!: string;
+  @IsOptional() @IsString() shipped?: string;
+  @IsOptional() @IsArray() @IsString({ each: true }) blocked?: string[];
+  @IsOptional() @IsString() asking?: string;
+  @IsOptional() @IsArray() @IsString({ each: true }) committed?: string[];
+}
+class IngestMinutesDto {
+  @IsArray() @ValidateNested({ each: true }) @Type(() => MinuteEntryDto) entries!: MinuteEntryDto[];
+  @IsOptional() @IsDateString() week?: string;
+}
+class ObjectiveDto {
+  @IsString() @MinLength(1) text!: string;
+  @IsIn(OBJECTIVE_STATUS) status!: (typeof OBJECTIVE_STATUS)[number];
+  @IsIn(OBJECTIVE_SOURCE) source!: (typeof OBJECTIVE_SOURCE)[number];
+}
+class ConfirmWeekDto {
+  @IsArray() @ValidateNested({ each: true }) @Type(() => ObjectiveDto) objectives!: ObjectiveDto[];
+  @IsOptional() @IsDateString() week?: string;
+}
+class FileReportDto {
+  @IsString() @MinLength(1) highlights!: string;
+  @IsOptional() @IsString() blockers?: string;
+  @IsOptional() @IsString() nextWeek?: string;
+  @IsOptional() @IsString() asking?: string;
   @IsOptional() @IsDateString() week?: string;
 }
 
@@ -130,5 +161,48 @@ export class UmurimoDigestController {
   @Get()
   week(@CurrentActor() actor: Actor, @Query() q: WeekQuery) {
     return this.digest.week(actor, q.week ? new Date(q.week) : undefined);
+  }
+}
+
+/**
+ * The weekly loop: minutes in, plans out, reports back.
+ *
+ * `POST /umurimo/week/minutes` is the one the meeting uses — the whole review lands in a single
+ * call so nobody retypes anything, which is the only way minutes ever reach a system.
+ */
+@ApiTags('umurimo')
+@ApiBearerAuth()
+@Controller('umurimo/week')
+export class UmurimoWeekController {
+  constructor(private readonly week: WeekService) {}
+
+  /** Post the minutes of a weekly review. Idempotent per person per week. */
+  @Post('minutes')
+  minutes(@CurrentActor() actor: Actor, @Body() dto: IngestMinutesDto) {
+    return this.week.ingestMinutes(actor, dto.entries, dto.week ? new Date(dto.week) : undefined);
+  }
+
+  /** My week — what I owe, what I am owed, and whether I still have to agree to it. */
+  @Get('mine')
+  mine(@CurrentActor() actor: Actor, @Query() q: WeekQuery) {
+    return this.week.myWeek(actor, q.week ? new Date(q.week) : undefined);
+  }
+
+  /** Add, edit or drop my objectives. This is the act that turns minutes into my plan. */
+  @Patch('mine')
+  confirm(@CurrentActor() actor: Actor, @Body() dto: ConfirmWeekDto) {
+    return this.week.confirmWeek(actor, dto.objectives, dto.week ? new Date(dto.week) : undefined);
+  }
+
+  /** File my weekly report. */
+  @Post('report')
+  report(@CurrentActor() actor: Actor, @Body() dto: FileReportDto) {
+    return this.week.fileReport(actor, dto, dto.week ? new Date(dto.week) : undefined);
+  }
+
+  /** What the system should be asking for, and of whom. Includes the founder. */
+  @Get('nudges')
+  nudges(@CurrentActor() actor: Actor, @Query() q: WeekQuery) {
+    return this.week.nudges(actor, q.week ? new Date(q.week) : undefined);
   }
 }

@@ -37,7 +37,11 @@ export type UmurimoCapability =
   | 'blocker:own' // accept ownership, set the due date
   | 'blocker:clear'
   | 'blocker:all' // see every blocker, including other people's — executive
-  | 'digest'; // the week's unowned blockers, open asks and open requests
+  | 'digest' // the week's unowned blockers, open asks and open requests
+  | 'week:read' // my own week, and the nudges aimed at me
+  | 'week:confirm' // agree to, edit or drop my objectives; file my report
+  | 'week:all' // see everyone's confirmation and filing state — executive
+  | 'minutes:ingest'; // post the minutes of a weekly review into the register
 
 const FULL: readonly UmurimoCapability[] = [
   'comment:read',
@@ -50,6 +54,10 @@ const FULL: readonly UmurimoCapability[] = [
   'blocker:clear',
   'blocker:all',
   'digest',
+  'week:read',
+  'week:confirm',
+  'week:all',
+  'minutes:ingest',
 ];
 
 /**
@@ -71,6 +79,11 @@ const INTERNAL: readonly UmurimoCapability[] = [
   'blocker:own',
   'blocker:clear',
   'digest',
+  // Everyone plans and everyone reports. `week:all` is withheld because seeing who across the
+  // whole company has not filed is oversight, not participation — but `week:read` still shows
+  // a person every nudge aimed at them.
+  'week:read',
+  'week:confirm',
 ];
 
 /** No Umurimo access — external / commercial roles. */
@@ -94,6 +107,15 @@ export const hasUmurimoCapability = (role: Role, capability: UmurimoCapability):
 
 /** `ceo`/`venture_manager` see every blocker unconditionally. */
 export const seesAllBlockers = (role: Role): boolean => hasUmurimoCapability(role, 'blocker:all');
+
+/**
+ * Who sees the whole company's confirmation and filing state.
+ *
+ * Note what this does NOT do: the executive list includes the executive. A weekly discipline
+ * the founder sits outside of is a reporting line, not a discipline, and everyone can see that
+ * within a month.
+ */
+export const seesAllWeeks = (role: Role): boolean => hasUmurimoCapability(role, 'week:all');
 
 /** Only the executive may rewrite or remove another person's comment. */
 export const mayModerate = (role: Role): boolean => hasUmurimoCapability(role, 'comment:moderate');

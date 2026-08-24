@@ -5,6 +5,7 @@ import {
   seesAllBlockers,
   mayModerate,
   isCommentSubject,
+  seesAllWeeks,
   COMMENT_SUBJECTS,
 } from '../src/umurimo/umurimo-access';
 import { blockerRef, commentRef, extractMentions } from '../src/umurimo/umurimo-ids';
@@ -104,5 +105,36 @@ describe('mentions', () => {
 
   it('returns an empty list rather than throwing on an empty body', () => {
     expect(extractMentions('')).toEqual([]);
+  });
+});
+
+describe('the weekly loop', () => {
+  it('lets everyone internal plan and report', () => {
+    // "each employee including me should be answerable" - so the capability to plan and to
+    // file is universal among internal roles, not a management privilege.
+    for (const role of ['finance', 'china_sourcing', 'china_warehouse', 'front_office'] as const) {
+      expect(hasUmurimoCapability(role, 'week:read')).toBe(true);
+      expect(hasUmurimoCapability(role, 'week:confirm')).toBe(true);
+    }
+    expect(hasUmurimoCapability('ceo', 'week:confirm')).toBe(true);
+  });
+
+  it('keeps company-wide filing state and minutes-posting executive', () => {
+    for (const role of ['finance', 'china_sourcing', 'front_office'] as const) {
+      expect(hasUmurimoCapability(role, 'week:all')).toBe(false);
+      expect(hasUmurimoCapability(role, 'minutes:ingest')).toBe(false);
+    }
+    expect(seesAllWeeks('ceo')).toBe(true);
+    expect(seesAllWeeks('venture_manager')).toBe(true);
+    expect(seesAllWeeks('front_office')).toBe(false);
+    expect(hasUmurimoCapability('venture_manager', 'minutes:ingest')).toBe(true);
+  });
+
+  it('denies the whole weekly loop to external roles', () => {
+    for (const role of ['customer', 'sales_agent', 'logistics_partner'] as const) {
+      expect(hasUmurimoCapability(role, 'week:read')).toBe(false);
+      expect(hasUmurimoCapability(role, 'week:confirm')).toBe(false);
+      expect(hasUmurimoCapability(role, 'minutes:ingest')).toBe(false);
+    }
   });
 });

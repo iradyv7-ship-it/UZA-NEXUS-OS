@@ -4,10 +4,12 @@ import { UmurimoAccessService } from './umurimo-authz.service';
 import { CommentService } from './comment/comment.service';
 import { BlockerService } from './blocker/blocker.service';
 import { DigestService } from './digest/digest.service';
+import { WeekService } from './week/week.service';
 import {
   UmurimoCommentController,
   UmurimoBlockerController,
   UmurimoDigestController,
+  UmurimoWeekController,
 } from './umurimo.controllers';
 
 /**
@@ -52,8 +54,20 @@ import {
  * global.
  */
 @Module({
-  providers: [AuditService, UmurimoAccessService, CommentService, BlockerService, DigestService],
-  controllers: [UmurimoCommentController, UmurimoBlockerController, UmurimoDigestController],
-  exports: [CommentService, BlockerService, DigestService],
+  providers: [
+    AuditService,
+    UmurimoAccessService,
+    CommentService,
+    BlockerService,
+    DigestService,
+    WeekService,
+  ],
+  controllers: [
+    UmurimoCommentController,
+    UmurimoBlockerController,
+    UmurimoDigestController,
+    UmurimoWeekController,
+  ],
+  exports: [CommentService, BlockerService, DigestService, WeekService],
 })
 export class UmurimoModule {}
