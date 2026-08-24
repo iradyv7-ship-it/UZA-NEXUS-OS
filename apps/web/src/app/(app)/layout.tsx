@@ -41,8 +41,11 @@ export default async function AppLayout({ children }: { children: React.ReactNod
                   Nexus
                 </Link>
               )}
-              <Link href="/week" className={NAV}>
+              <Link href="/my-week" className={NAV}>
                 My week
+              </Link>
+              <Link href="/week" className={NAV}>
+                Initiatives
               </Link>
               <Link href="/memos" className={NAV}>
                 Memos
