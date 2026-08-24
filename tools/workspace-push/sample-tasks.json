@@ -1,0 +1,8 @@
+[
+ {"id":"ws-1","name":"High Fidelity Design","state":"To Do","assignee":"abijuru@uzasolutions.rw","project_name":"UZABULK MOBILE APP UI","priority":"HIGH","created":"2026-08-19","due_date":"2026-08-25"},
+ {"id":"ws-2","name":"Wireframing and copy writing","state":"In Progress","assignee":"abijuru@uzasolutions.rw","project_name":"UZABULK MOBILE APP UI","priority":"MEDIUM","created":"2026-08-18","due_date":"2026-08-22"},
+ {"id":"ws-3","name":"Deploying codes in cloud","state":"Completed","assignee":"gad@uzasolutions.rw","project_name":"uzabulk platform","created":"2026-08-17","completed_at":"2026-08-20","completion_note":"completed deploying updated codes in alibaba cloud"},
+ {"id":"ws-4","name":"Remove exchange rate api","state":"doing","assignee":"saddock@uzasolutions.rw","project_name":"uzamobility"},
+ {"id":"ws-5","name":"Image Search result","state":"done","assignee":"someone@notinnexus.rw"},
+ {"name":"broken row with no id","state":"todo"}
+]
