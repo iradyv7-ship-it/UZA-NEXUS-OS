@@ -30,6 +30,18 @@ interface MyWeek {
   waitingOnSomebody: Blocker[];
   askedOfMe: Request[];
 }
+interface Memo {
+  ref: string;
+  subject: string;
+  fromId: string;
+  needsAck: boolean;
+  sentAt: string;
+  outstanding: boolean;
+}
+interface Inbox {
+  unread: number;
+  memos: Memo[];
+}
 interface Nudges {
   mine: { confirmYourPlan: boolean; writeYourReport: boolean; overdueBlockers: Blocker[] };
   counts?: { staff: number; unconfirmed: number; noPlan: number; noReport: number; overdueBlockers: number };
@@ -69,9 +81,10 @@ export default async function MyWeekPage({
   const { ok, err } = await searchParams;
   const session = await getSession();
 
-  const [weekRes, nudgeRes] = await Promise.all([
+  const [weekRes, nudgeRes, inboxRes] = await Promise.all([
     authedCall<MyWeek>('/umurimo/week/mine'),
     authedCall<Nudges>('/umurimo/week/nudges'),
+    authedCall<Inbox>('/planning/memos'),
   ]);
 
   if (weekRes.kind === 'unauthorized') {
@@ -84,6 +97,8 @@ export default async function MyWeekPage({
   const w = weekRes.data;
   const n = nudgeRes.kind === 'ok' ? nudgeRes.data : null;
   const me = session?.actor.userId ?? '';
+  const inbox = inboxRes.kind === 'ok' ? inboxRes.data : null;
+  const unreadMemos = inbox?.memos.filter((m) => m.outstanding) ?? [];
   const objectives = w.plan?.objectives ?? [];
   const done = objectives.filter((o) => o.status === 'done').length;
 
@@ -109,6 +124,34 @@ export default async function MyWeekPage({
       )}
       {err && ERR[err] && (
         <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-800">{ERR[err]}</p>
+      )}
+
+      {unreadMemos.length > 0 && (
+        <Card>
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <h2 className="text-sm font-semibold text-slate-900">
+              {unreadMemos.length === 1 ? 'One message for you' : `${unreadMemos.length} messages for you`}
+            </h2>
+            <a
+              href="/memos"
+              className="rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+            >
+              Open messages
+            </a>
+          </div>
+          <ul className="mt-2 space-y-1">
+            {unreadMemos.slice(0, 4).map((m) => (
+              <li key={m.ref} className="flex flex-wrap items-center gap-2 text-sm text-slate-800">
+                <span>{m.subject}</span>
+                <span className="text-xs text-slate-500">from {m.fromId} · {day(m.sentAt)}</span>
+                {m.needsAck && <Badge tone="amber">needs your reply</Badge>}
+              </li>
+            ))}
+            {unreadMemos.length > 4 && (
+              <li className="text-xs text-slate-500">and {unreadMemos.length - 4} more</li>
+            )}
+          </ul>
+        </Card>
       )}
 
       {/* ---------------------------------------------------------- what I owe */}
@@ -232,6 +275,9 @@ export default async function MyWeekPage({
         <Card>
           <h2 className="text-sm font-semibold text-slate-900">What the system is asking for</h2>
           <ul className="mt-2 space-y-1 text-sm text-slate-700">
+            {unreadMemos.length > 0 && (
+              <li>· Read {unreadMemos.length === 1 ? 'the message' : `the ${unreadMemos.length} messages`} above.</li>
+            )}
             {n.mine.confirmYourPlan && <li>· Agree your week above.</li>}
             {n.mine.writeYourReport && <li>· Write your report before Friday ends.</li>}
             {n.mine.overdueBlockers.map((b) => (
@@ -239,7 +285,7 @@ export default async function MyWeekPage({
                 · Late: {b.summary}
               </li>
             ))}
-            {!n.mine.confirmYourPlan && !n.mine.writeYourReport && !n.mine.overdueBlockers.length && (
+            {!unreadMemos.length && !n.mine.confirmYourPlan && !n.mine.writeYourReport && !n.mine.overdueBlockers.length && (
               <li className="text-emerald-700">· Nothing is waiting on you.</li>
             )}
           </ul>

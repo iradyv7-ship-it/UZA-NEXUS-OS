@@ -6,6 +6,7 @@ import { can, homePathFor } from '@/lib/permissions';
 import { LocaleSwitch } from '@/components/LocaleSwitch';
 import { SHELL_PADDING_X, SHELL_WIDTH } from '@/components/ui';
 import { logoutAction } from '@/app/actions';
+import { authedCall } from '@/lib/api';
 
 /** One class for every secondary nav item, so the bar stays even as links are added. */
 const NAV = 'rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-700 hover:bg-slate-50';
@@ -20,6 +21,12 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const showVerifyQueue = can(session.actor, 'payment', 'read');
   const showCommand = session.actor.role === 'ceo' || session.actor.role === 'venture_manager';
   const home = homePathFor(session.actor);
+
+  // The unread count. A message nobody is told about is not a message, and until now the
+  // count existed in the API and was only ever seen by someone who already went looking.
+  // Failure here must never take the shell down with it — a badge is not worth a blank page.
+  const inbox = await authedCall<{ unread: number }>('/planning/memos');
+  const unread = inbox.kind === 'ok' ? inbox.data.unread : 0;
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -47,8 +54,16 @@ export default async function AppLayout({ children }: { children: React.ReactNod
               <Link href="/week" className={NAV}>
                 Initiatives
               </Link>
-              <Link href="/memos" className={NAV}>
-                Memos
+              <Link href="/memos" className={`${NAV} relative`}>
+                Messages
+                {unread > 0 && (
+                  <span
+                    aria-label={`${unread} unread`}
+                    className="ml-1.5 inline-flex min-w-[1.25rem] items-center justify-center rounded-full bg-red-600 px-1.5 py-0.5 text-[11px] font-semibold leading-none text-white"
+                  >
+                    {unread}
+                  </span>
+                )}
               </Link>
               <Link href="/tasks" className={NAV}>
                 Tasks
