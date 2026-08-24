@@ -53,12 +53,12 @@ export function ObjectivesForm({
                 name="objectiveText"
                 value={row.text}
                 onChange={(e) => update(i, { text: e.target.value })}
-                placeholder="What will be true by Friday?"
+                placeholder="What will be finished by Friday?"
                 className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
               />
               {row.source === 'minutes' && (
                 <span className="mt-1 inline-block text-[11px] text-slate-500">
-                  from Monday&rsquo;s meeting — change it if that is not what you agreed
+                  from Monday&rsquo;s meeting — change it if that is not what you agreed to
                 </span>
               )}
             </div>
@@ -66,7 +66,7 @@ export function ObjectivesForm({
             <button
               type="button"
               onClick={() => setRows((r) => r.filter((_, j) => j !== i))}
-              aria-label="Remove this objective"
+              aria-label="Remove this line"
               className="mt-1 rounded-lg border border-slate-300 px-2 py-1.5 text-xs text-slate-600 hover:bg-slate-50"
             >
               Remove
@@ -81,17 +81,17 @@ export function ObjectivesForm({
           onClick={() => setRows((r) => [...r, { text: '', status: 'todo', source: 'self' }])}
           className="rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50"
         >
-          Add one of my own
+          Add something of my own
         </button>
         <button
           type="submit"
           className="rounded-lg bg-slate-900 px-4 py-1.5 text-xs font-semibold text-white hover:bg-slate-700"
         >
-          {isDraft ? 'This is my week' : 'Save changes'}
+          {isDraft ? 'Yes, this is my week' : 'Save changes'}
         </button>
         {isDraft && (
           <span className="text-xs text-amber-700">
-            Until you do this, it is what the meeting said — not what you agreed.
+            Until you press this, it is what the meeting said — not what you agreed.
           </span>
         )}
       </div>

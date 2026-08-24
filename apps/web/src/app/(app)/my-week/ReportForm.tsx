@@ -32,39 +32,39 @@ export function ReportForm({ filed }: { filed: boolean }) {
   return (
     <form action={fileReportAction} className="space-y-2">
       <label className="block">
-        <span className="text-xs font-medium text-slate-600">What I finished</span>
+        <span className="text-xs font-medium text-slate-600">What I finished this week</span>
         <textarea
           name="highlights"
           required
           rows={2}
-          placeholder="Something finished. Not something started."
+          placeholder="Something you actually finished - not something you started."
           className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
         />
       </label>
       <label className="block">
-        <span className="text-xs font-medium text-slate-600">What is in the way</span>
+        <span className="text-xs font-medium text-slate-600">What is stopping me</span>
         <textarea
           name="blockers"
           rows={2}
-          placeholder="Leave empty if nothing is."
+          placeholder="Leave this empty if nothing is."
           className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
         />
       </label>
       <label className="block">
-        <span className="text-xs font-medium text-slate-600">What I need from the team</span>
+        <span className="text-xs font-medium text-slate-600">What I need from someone</span>
         <textarea
           name="asking"
           rows={2}
-          placeholder="A specific ask of a named person."
+          placeholder="Name the person and say what you need."
           className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
         />
       </label>
       <label className="block">
-        <span className="text-xs font-medium text-slate-600">Next week</span>
+        <span className="text-xs font-medium text-slate-600">What I will finish next week</span>
         <textarea
           name="nextWeek"
           rows={2}
-          placeholder="One thing, measurable by next Monday."
+          placeholder="One thing. We should be able to check it next Monday."
           className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
         />
       </label>
@@ -72,7 +72,7 @@ export function ReportForm({ filed }: { filed: boolean }) {
         type="submit"
         className="rounded-lg bg-slate-900 px-4 py-1.5 text-xs font-semibold text-white hover:bg-slate-700"
       >
-        {filed ? 'Update my report' : 'File my report'}
+        {filed ? 'Update my report' : 'Send my report'}
       </button>
     </form>
   );

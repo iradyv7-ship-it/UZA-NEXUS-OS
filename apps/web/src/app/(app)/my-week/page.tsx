@@ -41,15 +41,15 @@ const day = (iso: string | null) =>
 
 const NOTE: Record<string, string> = {
   confirmed: 'Your week is agreed.',
-  filed: 'Report filed.',
-  owned: 'Taken. It has your name and a date on it now.',
-  cleared: 'Cleared.',
+  filed: 'Report sent.',
+  owned: 'Taken. It has a person and a date now.',
+  cleared: 'Solved.',
 };
 const ERR: Record<string, string> = {
   empty: 'A week with no objectives is not a plan — write at least one.',
-  highlights: 'Say what you finished, even if it is nothing.',
-  own: 'A blocker needs a name and a date together.',
-  clear: 'Say how it was cleared, or the record teaches nobody anything.',
+  highlights: 'Write what you finished, even if it is little.',
+  own: 'It needs a person AND a date, together.',
+  clear: 'Say how it was solved, so the next person learns something.',
   save: 'That did not save. Try again.',
   report: 'The report did not save. Try again.',
 };
@@ -98,9 +98,9 @@ export default async function MyWeekPage({
           </p>
         </div>
         <div className="flex gap-2">
-          {w.needsMyConfirmation && <Badge tone="amber">Not agreed yet</Badge>}
-          {!w.reportFiled && <Badge tone="slate">Report not filed</Badge>}
-          {w.reportFiled && <Badge tone="blue">Report filed</Badge>}
+          {w.needsMyConfirmation && <Badge tone="amber">You have not agreed this yet</Badge>}
+          {!w.reportFiled && <Badge tone="slate">No report yet</Badge>}
+          {w.reportFiled && <Badge tone="blue">Report sent</Badge>}
         </div>
       </header>
 
@@ -113,7 +113,7 @@ export default async function MyWeekPage({
 
       {/* ---------------------------------------------------------- what I owe */}
       <Card>
-        <h2 className="text-sm font-semibold text-slate-900">What I am doing this week</h2>
+        <h2 className="text-sm font-semibold text-slate-900">What I will finish this week</h2>
         <p className="mb-3 mt-0.5 text-xs text-slate-600">
           {w.plan
             ? 'Change anything that is not right. It is your week, not the meeting&rsquo;s.'
@@ -124,7 +124,7 @@ export default async function MyWeekPage({
 
       {w.iOwe.length > 0 && (
         <Card>
-          <h2 className="text-sm font-semibold text-slate-900">Blockers I took</h2>
+          <h2 className="text-sm font-semibold text-slate-900">Problems I took on</h2>
           <ul className="mt-2 space-y-3">
             {w.iOwe.map((b) => {
               const overdue = b.dueAt ? new Date(b.dueAt) < new Date() : false;
@@ -142,11 +142,11 @@ export default async function MyWeekPage({
                       type="text"
                       name="note"
                       required
-                      placeholder="How was it cleared?"
+                      placeholder="How was it solved?"
                       className="min-w-0 flex-1 rounded-lg border border-slate-300 px-3 py-1.5 text-xs"
                     />
                     <button className="rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50">
-                      Clear it
+                      Mark it solved
                     </button>
                   </form>
                 </li>
@@ -159,12 +159,12 @@ export default async function MyWeekPage({
       {/* ------------------------------------------------------- what I am owed */}
       {(w.waitingOnSomebody.length > 0 || w.askedOfMe.length > 0) && (
         <Card>
-          <h2 className="text-sm font-semibold text-slate-900">What I am waiting on</h2>
+          <h2 className="text-sm font-semibold text-slate-900">What I am waiting for</h2>
 
           {w.waitingOnSomebody.length > 0 && (
             <>
               <p className="mb-2 mt-0.5 text-xs text-slate-600">
-                I raised these and nobody has taken them. Chase them, or take them yourself.
+                I said these were stopping me and nobody has taken them yet. Chase someone, or take it yourself.
               </p>
               <ul className="space-y-3">
                 {w.waitingOnSomebody.map((b) => (
@@ -177,7 +177,7 @@ export default async function MyWeekPage({
                         name="ownerId"
                         required
                         defaultValue={me}
-                        placeholder="Whose is it? (user ref)"
+                        placeholder="Who will do it?"
                         className="w-44 rounded-lg border border-slate-300 px-3 py-1.5 text-xs"
                       />
                       <input
@@ -187,7 +187,7 @@ export default async function MyWeekPage({
                         className="rounded-lg border border-slate-300 px-3 py-1.5 text-xs"
                       />
                       <button className="rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50">
-                        Give it a name and a date
+                        Give it a person and a date
                       </button>
                     </form>
                   </li>
@@ -217,12 +217,12 @@ export default async function MyWeekPage({
       {/* ------------------------------------------------------------- the report */}
       <Card>
         <h2 className="text-sm font-semibold text-slate-900">
-          {w.reportFiled ? 'My report this week' : 'Friday: the report'}
+          {w.reportFiled ? 'My report for the week' : 'My report for the week'}
         </h2>
         <p className="mb-3 mt-0.5 text-xs text-slate-600">
           {w.reportFiled
-            ? 'Filed. You can still change it until Monday.'
-            : 'Everyone files one, including the founder.'}
+            ? 'Sent. You can still change it until Monday.'
+            : 'Everyone writes one, including Yves.'}
         </p>
         <ReportForm filed={w.reportFiled} />
       </Card>
@@ -232,15 +232,15 @@ export default async function MyWeekPage({
         <Card>
           <h2 className="text-sm font-semibold text-slate-900">What the system is asking for</h2>
           <ul className="mt-2 space-y-1 text-sm text-slate-700">
-            {n.mine.confirmYourPlan && <li>· Agree to your week above.</li>}
-            {n.mine.writeYourReport && <li>· File your report before Friday ends.</li>}
+            {n.mine.confirmYourPlan && <li>· Agree your week above.</li>}
+            {n.mine.writeYourReport && <li>· Write your report before Friday ends.</li>}
             {n.mine.overdueBlockers.map((b) => (
               <li key={b.ref} className="text-red-700">
-                · Past its date: {b.summary}
+                · Late: {b.summary}
               </li>
             ))}
             {!n.mine.confirmYourPlan && !n.mine.writeYourReport && !n.mine.overdueBlockers.length && (
-              <li className="text-emerald-700">· Nothing outstanding from you.</li>
+              <li className="text-emerald-700">· Nothing is waiting on you.</li>
             )}
           </ul>
 
@@ -248,7 +248,7 @@ export default async function MyWeekPage({
             <p className="mt-3 border-t border-slate-100 pt-3 text-xs text-slate-600">
               Across the team: <strong>{n.counts.noPlan}</strong> of {n.counts.staff} have no plan,{' '}
               <strong>{n.counts.unconfirmed}</strong> have not agreed theirs,{' '}
-              <strong>{n.counts.noReport}</strong> have not filed.
+              <strong>{n.counts.noReport}</strong> have not written a report.
             </p>
           )}
         </Card>
