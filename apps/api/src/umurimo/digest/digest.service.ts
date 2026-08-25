@@ -40,7 +40,8 @@ export class DigestService {
     const period = weekKey(weekOf);
     const now = new Date();
 
-    const [reports, unownedBlockers, overdueBlockers, openRequests, employees] = await Promise.all([
+    const [reports, unownedBlockers, overdueBlockers, openRequests, employees, profiles] =
+      await Promise.all([
       this.prisma.weeklyReport.findMany({ where: { periodKey: period } }),
       this.prisma.blocker.findMany({
         where: { clearedAt: null, OR: [{ ownerId: null }, { dueAt: null }] },
@@ -58,9 +59,46 @@ export class DigestService {
         where: { kind: 'employee', disabledAt: null },
         select: { ref: true },
       }),
+      // Departments exist now, so the digest can be read by arm rather than as a
+      // flat list of ten names. A founder scanning this on a Monday is asking
+      // "which part of the company is stuck", not "who is stuck".
+      this.prisma.employeeProfile.findMany({
+        select: { userId: true, department: { select: { code: true, name: true } } },
+      }),
     ]);
 
     const filed = new Set(reports.map((r) => r.ownerId));
+    const deptOf = new Map(
+      profiles.map((p) => [p.userId, p.department?.code ?? 'UNASSIGNED']),
+    );
+    const deptName = new Map<string, string>([['UNASSIGNED', 'No department']]);
+    for (const p of profiles) {
+      if (p.department) deptName.set(p.department.code, p.department.name);
+    }
+
+    /**
+     * One row per department: how many filed, how many did not, and what is
+     * unassigned or late inside it. An arm where nobody filed is a different
+     * problem from three individuals scattered across three arms, and a flat
+     * list cannot tell those apart.
+     */
+    const byDepartment = [...deptName.keys()]
+      .map((code) => {
+        const people = employees.map((e) => e.ref).filter((ref) => deptOf.get(ref) === code);
+        if (!people.length) return null;
+        const inDept = (ownerId: string | null) => !!ownerId && deptOf.get(ownerId) === code;
+        return {
+          code,
+          name: deptName.get(code) ?? code,
+          people: people.length,
+          filed: people.filter((ref) => filed.has(ref)).length,
+          silent: people.filter((ref) => !filed.has(ref)),
+          unowned: unownedBlockers.filter((b) => inDept(b.raisedBy)).length,
+          overdue: overdueBlockers.filter((b) => inDept(b.ownerId)).length,
+        };
+      })
+      .filter((d): d is NonNullable<typeof d> => d !== null)
+      .sort((a, b) => a.filed / a.people - b.filed / b.people);
 
     return {
       weekOf,
@@ -89,6 +127,9 @@ export class DigestService {
        * organisation; this one shows what they did not.
        */
       silent: employees.map((e) => e.ref).filter((ref) => !filed.has(ref)),
+
+      /** Worst-filing arm first — the one worth asking about. */
+      byDepartment,
 
       counts: {
         filed: reports.length,
