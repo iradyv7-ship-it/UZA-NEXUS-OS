@@ -4,7 +4,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { UmurimoAccessService } from '../umurimo-authz.service';
 import { seesAllBlockers } from '../umurimo-access';
 import { blockerRef } from '../umurimo-ids';
-import { mondayOf } from '../../planning/planning-ids';
+import { mondayOf, nextSequence, refPrefix } from '../../planning/planning-ids';
 
 const RESOURCE = 'blocker';
 
@@ -44,7 +44,7 @@ export class BlockerService {
     });
     if (!report) throw new NotFoundException(`weekly report ${reportRef} not found`);
 
-    const seq = (await this.prisma.blocker.count()) + 1;
+    const seq = await nextSequence(this.prisma.blocker, refPrefix('BLK'));
     const created = await this.prisma.blocker.create({
       data: { ref: blockerRef(seq), reportRef, raisedBy: actor.userId, summary: clean },
     });

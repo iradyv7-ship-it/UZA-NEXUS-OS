@@ -5,7 +5,14 @@ import { UmurimoAccessService } from '../umurimo-authz.service';
 import { WorkspaceService } from '../workspace/workspace.service';
 import { seesAllWeeks } from '../umurimo-access';
 import { blockerRef } from '../umurimo-ids';
-import { mondayOf, weekKey, planRef, weeklyReportRef } from '../../planning/planning-ids';
+import {
+  mondayOf,
+  weekKey,
+  planRef,
+  weeklyReportRef,
+  nextSequence,
+  refPrefix,
+} from '../../planning/planning-ids';
 
 const RESOURCE = 'week';
 
@@ -111,7 +118,7 @@ export class WeekService {
             })
           : await tx.plan.create({
               data: {
-                ref: planRef((await tx.plan.count()) + 1),
+                ref: planRef(await nextSequence(tx.plan, refPrefix('PLAN'))),
                 ownerId: entry.ownerId,
                 level: 'week',
                 periodKey: period,
@@ -125,7 +132,7 @@ export class WeekService {
         const report = await tx.weeklyReport.upsert({
           where: { planRef: plan.ref },
           create: {
-            ref: weeklyReportRef((await tx.weeklyReport.count()) + 1),
+            ref: weeklyReportRef(await nextSequence(tx.weeklyReport, refPrefix('WRPT'))),
             planRef: plan.ref,
             ownerId: entry.ownerId,
             periodKey: period,
@@ -151,7 +158,7 @@ export class WeekService {
           if (already) continue;
           await tx.blocker.create({
             data: {
-              ref: blockerRef((await tx.blocker.count()) + 1),
+              ref: blockerRef(await nextSequence(tx.blocker, refPrefix('BLK'))),
               reportRef: report.ref,
               raisedBy: entry.ownerId,
               summary,
@@ -268,7 +275,7 @@ export class WeekService {
         })
       : await this.prisma.plan.create({
           data: {
-            ref: planRef((await this.prisma.plan.count()) + 1),
+            ref: planRef(await nextSequence(this.prisma.plan, refPrefix('PLAN'))),
             ownerId: actor.userId,
             level: 'week',
             periodKey: period,
@@ -458,7 +465,7 @@ export class WeekService {
     const report = await this.prisma.weeklyReport.upsert({
       where: { planRef: plan.ref },
       create: {
-        ref: weeklyReportRef((await this.prisma.weeklyReport.count()) + 1),
+        ref: weeklyReportRef(await nextSequence(this.prisma.weeklyReport, refPrefix('WRPT'))),
         planRef: plan.ref,
         ownerId: actor.userId,
         periodKey: period,

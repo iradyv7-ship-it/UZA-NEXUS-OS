@@ -4,6 +4,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { UmurimoAccessService } from '../umurimo-authz.service';
 import { isCommentSubject, mayModerate, type CommentSubject } from '../umurimo-access';
 import { commentRef, extractMentions } from '../umurimo-ids';
+import { nextSequence, refPrefix } from '../../planning/planning-ids';
 
 const RESOURCE = 'comment';
 const MAX_BODY = 4000;
@@ -65,7 +66,7 @@ export class CommentService {
       }
     }
 
-    const seq = (await this.prisma.comment.count()) + 1;
+    const seq = await nextSequence(this.prisma.comment, refPrefix('CMT'));
     const created = await this.prisma.comment.create({
       data: {
         ref: commentRef(seq),
