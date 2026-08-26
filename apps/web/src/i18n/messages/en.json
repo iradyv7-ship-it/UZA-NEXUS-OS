@@ -6,7 +6,6 @@
   "nav.signedInAs": "Signed in as",
   "nav.verifyQueue": "Verify payments",
   "lang.label": "Language",
-
   "login.title": "Sign in",
   "login.subtitle": "Commercial operations console",
   "login.email": "Email",
@@ -20,8 +19,7 @@
   "login.google.or": "or",
   "login.google.submit": "Sign in with Google",
   "login.google.unavailable": "Google sign-in isn't set up yet.",
-  "login.hint": "Venture manager demo: vm@uza.rw / password1",
-
+  "login.hint": "Use your UZA account. Change your password after signing in.",
   "dash.title": "My work queue",
   "dash.subtitle": "Quotations and orders assigned to you",
   "dash.empty.title": "Nothing assigned yet",
@@ -39,13 +37,11 @@
   "dash.perUnit": "/ unit",
   "dash.section.denied": "Your role cannot view these records.",
   "dash.section.error": "We could not load these from the server.",
-
   "record.quotation": "Quotation",
   "record.order": "Order",
   "record.project": "Project",
   "record.customer": "Customer",
   "record.for": "for",
-
   "quo.title": "Quotation",
   "quo.qty": "Quantity",
   "quo.incoterm": "Sell incoterm",
@@ -67,7 +63,6 @@
   "quo.status.draft": "Draft — awaiting approval",
   "quo.status.approved": "Approved",
   "quo.status.superseded": "Superseded",
-
   "ord.title": "Order",
   "ord.total": "Order total",
   "ord.tier": "Client tier",
@@ -79,13 +74,11 @@
   "ord.schedule.amount": "Amount",
   "ord.schedule.status": "Status",
   "ord.viewQuotation": "View quotation",
-
   "trigger.confirmation": "Confirmation deposit",
   "trigger.pre_loading": "Before loading",
   "trigger.pre_release": "Before release",
   "install.due": "Due",
   "install.paid": "Paid",
-
   "pay.invoice": "Invoice",
   "pay.invoiceNotReady": "The payment schedule is being prepared. Check back in a moment.",
   "pay.pending": "Pending verification",
@@ -97,7 +90,6 @@
   "pay.submitted": "Payment proof submitted",
   "pay.submittedNote": "Your {trigger} proof is now pending Finance verification. The order activates once Finance verifies it.",
   "pay.error": "We could not submit the payment proof. Please try again.",
-
   "verify.title": "Verify payments",
   "verify.subtitle": "Payment proofs awaiting your verification",
   "verify.empty.title": "Nothing to verify",
@@ -113,7 +105,6 @@
   "verify.doneLink": "Order is now procurement active",
   "verify.rejected": "Payment rejected.",
   "verify.error": "We could not complete that. The payment may have changed — reload the queue.",
-
   "stage.quotation.draft": "Draft quotation",
   "stage.quotation.approved": "Approved quotation",
   "stage.quotation.superseded": "Superseded",
@@ -127,7 +118,6 @@
   "stage.shipment.delayed": "Delayed",
   "stage.shipment.arrived": "Arrived",
   "stage.shipment.delivered": "Delivered",
-
   "next.quotation.draft": "Approve the quotation",
   "next.quotation.approved": "Create the order",
   "next.quotation.superseded": "Open the current version",
@@ -141,7 +131,6 @@
   "next.shipment.delayed": "Confirm the new plan and downstream handling",
   "next.shipment.arrived": "Coordinate last-mile delivery",
   "next.shipment.delivered": "No further action",
-
   "owner.venture_manager": "Venture manager",
   "owner.finance": "Finance",
   "owner.china_sourcing": "China sourcing",
@@ -149,7 +138,6 @@
   "owner.logistics_partner": "Logistics partner (Imari)",
   "owner.front_office": "Front office",
   "owner.none": "Unassigned",
-
   "role.ceo": "CEO",
   "role.venture_manager": "Venture manager",
   "role.china_sourcing": "China sourcing",
@@ -159,23 +147,19 @@
   "role.sales_agent": "Sales agent",
   "role.customer": "Customer",
   "role.logistics_partner": "Logistics partner",
-
   "home.title": "Your orders",
   "home.subtitle": "Your projects, quotations and orders",
   "home.empty.title": "Nothing here yet",
   "home.empty.body": "You have no active projects, quotations or orders yet.",
-
   "partner.title": "My shipments",
   "partner.subtitle": "Shipments assigned to you",
   "partner.empty.title": "No shipments assigned",
   "partner.empty.body": "You have no shipments assigned to you right now.",
-
   "dest.KIGALI": "Kigali",
   "dest.GOMA": "Goma",
   "dest.BUKAVU": "Bukavu",
   "dest.UZA_STOCK": "UZA stock",
   "dest.OTHER": "Other",
-
   "ship.carrier": "Carrier",
   "ship.container": "Container",
   "ship.destination": "Destination",
@@ -184,7 +168,6 @@
   "ship.daysWaiting": "Days awaiting consolidation",
   "ship.freight": "Freight cost",
   "ship.freightNote": "Freight cost figures are not shared with logistics partners.",
-
   "pkg.title": "Packages",
   "pkg.kg": "Weight (kg)",
   "pkg.cbm": "Volume (CBM)",
@@ -192,7 +175,6 @@
   "pkg.held": "On hold",
   "pkg.empty": "No packages recorded on this shipment yet.",
   "pkg.unavailable": "Package details are not available right now.",
-
   "delivery.title": "Delivery",
   "delivery.none": "Not delivered yet. A proof of delivery appears here once the goods are handed over.",
   "delivery.unavailable": "Delivery details are not available right now.",
@@ -203,11 +185,9 @@
   "delivery.status.in_progress": "In progress",
   "delivery.status.delivered": "Delivered",
   "delivery.status.failed": "Failed",
-
   "timeline.title": "Tracking timeline",
   "timeline.empty": "No tracking milestones recorded yet.",
   "timeline.unavailable": "The tracking timeline is not available right now.",
-
   "state.loading": "Loading…",
   "state.error.title": "Something went wrong",
   "state.error.body": "We could not load this from the server.",
@@ -216,9 +196,7 @@
   "state.denied.body": "Your role cannot view this record.",
   "state.notfound.title": "Not found",
   "state.notfound.body": "This record does not exist or is no longer available.",
-
   "provenance.confirmed": "Confirmed",
   "provenance.estimated": "Estimated",
-
   "action.back": "Back"
 }

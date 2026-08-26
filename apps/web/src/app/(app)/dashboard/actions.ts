@@ -13,8 +13,13 @@ import { getSession } from '@/lib/session';
  * half with the LOGGED-IN user's own token. Credentials are env-configurable dev defaults;
  * this is not part of the production auth story.
  */
-const SEED_AGENT_EMAIL = process.env.UZA_SEED_AGENT_EMAIL ?? 'agent@uza.rw';
-const SEED_AGENT_PASSWORD = process.env.UZA_SEED_AGENT_PASSWORD ?? 'password1';
+/**
+ * No default password. A hard-coded fallback is a working credential on any host where the
+ * variable was not set, and "it is only a dev default" stops being true the moment there is a
+ * public URL. Unset means the demo action is unavailable, which is the safe failure.
+ */
+const SEED_AGENT_EMAIL = process.env.UZA_SEED_AGENT_EMAIL ?? '';
+const SEED_AGENT_PASSWORD = process.env.UZA_SEED_AGENT_PASSWORD ?? '';
 
 interface LoginResp { accessToken: string }
 interface RefResp { ref: string }
@@ -22,6 +27,10 @@ interface RefResp { ref: string }
 export async function seedDealAction(): Promise<void> {
   const session = await getSession();
   if (!session) redirect('/login');
+
+  // Unconfigured on purpose in production. Without the seed agent's credentials in the
+  // environment this action does nothing rather than falling back to a known password.
+  if (!SEED_AGENT_EMAIL || !SEED_AGENT_PASSWORD) redirect('/dashboard?err=seed_disabled');
 
   // Upstream (agent-owned): customer + lead.
   const login = await apiCall<LoginResp>('/auth/login', {
