@@ -2039,3 +2039,82 @@ enum WorkspaceTaskStatus {
   in_progress
   done
 }
+
+// ─────────────────────────────────────────────────────────────────── The UZA ID
+//
+// One person, one identifier, used by every UZA system: the Mobility platform, the
+// candidate portal, the charging platform, the taxi app, the wallet, the battery
+// registry and Nexus itself.
+//
+// WHY THIS IS FEDERATION AND NOT A MERGE
+//
+// Each satellite system keeps its own user table and its own database. What changes is
+// that each one records the person's UZA ID alongside its local row, and Nexus holds the
+// map. That means:
+//
+//   · No destructive migration. Nothing is deleted, nothing is moved, and a system that
+//     has not adopted the ID yet simply has no link row — visible as a gap rather than
+//     as a wrong answer.
+//   · It is reversible. A merge is not.
+//   · It can be rolled out one system at a time, which is the only way it will actually
+//     happen while five other things are also being launched.
+//
+// WHY THERE IS NO PERSONAL DATA IN HERE
+//
+// Nexus holds NO national ID and NO phone number in clear. It holds a peppered hash of
+// each, used only to answer "are these two records the same person?", plus a display name
+// so a human can read the register. The real values stay in the system that legitimately
+// collects them, under the consent given there.
+//
+// This is not caution for its own sake. Nexus is the one system every employee can reach,
+// so it is the worst possible place to concentrate identity documents — and under Law
+// N° 058/2021 the obligation follows the data. Not holding it is the strongest control
+// available, and it costs nothing here because matching only ever needs equality.
+
+/// A natural person, known to UZA once, across every system.
+model Person {
+  id          String   @id @default(uuid())
+  ref         String   @unique /// the UZA ID, e.g. UZA-P-000123. Permanent.
+  displayName String /// for humans reading a register. Not used for matching.
+
+  /// SHA-256 of (normalised value + UZA_ID_PEPPER). Match keys, never identifiers.
+  /// The pepper is mandatory: a national ID has a small enough space that an unpeppered
+  /// hash is recoverable by brute force in minutes, which would make this table the
+  /// identity-document store it exists to avoid being.
+  phoneHash      String? @unique
+  nationalIdHash String? @unique
+
+  /// Consent to be included in aggregate impact reporting (Law N° 058/2021).
+  /// Revocable: withdrawing removes the person from FUTURE aggregates. It cannot rewrite
+  /// a report already issued, and intake says so out loud.
+  reportingConsent   Boolean   @default(false)
+  consentRecordedAt  DateTime?
+  consentWithdrawnAt DateTime?
+
+  mergedIntoRef String? /// set when this record was folded into another. Never deleted.
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  links PersonLink[]
+
+  @@index([mergedIntoRef])
+}
+
+/// One person as a given system knows them. The join that makes the UZA ID real.
+model PersonLink {
+  id         String   @id @default(uuid())
+  personRef  String /// Person.ref
+  system     String /// e.g. "mobility", "charge", "evfleet", "battery", "nexus", "taxi"
+  externalId String /// that system's own primary key or username for this person
+  note       String?
+  createdAt  DateTime @default(now())
+
+  person Person @relation(fields: [personRef], references: [ref], onDelete: Cascade)
+
+  /// A system may know a person exactly once. This is the constraint that stops the
+  /// fragmentation from re-forming: a second link for the same (system, externalId)
+  /// fails loudly rather than quietly creating a second identity.
+  @@unique([system, externalId])
+  @@index([personRef])
+}

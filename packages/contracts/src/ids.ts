@@ -1,5 +1,14 @@
 /** Readable identifiers layered over UUID primary keys (spec section 4). */
 export const ID_PATTERNS = {
+  /**
+   * The UZA ID. One person, one identifier, used by every UZA system.
+   *
+   * Deliberately carries NO year, unlike almost every other pattern here. A year would
+   * read as a cohort and would invite the question of what happens when somebody
+   * re-registers — and the answer must be "nothing, they keep the same ID". A person is
+   * not an event.
+   */
+  person:      'UZA-P-{seq:6}',
   customer:    'CUS-{country}-{seq:6}',
   agent:       'AGT-{office}-{seq:4}',
   supplier:      'SUP-{country}-{seq:4}',
