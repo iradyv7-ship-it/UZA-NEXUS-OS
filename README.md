@@ -178,12 +178,32 @@ computation is not built.
 
 ---
 
-## A note on how this was written
+## House style — comments
 
-Much of this codebase was written with AI assistance, and the comments are longer than you may
-be used to. That is deliberate: where a decision was not obvious, the reason is written next to
-the code instead of being lost.
+Much of this codebase was written with AI assistance, and **the comments are denser than a
+hand-written codebase**. Measured: 42% comment lines in the most recently added files against
+21% elsewhere, where a typical NestJS project sits nearer 5–10%.
 
-**Treat the comments as documentation, not decoration** — several record a bug that already
-cost a day. But treat the code as yours. **If something is wrong, change it.** Nothing here is
-sacred, and the tests exist so you can change things confidently.
+That is too much, and it is being corrected rather than defended. **The standard going
+forward:**
+
+| Belongs in the code | Belongs in `docs/` |
+|---|---|
+| What a non-obvious line does | Why an approach was chosen over another |
+| A trap that will bite the next person, in one or two lines | A diagnosis, an investigation, a history |
+| Why a constant has that value | Anything longer than about five lines |
+
+```ts
+// Reads the highest existing ref, not count()+1 — counting collides after a delete.
+const seq = await nextSequence(model, prefix);
+```
+
+not fifteen lines recounting the incident. **Link instead:** `// see docs/PORTALS.md`.
+
+**Some comments are load-bearing and must not be trimmed away.** The confidentiality rules in
+`intake-lanes.ts` and `lender-view-access.ts`, and the `UZA_ID_PEPPER` note in
+`uza-id.hash.ts`, explain constraints with legal consequences. If you shorten those, keep the
+constraint and move the reasoning to a document you link to.
+
+**Everything else is yours.** If a comment is noise, delete it. If code is wrong, change it.
+Nothing here is sacred, and the tests exist so you can change things confidently.
