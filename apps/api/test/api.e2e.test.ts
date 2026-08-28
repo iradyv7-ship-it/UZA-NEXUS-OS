@@ -79,9 +79,35 @@ beforeAll(async () => {
     env: { ...process.env, PORT: String(PORT) },
   });
   await new Promise<void>((resolve, reject) => {
-    const timer = setTimeout(() => reject(new Error('API did not start in time')), 45_000);
+    // BOOT_TIMEOUT is generous on purpose, and the reason is worth knowing before you
+    // shrink it again.
+    //
+    // This spawns the real API under @swc-node/register, which compiles the whole
+    // application on the fly. With a COLD swc cache that is slow — slower than the 45s
+    // this used to allow — so the suite failed here on a first run and passed on a retry,
+    // which looked like flakiness and was really a cold cache. It is not CPU contention:
+    // vitest runs these files serially (fileParallelism: false, singleFork).
+    //
+    // It must also stay comfortably below the hook timeout below, or vitest kills the hook
+    // first and you get a timeout with no output instead of the message built here.
+    const BOOT_TIMEOUT = 100_000;
+    let outBuf = '';
+    const timer = setTimeout(
+      () =>
+        reject(
+          new Error(
+            `API did not start within ${BOOT_TIMEOUT / 1000}s.
+` +
+              `stdout: ${outBuf.slice(-800) || '(nothing)'}
+` +
+              `stderr: ${errBuf.slice(-800) || '(nothing)'}`,
+          ),
+        ),
+      BOOT_TIMEOUT,
+    );
     let errBuf = '';
     server.stdout.on('data', (d: Buffer) => {
+      outBuf += d.toString();
       if (d.toString().includes('listening on')) {
         clearTimeout(timer);
         resolve();
@@ -101,7 +127,7 @@ beforeAll(async () => {
   tokens.agent = await login('agent@uza.rw', 'password1');
   tokens.finance = await login('finance@uza.rw', 'password1');
   tokens.front = await login('front@uza.rw', 'password1');
-}, 60_000);
+}, 150_000);
 
 afterAll(async () => {
   server?.kill('SIGTERM');
