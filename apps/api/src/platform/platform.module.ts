@@ -5,6 +5,7 @@ import { AuthModule } from './auth/auth.module';
 import { IdentityModule } from './identity/identity.module';
 import { NotificationModule } from './notification/notification.module';
 import { OutboxModule } from './outbox/outbox.module';
+import { LenderViewModule } from './lender-view/lender-view.module';
 import { UzaIdModule } from './uza-id/uza-id.module';
 
 /**
@@ -21,6 +22,7 @@ import { UzaIdModule } from './uza-id/uza-id.module';
     NotificationModule,
     OutboxModule,
     UzaIdModule,
+    LenderViewModule,
   ],
   exports: [
     AuditModule,
@@ -30,6 +32,7 @@ import { UzaIdModule } from './uza-id/uza-id.module';
     NotificationModule,
     OutboxModule,
     UzaIdModule,
+    LenderViewModule,
   ],
 })
 export class PlatformModule {}

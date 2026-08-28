@@ -2118,3 +2118,38 @@ model PersonLink {
   @@unique([system, externalId])
   @@index([personRef])
 }
+
+// ───────────────────────────────────────────────────── Lender disclosure
+//
+// Which lender may see which borrower, and whether that borrower agreed to it.
+//
+// Entitlement and consent are deliberately ONE record with two dates rather than two
+// tables. A lender is entitled because it has a loan with this person, and the consent it
+// holds is consent to THAT lender — the two facts are born together at origination and
+// they die together. Splitting them invites a row of one kind without the other, which is
+// exactly the state that produces an accidental disclosure.
+//
+// Under Law N° 058/2021 consent is specific. Agreeing that Unguka may see a file is not
+// agreeing that Equity may, so there is one row per (person, lender) and no global
+// "consents to lenders" flag anywhere.
+
+/// A lender's entitlement to one borrower's file, and that borrower's consent to it.
+model LenderBorrower {
+  id        String @id @default(uuid())
+  personRef String /// Person.ref — the UZA ID
+  lender    String /// normalised lender key, e.g. "unguka", "equity"
+  loanRef   String? /// the lender's OWN reference for the loan, for their reconciliation
+
+  /// Null means never given. Consent is affirmative — absence is refusal, not permission.
+  consentGivenAt     DateTime?
+  /// Set on withdrawal. Kept rather than clearing consentGivenAt, so the record shows that
+  /// consent existed and when it ended — which is what an audit or a complaint needs.
+  consentWithdrawnAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  /// A lender knows a person once. Two rows would mean two answers to "may they see this".
+  @@unique([personRef, lender])
+  @@index([lender])
+}
