@@ -1,10 +1,11 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { BadRequestException, Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import type { Actor } from '@uza/contracts';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
 import { verifyPassword } from './password';
 import { toActor } from './actor';
+import { encryptMfaSecret, generateMfaSecret, mfaOtpAuthUrl, verifyMfaCode } from './mfa';
 
 export interface LoginResult {
   readonly accessToken: string;
@@ -12,15 +13,25 @@ export interface LoginResult {
   readonly mfaRequired: boolean;
 }
 
+export interface MfaEnrollment {
+  /** Not yet active. Nothing is trusted until confirmMfaEnrollment verifies a real code. */
+  readonly otpauthUrl: string;
+}
+
 /**
- * Authentication. JWT-based and MFA-ready:
+ * Authentication. JWT-based, with real TOTP MFA:
  *  - password is verified with bcrypt;
  *  - a disabled account (disabledAt) or an EXPIRED account (expiresAt in the past —
  *    this is how partner/customer-portal accounts lapse) is refused;
- *  - if MFA is enabled the second factor is required before a token is issued.
+ *  - if MFA is enabled the second factor is required before a token is issued, verified
+ *    with RFC 6238 TOTP (see `mfa.ts`) — not the six-digit-shaped stub this replaced.
  *
- * MFA verification itself is a documented stub (see `verifyMfaCode`): the structure,
- * columns and enforcement path exist so turning on TOTP is a later, contained change.
+ * Enrollment is two steps, deliberately: `startMfaEnrollment` generates a secret and
+ * returns it as an otpauth:// URL, but writes nothing to `mfaEnabled`. Only
+ * `confirmMfaEnrollment`, which requires a real code generated from that secret, flips
+ * `mfaEnabled` on — proving the user actually captured the secret in an authenticator app
+ * before the account starts requiring it. Enrolling with a secret nobody can generate a
+ * code from would be a self-lockout, not security.
  */
 @Injectable()
 export class AuthService {
@@ -59,7 +70,15 @@ export class AuthService {
       if (!mfaCode) {
         return { accessToken: '', actor: this.actorFor(user), mfaRequired: true };
       }
-      if (!this.verifyMfaCode(user.mfaSecret, mfaCode)) {
+      if (!verifyMfaCode(user.mfaSecret, mfaCode)) {
+        await this.audit.record({
+          actorId: user.ref,
+          actorRole: user.role,
+          resource: 'session',
+          action: 'login',
+          decision: 'deny',
+          reason: 'MFA_INVALID_CODE',
+        });
         throw new UnauthorizedException('Invalid MFA code');
       }
     }
@@ -191,11 +210,74 @@ export class AuthService {
   }
 
   /**
-   * STUB. Real TOTP (otplib) lands with the MFA rollout. Kept deterministic and
-   * clearly non-cryptographic so nobody mistakes it for production MFA.
+   * Step 1 of enrolling: generate a secret, return it as an otpauth:// URL to render as a
+   * QR code (or accept pasted). Self-service only — `userRef` always comes from the
+   * caller's own authenticated identity, never a caller-supplied id, matching the pattern
+   * `identity.service.ts` uses for role assignment.
+   *
+   * Does NOT set mfaEnabled and does NOT touch the existing mfaSecret column yet — that
+   * only happens once `confirmMfaEnrollment` proves the secret actually works. Calling
+   * this twice before confirming is fine; it just issues a new secret, discarding the
+   * unconfirmed one.
    */
-  private verifyMfaCode(secret: string | null, code: string): boolean {
-    if (!secret) return false;
-    return code.length === 6 && /^\d{6}$/.test(code);
+  async startMfaEnrollment(userRef: string): Promise<MfaEnrollment> {
+    const user = await this.prisma.user.findUnique({ where: { ref: userRef } });
+    if (!user) throw new UnauthorizedException('unknown account');
+    const secret = generateMfaSecret();
+    await this.prisma.user.update({
+      where: { ref: userRef },
+      // Stored encrypted immediately, even though mfaEnabled stays false — an unconfirmed
+      // secret sitting in the database in plaintext would defeat the point of encrypting
+      // the confirmed one.
+      data: { mfaSecret: encryptMfaSecret(secret) },
+    });
+    return { otpauthUrl: mfaOtpAuthUrl(user.email, secret) };
+  }
+
+  /**
+   * Step 2: prove the enrollment worked. Requires a real code generated from the secret
+   * `startMfaEnrollment` just issued — only then does the account start requiring MFA.
+   */
+  async confirmMfaEnrollment(userRef: string, code: string): Promise<void> {
+    const user = await this.prisma.user.findUnique({ where: { ref: userRef } });
+    if (!user) throw new UnauthorizedException('unknown account');
+    if (!user.mfaSecret) {
+      throw new BadRequestException('call startMfaEnrollment first');
+    }
+    if (!verifyMfaCode(user.mfaSecret, code)) {
+      throw new UnauthorizedException('Invalid MFA code');
+    }
+    await this.prisma.user.update({ where: { ref: userRef }, data: { mfaEnabled: true } });
+    await this.audit.record({
+      actorId: user.ref,
+      actorRole: user.role,
+      resource: 'session',
+      action: 'mfa:enable',
+      decision: 'allow',
+    });
+  }
+
+  /**
+   * Turn MFA off. Requires a currently-valid code, the same self-service proof-of-
+   * possession as confirming — otherwise anyone who stole a bearer token could disable the
+   * second factor that was supposed to stop them.
+   */
+  async disableMfa(userRef: string, code: string): Promise<void> {
+    const user = await this.prisma.user.findUnique({ where: { ref: userRef } });
+    if (!user) throw new UnauthorizedException('unknown account');
+    if (!user.mfaEnabled || !verifyMfaCode(user.mfaSecret, code)) {
+      throw new UnauthorizedException('Invalid MFA code');
+    }
+    await this.prisma.user.update({
+      where: { ref: userRef },
+      data: { mfaEnabled: false, mfaSecret: null },
+    });
+    await this.audit.record({
+      actorId: user.ref,
+      actorRole: user.role,
+      resource: 'session',
+      action: 'mfa:disable',
+      decision: 'allow',
+    });
   }
 }

@@ -68,6 +68,9 @@ services:
       JWT_SECRET: ${JWT_SECRET}
       # Mandatory: the UZA ID refuses to hash match keys unpeppered. See uza-id.hash.ts.
       UZA_ID_PEPPER: ${UZA_ID_PEPPER}
+      # Mandatory once any account enables MFA: encrypts/decrypts TOTP secrets at rest.
+      # See platform/auth/mfa.ts.
+      MFA_ENCRYPTION_KEY: ${MFA_ENCRYPTION_KEY}
       REDIS_URL: redis://redis:6379
       # Optional. Absent, the register works and only the two advisor routes return 503.
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}

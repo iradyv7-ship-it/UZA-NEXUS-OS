@@ -10,9 +10,17 @@ import {
 } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { IsEmail, IsOptional, IsString, MinLength } from 'class-validator';
+import type { Actor } from '@uza/contracts';
 import { AuthService } from './auth.service';
 import { GoogleAuthService } from './google.service';
 import { Public } from './public.decorator';
+import { CurrentActor } from './current-actor.decorator';
+
+class MfaCodeDto {
+  @IsString()
+  @MinLength(6)
+  code!: string;
+}
 
 class LoginDto {
   @IsEmail()
@@ -83,5 +91,35 @@ export class AuthController {
       throw new BadRequestException('Missing authorization code');
     }
     return this.google.handleCallback(code, state);
+  }
+
+  /**
+   * Step 1 of turning MFA on for YOUR OWN account. Returns an otpauth:// URL — render it
+   * as a QR code for an authenticator app, or let the user paste it in manually. Does not
+   * enable MFA yet; see POST /auth/mfa/confirm.
+   */
+  @Post('mfa/setup')
+  @ApiOperation({ summary: 'Start MFA enrollment for the caller\'s own account; returns { otpauthUrl }' })
+  startMfa(@CurrentActor() actor: Actor) {
+    return this.auth.startMfaEnrollment(actor.userId);
+  }
+
+  /**
+   * Step 2: prove the secret from mfa/setup actually works. Only after this succeeds does
+   * the account start requiring a code at login.
+   */
+  @Post('mfa/confirm')
+  @ApiOperation({ summary: 'Confirm MFA enrollment with a real code; enables MFA on success' })
+  async confirmMfa(@CurrentActor() actor: Actor, @Body() dto: MfaCodeDto) {
+    await this.auth.confirmMfaEnrollment(actor.userId, dto.code);
+    return { ok: true };
+  }
+
+  /** Turn MFA off for YOUR OWN account. Requires a currently-valid code. */
+  @Post('mfa/disable')
+  @ApiOperation({ summary: 'Disable MFA on the caller\'s own account; requires a valid current code' })
+  async disableMfa(@CurrentActor() actor: Actor, @Body() dto: MfaCodeDto) {
+    await this.auth.disableMfa(actor.userId, dto.code);
+    return { ok: true };
   }
 }

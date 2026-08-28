@@ -75,6 +75,9 @@ model User {
   // MFA-ready. No secret material is required to exist; the columns are present so
   // enabling TOTP later is a data change, not a migration.
   mfaEnabled Boolean @default(false)
+  /// Encrypted at rest (AES-256-GCM, keyed by MFA_ENCRYPTION_KEY — see platform/auth/mfa.ts).
+  /// Never the plaintext TOTP secret. Set on startMfaEnrollment, before mfaEnabled flips —
+  /// see AuthService for why those two are separate steps.
   mfaSecret  String?
 
   // Partner/customer accounts expire; internal employees leave expiresAt null.
