@@ -1,6 +1,8 @@
 import { Body, Controller, Get, Param, Post } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { IsBoolean, IsOptional, IsString, MinLength } from 'class-validator';
+import type { Actor } from '@uza/contracts';
+import { CurrentActor } from '../auth/current-actor.decorator';
 import { UzaIdService } from './uza-id.service';
 
 /**
@@ -46,34 +48,34 @@ export class UzaIdController {
 
   /** Idempotent. Same (system, externalId) always returns the same UZA ID. */
   @Post('resolve')
-  resolve(@Body() dto: ResolveDto) {
-    return this.ids.resolve(dto);
+  resolve(@CurrentActor() actor: Actor, @Body() dto: ResolveDto) {
+    return this.ids.resolve(actor, dto);
   }
 
   /** Every system that knows this person, and what it calls them. */
   @Get(':ref/links')
-  links(@Param('ref') ref: string) {
-    return this.ids.links(ref);
+  links(@CurrentActor() actor: Actor, @Param('ref') ref: string) {
+    return this.ids.links(actor, ref);
   }
 
   /** Attach a record to a person a human has confirmed — used after an uncertain match. */
   @Post(':ref/links')
-  async link(@Param('ref') ref: string, @Body() dto: LinkDto) {
-    await this.ids.link(ref, dto.system, dto.externalId);
+  async link(@CurrentActor() actor: Actor, @Param('ref') ref: string, @Body() dto: LinkDto) {
+    await this.ids.link(actor, ref, dto.system, dto.externalId);
     return { ok: true };
   }
 
   /** Fold two records into one. The loser is tombstoned, never deleted. */
   @Post('merge')
-  async merge(@Body() dto: MergeDto) {
-    await this.ids.merge(dto.loserRef, dto.winnerRef);
+  async merge(@CurrentActor() actor: Actor, @Body() dto: MergeDto) {
+    await this.ids.merge(actor, dto.loserRef, dto.winnerRef);
     return { ok: true };
   }
 
   /** Consent to appear in aggregate impact reporting. Revocable. */
   @Post(':ref/reporting-consent')
-  async consent(@Param('ref') ref: string, @Body() dto: ConsentDto) {
-    await this.ids.setReportingConsent(ref, dto.granted);
+  async consent(@CurrentActor() actor: Actor, @Param('ref') ref: string, @Body() dto: ConsentDto) {
+    await this.ids.setReportingConsent(actor, ref, dto.granted);
     return { ok: true };
   }
 }

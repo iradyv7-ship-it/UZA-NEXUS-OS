@@ -1,5 +1,7 @@
 import { Injectable, BadRequestException, ConflictException, NotFoundException } from '@nestjs/common';
+import type { Actor } from '@uza/contracts';
 import { PrismaService } from '../../prisma/prisma.service';
+import { AuthorizationService } from '../authorization/authorization.service';
 import { formatId } from '../ids/readable-id';
 import { nationalIdHash, phoneHash } from './uza-id.hash';
 
@@ -38,7 +40,10 @@ export interface ResolveResult {
 
 @Injectable()
 export class UzaIdService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly authz: AuthorizationService,
+  ) {}
 
   /**
    * The single entry point every system calls. Idempotent by construction: called twice
@@ -62,7 +67,8 @@ export class UzaIdService {
    * suggestion. This service will not silently unify two identities on a phone number
    * alone — it links, and it tells you it guessed.
    */
-  async resolve(input: PersonIdentity): Promise<ResolveResult> {
+  async resolve(actor: Actor, input: PersonIdentity): Promise<ResolveResult> {
+    await this.authz.authorize(actor, 'uza-id', 'resolve');
     const system = input.system.trim().toLowerCase();
     const externalId = input.externalId.trim();
     if (!system || !externalId) {
@@ -127,7 +133,8 @@ export class UzaIdService {
   }
 
   /** Everything UZA knows about where this person exists. The point of the whole thing. */
-  async links(ref: string): Promise<{ system: string; externalId: string }[]> {
+  async links(actor: Actor, ref: string): Promise<{ system: string; externalId: string }[]> {
+    await this.authz.authorize(actor, 'uza-id', 'links', { ref });
     const person = await this.prisma.person.findUnique({
       where: { ref },
       include: { links: { orderBy: { system: 'asc' } } },
@@ -140,7 +147,8 @@ export class UzaIdService {
    * Attach a system's record to a person that is already known — used when a human has
    * confirmed a match the automatic path was not confident enough to make.
    */
-  async link(ref: string, system: string, externalId: string): Promise<void> {
+  async link(actor: Actor, ref: string, system: string, externalId: string): Promise<void> {
+    await this.authz.authorize(actor, 'uza-id', 'link', { ref });
     const person = await this.prisma.person.findUnique({ where: { ref } });
     if (!person) throw new NotFoundException(`no person with ref ${ref}`);
     const s = system.trim().toLowerCase();
@@ -166,7 +174,10 @@ export class UzaIdService {
    * those into a dead reference, and merges are exactly the situation where old references
    * are still in circulation.
    */
-  async merge(loserRef: string, winnerRef: string): Promise<void> {
+  async merge(actor: Actor, loserRef: string, winnerRef: string): Promise<void> {
+    // Scoped on the winner: the surviving record is the one whose future this decision
+    // actually shapes, and it is always present (loserRef===winnerRef is rejected next).
+    await this.authz.authorize(actor, 'uza-id', 'merge', { ref: winnerRef });
     if (loserRef === winnerRef) throw new BadRequestException('cannot merge a person into themselves');
     const [loser, winner] = await Promise.all([
       this.prisma.person.findUnique({ where: { ref: loserRef } }),
@@ -209,7 +220,8 @@ export class UzaIdService {
   }
 
   /** Consent to appear in aggregate impact reporting. Revocable, and revocation is dated. */
-  async setReportingConsent(ref: string, granted: boolean): Promise<void> {
+  async setReportingConsent(actor: Actor, ref: string, granted: boolean): Promise<void> {
+    await this.authz.authorize(actor, 'uza-id', 'consent', { ref });
     const person = await this.prisma.person.findUnique({ where: { ref } });
     if (!person) throw new NotFoundException(`no person with ref ${ref}`);
     await this.prisma.person.update({

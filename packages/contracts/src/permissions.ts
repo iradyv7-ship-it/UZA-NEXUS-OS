@@ -20,30 +20,47 @@ export interface Actor {
 
 export const ROLE_GRANTS: Record<Role, readonly string[]> = {
   ceo: ['*:*'],
+  // `uza-id:resolve`/`link`/`links` on the six internal-staff roles below, and the
+  // additional `uza-id:merge`/`consent` on venture_manager, are a policy call made
+  // when the module went from zero authorization to enforced — there was no prior
+  // grant to recover, so this is a proposal, not a fact. Two tiers, deliberately:
+  // resolve/link/links is the routine cross-system integration path every satellite
+  // system calls to onboard or look up a person — open to internal staff, never to
+  // `customer` or `logistics_partner` (the two external, expiry-limited account
+  // kinds). merge/consent are irreversible-ish (a merge folds two people together;
+  // consent controls a Law N°058/2021 flag) and stay limited to the two roles this
+  // codebase already treats as trusted-admin (`ceo` via `*:*`; `venture_manager`,
+  // the other role with broad `*` grants below). Confirm this with the founder.
   venture_manager: [
     'lead:*', 'request:*', 'project:*', 'task:*', 'quotation:*', 'order:*',
     'customer:read', 'supplier:read', 'shipment:read', 'shipment:create',
     'package:read', 'package:update', 'invoice:read', 'payment:read',
+    'uza-id:resolve', 'uza-id:link', 'uza-id:links', 'uza-id:merge', 'uza-id:consent',
   ],
   china_sourcing: [
     'supplier:*', 'rfq:*', 'supplierQuote:*', 'po:*', 'visit:create',
     'inspection:read', 'capa:*', 'project:read', 'task:read', 'package:read',
+    'uza-id:resolve', 'uza-id:link', 'uza-id:links',
   ],
   china_warehouse: [
     'visit:read', 'visit:accept', 'inspection:*', 'package:*', 'receipt:*',
     'supplier:read', 'po:read', 'capa:read',
+    'uza-id:resolve', 'uza-id:link', 'uza-id:links',
   ],
   front_office: [
     'customer:read', 'call:*', 'promise:*', 'quotation:read', 'quotation:draft',
     'project:read', 'order:read', 'shipment:read', 'pettyCash:*',
+    'uza-id:resolve', 'uza-id:link', 'uza-id:links',
   ],
   finance: [
     'invoice:*', 'payment:*', 'installment:*', 'po:approve', 'margin:read',
     'commission:*', 'project:read', 'order:read', 'supplier:read', 'claim:*',
+    'uza-id:resolve', 'uza-id:link', 'uza-id:links',
   ],
   sales_agent: [
     'lead:create', 'lead:read', 'customer:create', 'customer:read',
     'request:create', 'quotation:read', 'order:read', 'commission:read',
+    'uza-id:resolve', 'uza-id:link', 'uza-id:links',
   ],
   customer: [
     'project:read', 'quotation:read', 'order:read', 'invoice:read',

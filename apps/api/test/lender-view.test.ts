@@ -1,6 +1,8 @@
 import { beforeAll, beforeEach, afterAll, describe, expect, it } from 'vitest';
+import type { Actor } from '@uza/contracts';
 import { prisma } from './db';
 import { AuditService } from '../src/platform/audit/audit.service';
+import { AuthorizationService } from '../src/platform/authorization/authorization.service';
 import { UzaIdService } from '../src/platform/uza-id/uza-id.service';
 import {
   LenderViewService,
@@ -8,7 +10,10 @@ import {
 } from '../src/platform/lender-view/lender-view.service';
 
 const audit = new AuditService(prisma as never);
-const ids = new UzaIdService(prisma as never);
+const ids = new UzaIdService(prisma as never, new AuthorizationService(audit));
+
+/** venture_manager holds every uza-id grant. See ROLE_GRANTS in @uza/contracts. */
+const vm: Actor = { userId: 'VM-RW-0001', role: 'venture_manager', office: 'KGL', scope: {} };
 
 /** A source where everything is instrumented, so redaction has something to remove. */
 const FULL: LenderDataSource = {
@@ -46,7 +51,7 @@ async function reset(): Promise<void> {
 
 /** A consenting borrower of `lender`. Returns the UZA ID. */
 async function borrower(lender: string, externalId = 'm-1'): Promise<string> {
-  const p = await ids.resolve({ system: 'mobility', externalId, displayName: 'A Borrower' });
+  const p = await ids.resolve(vm, { system: 'mobility', externalId, displayName: 'A Borrower' });
   await full.registerBorrower({ personRef: p.ref, lender, loanRef: 'L-1' });
   await full.setConsent(p.ref, lender, true);
   return p.ref;
@@ -88,7 +93,7 @@ describe('a lender sees only its own consenting borrowers', () => {
   });
 
   it('refuses without consent, and after it is withdrawn', async () => {
-    const p = await ids.resolve({ system: 'mobility', externalId: 'm-9', displayName: 'B' });
+    const p = await ids.resolve(vm, { system: 'mobility', externalId: 'm-9', displayName: 'B' });
     await full.registerBorrower({ personRef: p.ref, lender: 'equity' });
     await expect(full.view('equity', p.ref)).rejects.toThrow(/No file available/);
 

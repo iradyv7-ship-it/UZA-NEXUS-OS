@@ -4,6 +4,7 @@ import type { SignalSource, SignalStatus } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { PlanningAccessService } from '../planning/planning-authz.service';
 import { classify, redact } from './intake-lanes';
+import type { Signal } from '@prisma/client';
 import type { CapturedSignal } from './sources/captured-signal';
 import { ClaudeCodeSource } from './sources/claude-code.source';
 import { GmailSource } from './sources/gmail.source';
@@ -45,6 +46,21 @@ export class IntakeService {
 
   private seesPrivate(actor: Actor): boolean {
     return actor.role === 'ceo';
+  }
+
+  /**
+   * `body` is stored RAW, deliberately — redaction is applied fresh at each point the text
+   * actually leaves the system (triage.service.ts does the same before a model call), so
+   * the choice of what counts as "leaving" stays in one place instead of being baked into
+   * storage. An HTTP response to a caller is one of those points and, until this fix, was
+   * the one place that skipped it: read()/add()/promote()/dismiss() all returned the raw
+   * row, so a phone number in a signal's body that never tripped a wall term or a
+   * RESTRICTED keyword (classify() only pattern-matches title+body for THOSE, not for bare
+   * PII) reached any of the five intake:read roles unredacted — the exact leak this
+   * module's own header comment describes as the reason it exists.
+   */
+  private redactBody<T extends Signal>(signal: T): T {
+    return { ...signal, body: redact(signal.body) };
   }
 
   /** The instant the last sweep reached. Derived from the data, so it survives a restart. */
@@ -139,7 +155,7 @@ export class IntakeService {
       occurredAt: new Date(),
     });
     await this.access.allow(actor, RESOURCE, 'create', created?.ref);
-    return created;
+    return created ? this.redactBody(created) : created;
   }
 
   async list(
@@ -169,7 +185,7 @@ export class IntakeService {
     return rows;
   }
 
-  /** The full record including the raw body. Lane-checked individually. */
+  /** The full record, with body redacted the same way a model call redacts it. Lane-checked individually. */
   async read(actor: Actor, ref: string) {
     await this.access.assertRole(actor, 'intake:read', RESOURCE, 'read', ref);
     const found = await this.prisma.signal.findUnique({ where: { ref } });
@@ -178,7 +194,7 @@ export class IntakeService {
       return this.access.denyScope(actor, RESOURCE, 'read', ref);
     }
     await this.access.allow(actor, RESOURCE, 'read', ref);
-    return found;
+    return this.redactBody(found);
   }
 
   /**
@@ -201,7 +217,7 @@ export class IntakeService {
       },
     });
     await this.access.allow(actor, RESOURCE, 'promote', ref);
-    return updated;
+    return this.redactBody(updated);
   }
 
   async dismiss(actor: Actor, ref: string, reason: string) {
@@ -215,7 +231,7 @@ export class IntakeService {
       data: { status: 'dismissed', dismissedReason: reason.trim(), resolvedById: actor.userId, resolvedAt: new Date() },
     });
     await this.access.allow(actor, RESOURCE, 'dismiss', ref);
-    return updated;
+    return this.redactBody(updated);
   }
 
   /**
@@ -230,11 +246,11 @@ export class IntakeService {
     await this.access.assertRole(actor, 'intake:declassify', RESOURCE, 'share', ref);
     const signal = await this.prisma.signal.findUnique({ where: { ref } });
     if (!signal) throw new NotFoundException(`signal ${ref} not found`);
-    if (signal.lane === 'shared') return signal;
+    if (signal.lane === 'shared') return this.redactBody(signal);
 
     const updated = await this.prisma.signal.update({ where: { ref }, data: { lane: 'shared' } });
     await this.access.allow(actor, RESOURCE, 'share', ref);
-    return updated;
+    return this.redactBody(updated);
   }
 
   /** What is sitting in the queue, and how stale the oldest of it is. */

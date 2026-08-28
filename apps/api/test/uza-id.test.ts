@@ -1,5 +1,8 @@
 import { beforeAll, beforeEach, afterAll, describe, expect, it } from 'vitest';
+import type { Actor } from '@uza/contracts';
 import { prisma } from './db';
+import { AuditService } from '../src/platform/audit/audit.service';
+import { AuthorizationService } from '../src/platform/authorization/authorization.service';
 import { UzaIdService } from '../src/platform/uza-id/uza-id.service';
 import {
   MissingPepperError,
@@ -8,7 +11,16 @@ import {
   phoneHash,
 } from '../src/platform/uza-id/uza-id.hash';
 
-const ids = new UzaIdService(prisma as never);
+const audit = new AuditService(prisma as never);
+const authz = new AuthorizationService(audit);
+const ids = new UzaIdService(prisma as never, authz);
+
+// venture_manager: the broadest of the internal-staff roles granted uza-id access — used
+// as the default actor throughout this file so the pre-existing tests exercise the normal
+// path. The dedicated 'authorization' describe block below covers the boundary.
+const vm: Actor = { userId: 'VM-1', role: 'venture_manager', office: 'RW', scope: {} };
+const customer: Actor = { userId: 'CUS-1', role: 'customer', office: 'RW', scope: { customerId: 'X' } };
+const financeActor: Actor = { userId: 'FIN-1', role: 'finance', office: 'RW', scope: {} };
 
 beforeAll(() => {
   // Matching refuses to run unpeppered, so the suite must supply one.
@@ -16,7 +28,9 @@ beforeAll(() => {
 });
 
 async function reset(): Promise<void> {
-  await prisma.$executeRawUnsafe('TRUNCATE TABLE "PersonLink","Person" RESTART IDENTITY CASCADE');
+  await prisma.$executeRawUnsafe(
+    'TRUNCATE TABLE "PersonLink","Person" RESTART IDENTITY CASCADE',
+  );
 }
 
 beforeEach(reset);
@@ -61,7 +75,7 @@ describe('the pepper', () => {
 
 describe('issuing the UZA ID', () => {
   it('issues the documented format', async () => {
-    const r = await ids.resolve({
+    const r = await ids.resolve(vm, {
       system: 'mobility',
       externalId: 'm-1',
       displayName: 'A Driver',
@@ -71,8 +85,8 @@ describe('issuing the UZA ID', () => {
   });
 
   it('is idempotent — the same system record always returns the same ID', async () => {
-    const a = await ids.resolve({ system: 'mobility', externalId: 'm-1', displayName: 'A Driver' });
-    const b = await ids.resolve({ system: 'mobility', externalId: 'm-1', displayName: 'A Driver' });
+    const a = await ids.resolve(vm, { system: 'mobility', externalId: 'm-1', displayName: 'A Driver' });
+    const b = await ids.resolve(vm, { system: 'mobility', externalId: 'm-1', displayName: 'A Driver' });
     expect(b.ref).toBe(a.ref);
     expect(b.outcome).toBe('existing-link');
     expect(await prisma.person.count()).toBe(1);
@@ -81,10 +95,10 @@ describe('issuing the UZA ID', () => {
   it('increments from the highest existing ref, not from a row count', async () => {
     // The bug this guards against: delete a row and `count() + 1` collides with a ref that
     // is still in use. It has already happened once in this codebase.
-    const a = await ids.resolve({ system: 'mobility', externalId: 'm-1', displayName: 'One' });
-    const b = await ids.resolve({ system: 'mobility', externalId: 'm-2', displayName: 'Two' });
+    const a = await ids.resolve(vm, { system: 'mobility', externalId: 'm-1', displayName: 'One' });
+    const b = await ids.resolve(vm, { system: 'mobility', externalId: 'm-2', displayName: 'Two' });
     await prisma.person.delete({ where: { ref: a.ref } });
-    const c = await ids.resolve({ system: 'mobility', externalId: 'm-3', displayName: 'Three' });
+    const c = await ids.resolve(vm, { system: 'mobility', externalId: 'm-3', displayName: 'Three' });
     expect(c.ref).not.toBe(b.ref);
     expect(c.ref).not.toBe(a.ref);
     expect(c.ref > b.ref).toBe(true);
@@ -93,13 +107,13 @@ describe('issuing the UZA ID', () => {
 
 describe('recognising the same person across systems', () => {
   it('links a second system to the person already known, by national ID', async () => {
-    const first = await ids.resolve({
+    const first = await ids.resolve(vm, {
       system: 'evfleet',
       externalId: 'f-1',
       displayName: 'A Driver',
       nationalId: '1199012345678901',
     });
-    const second = await ids.resolve({
+    const second = await ids.resolve(vm, {
       system: 'charge',
       externalId: 'c-9',
       displayName: 'A. Driver',
@@ -109,7 +123,7 @@ describe('recognising the same person across systems', () => {
     expect(second.outcome).toBe('matched');
     expect(await prisma.person.count()).toBe(1);
 
-    const links = await ids.links(first.ref);
+    const links = await ids.links(vm, first.ref);
     expect(links).toEqual([
       { system: 'charge', externalId: 'c-9' },
       { system: 'evfleet', externalId: 'f-1' },
@@ -117,8 +131,8 @@ describe('recognising the same person across systems', () => {
   });
 
   it('reports a phone match as a guess rather than a certainty', async () => {
-    await ids.resolve({ system: 'evfleet', externalId: 'f-1', displayName: 'One', phone: '0788123456' });
-    const second = await ids.resolve({
+    await ids.resolve(vm, { system: 'evfleet', externalId: 'f-1', displayName: 'One', phone: '0788123456' });
+    const second = await ids.resolve(vm, {
       system: 'charge',
       externalId: 'c-1',
       displayName: 'Two',
@@ -130,13 +144,13 @@ describe('recognising the same person across systems', () => {
   });
 
   it('fills a missing match key but never overwrites one that disagrees', async () => {
-    const first = await ids.resolve({
+    const first = await ids.resolve(vm, {
       system: 'evfleet',
       externalId: 'f-1',
       displayName: 'One',
       nationalId: '1199012345678901',
     });
-    await ids.resolve({
+    await ids.resolve(vm, {
       system: 'charge',
       externalId: 'c-1',
       displayName: 'One',
@@ -148,10 +162,10 @@ describe('recognising the same person across systems', () => {
   });
 
   it('keeps two different people apart', async () => {
-    const a = await ids.resolve({
+    const a = await ids.resolve(vm, {
       system: 'mobility', externalId: 'm-1', displayName: 'One', nationalId: '1199012345678901',
     });
-    const b = await ids.resolve({
+    const b = await ids.resolve(vm, {
       system: 'mobility', externalId: 'm-2', displayName: 'Two', nationalId: '1199012345678902',
     });
     expect(b.ref).not.toBe(a.ref);
@@ -161,27 +175,27 @@ describe('recognising the same person across systems', () => {
 
 describe('the constraint that stops fragmentation re-forming', () => {
   it('refuses to move a system record to another person by accident', async () => {
-    const a = await ids.resolve({ system: 'mobility', externalId: 'm-1', displayName: 'One' });
-    const b = await ids.resolve({ system: 'mobility', externalId: 'm-2', displayName: 'Two' });
-    await expect(ids.link(b.ref, 'mobility', 'm-1')).rejects.toThrow(/already linked to/);
-    const links = await ids.links(a.ref);
+    const a = await ids.resolve(vm, { system: 'mobility', externalId: 'm-1', displayName: 'One' });
+    const b = await ids.resolve(vm, { system: 'mobility', externalId: 'm-2', displayName: 'Two' });
+    await expect(ids.link(vm, b.ref, 'mobility', 'm-1')).rejects.toThrow(/already linked to/);
+    const links = await ids.links(vm, a.ref);
     expect(links).toEqual([{ system: 'mobility', externalId: 'm-1' }]);
   });
 
   it('treats re-linking the same pair as a no-op, not an error', async () => {
-    const a = await ids.resolve({ system: 'mobility', externalId: 'm-1', displayName: 'One' });
-    await expect(ids.link(a.ref, 'mobility', 'm-1')).resolves.toBeUndefined();
+    const a = await ids.resolve(vm, { system: 'mobility', externalId: 'm-1', displayName: 'One' });
+    await expect(ids.link(vm, a.ref, 'mobility', 'm-1')).resolves.toBeUndefined();
   });
 });
 
 describe('merging two records for one person', () => {
   it('moves the links and leaves the old ID resolving to the new one', async () => {
-    const loser = await ids.resolve({ system: 'evfleet', externalId: 'f-1', displayName: 'One' });
-    const winner = await ids.resolve({ system: 'mobility', externalId: 'm-1', displayName: 'One' });
+    const loser = await ids.resolve(vm, { system: 'evfleet', externalId: 'f-1', displayName: 'One' });
+    const winner = await ids.resolve(vm, { system: 'mobility', externalId: 'm-1', displayName: 'One' });
 
-    await ids.merge(loser.ref, winner.ref);
+    await ids.merge(vm, loser.ref, winner.ref);
 
-    expect(await ids.links(winner.ref)).toEqual([
+    expect(await ids.links(vm, winner.ref)).toEqual([
       { system: 'evfleet', externalId: 'f-1' },
       { system: 'mobility', externalId: 'm-1' },
     ]);
@@ -191,54 +205,89 @@ describe('merging two records for one person', () => {
     const tombstone = await prisma.person.findUnique({ where: { ref: loser.ref } });
     expect(tombstone?.mergedIntoRef).toBe(winner.ref);
 
-    const again = await ids.resolve({ system: 'evfleet', externalId: 'f-1', displayName: 'One' });
+    const again = await ids.resolve(vm, { system: 'evfleet', externalId: 'f-1', displayName: 'One' });
     expect(again.ref).toBe(winner.ref);
   });
 
   it('moves the match keys, so the surviving person is still findable by them', async () => {
-    const loser = await ids.resolve({
+    const loser = await ids.resolve(vm, {
       system: 'evfleet', externalId: 'f-1', displayName: 'One', nationalId: '1199012345678901',
     });
-    const winner = await ids.resolve({ system: 'mobility', externalId: 'm-1', displayName: 'One' });
-    await ids.merge(loser.ref, winner.ref);
+    const winner = await ids.resolve(vm, { system: 'mobility', externalId: 'm-1', displayName: 'One' });
+    await ids.merge(vm, loser.ref, winner.ref);
 
-    const found = await ids.resolve({
+    const found = await ids.resolve(vm, {
       system: 'taxi', externalId: 't-1', displayName: 'One', nationalId: '1199012345678901',
     });
     expect(found.ref).toBe(winner.ref);
   });
 
   it('does not fail when both records already hold the identical link', async () => {
-    const loser = await ids.resolve({ system: 'evfleet', externalId: 'f-1', displayName: 'One' });
-    const winner = await ids.resolve({ system: 'mobility', externalId: 'm-1', displayName: 'One' });
-    await ids.link(winner.ref, 'charge', 'c-1');
-    await ids.link(loser.ref, 'charge', 'c-2');
-    await expect(ids.merge(loser.ref, winner.ref)).resolves.toBeUndefined();
+    const loser = await ids.resolve(vm, { system: 'evfleet', externalId: 'f-1', displayName: 'One' });
+    const winner = await ids.resolve(vm, { system: 'mobility', externalId: 'm-1', displayName: 'One' });
+    await ids.link(vm, winner.ref, 'charge', 'c-1');
+    await ids.link(vm, loser.ref, 'charge', 'c-2');
+    await expect(ids.merge(vm, loser.ref, winner.ref)).resolves.toBeUndefined();
   });
 
   it('refuses to merge a person into themselves, or to re-merge', async () => {
-    const a = await ids.resolve({ system: 'mobility', externalId: 'm-1', displayName: 'One' });
-    const b = await ids.resolve({ system: 'mobility', externalId: 'm-2', displayName: 'Two' });
-    await expect(ids.merge(a.ref, a.ref)).rejects.toThrow(/themselves/);
-    await ids.merge(a.ref, b.ref);
-    await expect(ids.merge(a.ref, b.ref)).rejects.toThrow(/already merged/);
+    const a = await ids.resolve(vm, { system: 'mobility', externalId: 'm-1', displayName: 'One' });
+    const b = await ids.resolve(vm, { system: 'mobility', externalId: 'm-2', displayName: 'Two' });
+    await expect(ids.merge(vm, a.ref, a.ref)).rejects.toThrow(/themselves/);
+    await ids.merge(vm, a.ref, b.ref);
+    await expect(ids.merge(vm, a.ref, b.ref)).rejects.toThrow(/already merged/);
   });
 });
 
 describe('reporting consent', () => {
   it('is off until it is given, and withdrawal is dated', async () => {
-    const p = await ids.resolve({ system: 'mobility', externalId: 'm-1', displayName: 'One' });
+    const p = await ids.resolve(vm, { system: 'mobility', externalId: 'm-1', displayName: 'One' });
     let person = await prisma.person.findUnique({ where: { ref: p.ref } });
     expect(person?.reportingConsent).toBe(false);
 
-    await ids.setReportingConsent(p.ref, true);
+    await ids.setReportingConsent(vm, p.ref, true);
     person = await prisma.person.findUnique({ where: { ref: p.ref } });
     expect(person?.reportingConsent).toBe(true);
     expect(person?.consentRecordedAt).toBeInstanceOf(Date);
 
-    await ids.setReportingConsent(p.ref, false);
+    await ids.setReportingConsent(vm, p.ref, false);
     person = await prisma.person.findUnique({ where: { ref: p.ref } });
     expect(person?.reportingConsent).toBe(false);
     expect(person?.consentWithdrawnAt).toBeInstanceOf(Date);
+  });
+});
+
+// Regression coverage for the finding that every UzaId endpoint enforced NO authorization
+// at all: any authenticated actor of any role could merge two people's records or flip
+// someone's Law N°058/2021 reporting-consent flag. See permissions.ts for the grant design.
+describe('authorization', () => {
+  it('lets an internal-staff role resolve, link and read links', async () => {
+    const a = await ids.resolve(financeActor, { system: 'mobility', externalId: 'm-1', displayName: 'One' });
+    await expect(ids.links(financeActor, a.ref)).resolves.toEqual([
+      { system: 'mobility', externalId: 'm-1' },
+    ]);
+  });
+
+  it('refuses resolve, link and links to a role with no uza-id grant', async () => {
+    await expect(
+      ids.resolve(customer, { system: 'mobility', externalId: 'm-1', displayName: 'One' }),
+    ).rejects.toMatchObject({ code: 'ACCESS_DENIED_ROLE' });
+
+    const a = await ids.resolve(vm, { system: 'mobility', externalId: 'm-2', displayName: 'Two' });
+    await expect(ids.links(customer, a.ref)).rejects.toMatchObject({ code: 'ACCESS_DENIED_ROLE' });
+    await expect(ids.link(customer, a.ref, 'charge', 'c-1')).rejects.toMatchObject({ code: 'ACCESS_DENIED_ROLE' });
+  });
+
+  it('refuses merge and reporting-consent to a role that can resolve/link but is not trusted-admin', async () => {
+    const loser = await ids.resolve(vm, { system: 'evfleet', externalId: 'f-1', displayName: 'One' });
+    const winner = await ids.resolve(vm, { system: 'mobility', externalId: 'm-1', displayName: 'One' });
+
+    // finance can resolve/link (routine integration) but not merge/consent (trusted-admin only).
+    await expect(ids.merge(financeActor, loser.ref, winner.ref)).rejects.toMatchObject({ code: 'ACCESS_DENIED_ROLE' });
+    await expect(ids.setReportingConsent(financeActor, winner.ref, true)).rejects.toMatchObject({ code: 'ACCESS_DENIED_ROLE' });
+
+    // venture_manager holds both grants and can actually do it.
+    await expect(ids.merge(vm, loser.ref, winner.ref)).resolves.toBeUndefined();
+    await expect(ids.setReportingConsent(vm, winner.ref, true)).resolves.toBeUndefined();
   });
 });

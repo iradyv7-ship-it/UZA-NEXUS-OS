@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { AuthorizationModule } from '../authorization/authorization.module';
 import { UzaIdController } from './uza-id.controller';
 import { UzaIdService } from './uza-id.service';
 
@@ -12,6 +13,7 @@ import { UzaIdService } from './uza-id.service';
  * PrismaModule is @Global, so it is not imported here.
  */
 @Module({
+  imports: [AuthorizationModule],
   controllers: [UzaIdController],
   providers: [UzaIdService],
   exports: [UzaIdService],
