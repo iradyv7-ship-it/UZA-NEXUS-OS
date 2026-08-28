@@ -78,9 +78,14 @@ export function verifyMfaCode(encryptedSecret: string | null, code: string): boo
   if (!/^\d{6}$/.test(code)) return false;
   try {
     return authenticator.verify({ token: code, secret: decryptMfaSecret(encryptedSecret) });
-  } catch {
-    // A malformed stored secret or a decryption failure is a verification failure, not a
-    // crash — a corrupt row must not turn into a 500 on every future login attempt.
+  } catch (e) {
+    // A missing key is a CONFIGURATION error and must surface. Swallowed, it would present
+    // as "invalid code" for every MFA user at once, with nothing in the logs saying why —
+    // which is a bad night for whoever is on call.
+    if (e instanceof MissingMfaKeyError) throw e;
+    // Everything else — a malformed stored secret, a decryption failure — is a verification
+    // failure rather than a crash. A corrupt row must not become a 500 on every future
+    // login attempt by that user.
     return false;
   }
 }
