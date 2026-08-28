@@ -39,7 +39,7 @@ Two things in `apps/api/.env` that are not optional:
 
 ```bash
 pnpm typecheck                              # must be clean
-pnpm --filter @uza/api test                 # 282 tests, ~2 minutes
+pnpm --filter @uza/api test                 # 295 tests, ~90 seconds
 curl localhost:3000/health
 ```
 
@@ -169,9 +169,6 @@ implementing TOTP is contained — **but it must not reach production in this st
 
 **29 `count() + 1` ref sites remain**, in `command`, `finance`, `intake`, `logistics` and
 `quality`.
-
-**One flaky test.** The suite occasionally fails one file on a first run and passes on retry —
-probably a shared-fixture race.
 
 **There is no impact module.** The measurement framework is written in the documents repo; the
 computation is not built.
