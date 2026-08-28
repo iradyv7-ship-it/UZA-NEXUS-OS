@@ -1,25 +1,189 @@
-# UZA Nexus OS
+# UZA Nexus
 
-Operating system for UZA Solutions Ltd. **v1 scope: UZA Bulk, China → Kigali/Goma.**
+The operating layer for UZA Solutions: the register of what the company is doing, who owes
+what, what was decided, and where the money is. NestJS API + Next.js web app + Postgres +
+Redis, in a pnpm monorepo.
 
-## Why the repo looks like this
+**New here? Read this page top to bottom.** It is written to get you productive in an hour,
+not to describe the architecture in the abstract.
 
-Built by parallel Claude Code subagents that cannot communicate with each other.
-Shared knowledge therefore lives in files, not conversation:
+---
 
-- `CLAUDE.md` — loaded into every agent at startup; the business rules
-- `packages/contracts` — the shared kernel; only `contracts-guardian` writes here
-- `docs/integration-contract.md` — how modules stay compatible
-- `tests/conformance/SPEC.md` — 30 assertions every module is measured against
-- `reference/` — the Python spike that validated the design; the oracle
-- `docs/TOOLING.md` — every tool, service and credential needed through to launch
+## Running it, in five minutes
 
-## Start here
-
-`BOOTSTRAP.md`
-
-## Run the oracle
+You need **Node 20+**, **pnpm** and **Docker**.
 
 ```bash
-cd reference && python3 run_scenarios.py    # expect 30 passed, 0 failed
+pnpm install
+docker compose up -d                                  # Postgres + Redis
+cp apps/api/.env.example apps/api/.env                # then open it, see below
+pnpm --filter @uza/api exec prisma migrate deploy
+pnpm --filter @uza/api seed:all                       # ONCE, on an empty database only
+pnpm dev
 ```
+
+- API → <http://localhost:3000>, OpenAPI docs at **`/docs`**
+- Web → <http://localhost:3100>
+
+Two things in `apps/api/.env` that are not optional:
+
+| | |
+|---|---|
+| `DATABASE_URL` | Matches `docker-compose.yml`. Usually correct as shipped |
+| `UZA_ID_PEPPER` | **Any non-empty string locally.** The UZA ID refuses to hash without one, and the failure message is not obvious |
+
+**`seed:all` is not idempotent.** Run it on an empty database only. To start over:
+`pnpm --filter @uza/api db:reset`.
+
+### Check it actually works
+
+```bash
+pnpm typecheck                              # must be clean
+pnpm --filter @uza/api test                 # 282 tests, ~2 minutes
+curl localhost:3000/health
+```
+
+Tests need Postgres running. They use a **separate database** (`<your db>_test`), and a guard
+refuses to run against anything whose name does not contain `test` — because the suite
+truncates tables, and it once emptied the development database twice before anyone worked out
+why.
+
+---
+
+## How the code is organised
+
+```
+apps/api/src/
+  platform/     foundation: auth, authorization, audit, identity, uza-id, lender-view
+  planning/     the register: initiatives, decisions, responsibilities, funding
+  umurimo/      the weekly loop: my-week, digest, blockers, comments
+  command/      tasks, grants, departments
+  trade/  finance/  logistics/  quality/  sourcing/
+  intake/       inbound signals, and the counterparty walls
+  integration/  the internal event bus
+packages/contracts/       shared types, ID patterns, roles, permissions
+apps/web/src/app/(app)/   18 pages
+```
+
+**One rule explains the whole layout, and breaking it is the main way to make a mess here:**
+
+> **A feature module never imports another feature module.**
+>
+> `finance` does not import `logistics`. They communicate by publishing events, and the only
+> place allowed to know every module at once is the composition root,
+> `integration/dispatch-map.ts`.
+>
+> `platform/*` is the exception in the other direction: everything may import it, and it
+> imports no feature module.
+
+If you find yourself writing `import { OrderService } from '../trade/...'` inside `finance`,
+that is the signal to publish an event instead.
+
+---
+
+## Adding a feature — a worked example
+
+Say you are adding **vehicle inspections** to the register.
+
+**1 · Model it** in `apps/api/prisma/schema.prisma`, then:
+
+```bash
+pnpm --filter @uza/api exec prisma migrate dev --name inspections
+```
+
+**2 · Give it a readable ref** in `packages/contracts/src/ids.ts`:
+
+```ts
+inspectionRecord: 'INSP-{year}-{seq:4}',
+```
+
+**3 · Write the service** — `apps/api/src/planning/inspection/inspection.service.ts`. Two
+things every service here does:
+
+```ts
+// Authorise at the SERVICE layer, not only in the controller. A controller is one way in;
+// events and seeds are others, and only the service sees them all.
+await this.access.require(actor, 'inspection:create');
+
+// Generate the ref from the HIGHEST EXISTING REF, never count() + 1. See below.
+const seq = await nextSequence(this.prisma.inspectionRecord, refPrefix('INSP'));
+```
+
+**4 · Controller.** Thin: validate with `class-validator`, call the service, return. No
+business logic.
+
+**5 · Register** the service in its module, and the module in `app.module.ts`.
+
+**6 · Test it** — `apps/api/test/inspection.test.ts`. Copy the shape of `command.test.ts`.
+Tests instantiate services directly rather than booting Nest, which keeps them fast and makes
+the dependencies obvious.
+
+```bash
+pnpm --filter @uza/api test inspection
+```
+
+---
+
+## Conventions that will bite you if you do not know them
+
+**Refs come from the highest existing ref, not `count() + 1`.** Use `nextSequence()` in
+`planning-ids.ts`. Counting breaks the moment a row is deleted: 32 decisions once existed while
+the highest ref was `DEC-2026-0033`, and every insert returned a 500 until somebody found it.
+**29 sites still use the old pattern — fixing one is a good first contribution.**
+
+**Authorise in the service, not the controller.**
+
+**The audit log is append-only.** `AuditService` exposes inserts and nothing else — no update,
+no delete, deliberately.
+
+**Deny before you throw.** On a refusal, write the audit row *first*, and without a transaction
+handle, so the denial survives the exception that is about to be raised.
+
+**Some things must never travel.** `intake/intake-lanes.ts` and
+`platform/lender-view/lender-view-access.ts` encode confidentiality rules as code, with tests
+naming specific counterparties. **Read those two files before touching anything lender-facing
+or intake-related.** They are not style — breaking one has legal consequences.
+
+**`packages/contracts` is the shared kernel.** A change there ripples into both apps; run
+`pnpm typecheck` at the root afterwards.
+
+---
+
+## Where things are
+
+| I want to… | Go to |
+|---|---|
+| See every endpoint | `/docs` on the running API — it cannot go stale |
+| Understand the business rules | `CLAUDE.md`, in this repo |
+| Understand the wider estate | The `UZA-SOLUTIONS-GUIDE` repo, `00-group/` |
+| Know how modules stay compatible | `docs/integration-contract.md` |
+| Deploy it | `deploy/README.md` and `docker-compose.prod.yml` |
+
+---
+
+## Known issues — so they do not surprise you
+
+**MFA does not verify anything.** `platform/auth/auth.service.ts` checks that the code is six
+digits and never checks the code. A deliberate stub, and the surrounding structure is real so
+implementing TOTP is contained — **but it must not reach production in this state.**
+
+**29 `count() + 1` ref sites remain**, in `command`, `finance`, `intake`, `logistics` and
+`quality`.
+
+**One flaky test.** The suite occasionally fails one file on a first run and passes on retry —
+probably a shared-fixture race.
+
+**There is no impact module.** The measurement framework is written in the documents repo; the
+computation is not built.
+
+---
+
+## A note on how this was written
+
+Much of this codebase was written with AI assistance, and the comments are longer than you may
+be used to. That is deliberate: where a decision was not obvious, the reason is written next to
+the code instead of being lost.
+
+**Treat the comments as documentation, not decoration** — several record a bug that already
+cost a day. But treat the code as yours. **If something is wrong, change it.** Nothing here is
+sacred, and the tests exist so you can change things confidently.
