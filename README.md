@@ -31,6 +31,7 @@ Two things in `apps/api/.env` that are not optional:
 |---|---|
 | `DATABASE_URL` | Matches `docker-compose.yml`. Usually correct as shipped |
 | `UZA_ID_PEPPER` | **Any non-empty string locally.** The UZA ID refuses to hash without one, and the failure message is not obvious |
+| `MFA_ENCRYPTION_KEY` | **Any non-empty string locally.** TOTP secrets are encrypted with it, and a missing key now throws rather than failing quietly |
 
 **`seed:all` is not idempotent.** Run it on an empty database only. To start over:
 `pnpm --filter @uza/api db:reset`.
@@ -39,7 +40,7 @@ Two things in `apps/api/.env` that are not optional:
 
 ```bash
 pnpm typecheck                              # must be clean
-pnpm --filter @uza/api test                 # 295 tests, ~90 seconds
+pnpm --filter @uza/api test                 # 317 tests, ~90 seconds
 curl localhost:3000/health
 ```
 
@@ -163,9 +164,8 @@ or intake-related.** They are not style — breaking one has legal consequences.
 
 ## Known issues — so they do not surprise you
 
-**MFA does not verify anything.** `platform/auth/auth.service.ts` checks that the code is six
-digits and never checks the code. A deliberate stub, and the surrounding structure is real so
-implementing TOTP is contained — **but it must not reach production in this state.**
+**The web app has no tests at all.** 18 pages, 4,600 lines, zero test files. The API has 317
+tests; the front end has none. That asymmetry is the largest quality gap in this repository.
 
 **29 `count() + 1` ref sites remain**, in `command`, `finance`, `intake`, `logistics` and
 `quality`.
