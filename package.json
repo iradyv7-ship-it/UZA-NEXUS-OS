@@ -8,7 +8,8 @@
   },
   "scripts": {
     "typecheck": "pnpm -r typecheck",
-    "test": "pnpm --filter @uza/api test",
-    "contracts:typecheck": "pnpm --filter @uza/contracts typecheck"
+    "test": "pnpm -r test",
+    "contracts:typecheck": "pnpm --filter @uza/contracts typecheck",
+    "verify": "pnpm typecheck && pnpm -r test"
   }
 }

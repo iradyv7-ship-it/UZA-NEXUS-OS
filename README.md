@@ -39,10 +39,13 @@ Two things in `apps/api/.env` that are not optional:
 ### Check it actually works
 
 ```bash
-pnpm typecheck                              # must be clean
-pnpm --filter @uza/api test                 # 317 tests, ~90 seconds
+pnpm verify        # typecheck + every test, both apps. The same command CI runs
 curl localhost:3000/health
 ```
+
+**340 tests: 317 on the API, 23 on the web app.** `pnpm verify` is deliberately identical
+to the CI job, so a red pipeline reproduces locally with one command instead of guessing
+which flags it used.
 
 Tests need Postgres running. They use a **separate database** (`<your db>_test`), and a guard
 refuses to run against anything whose name does not contain `test` — because the suite
@@ -148,6 +151,11 @@ or intake-related.** They are not style — breaking one has legal consequences.
 **`packages/contracts` is the shared kernel.** A change there ripples into both apps; run
 `pnpm typecheck` at the root afterwards.
 
+**Test the pure logic first.** `apps/web/src/lib/format.test.ts` and the API's
+`listing-pricing.util.spec.ts` equivalent are the reference shapes — no database, no
+rendering, milliseconds, and they fail for exactly one reason. Reach for jsdom only when the
+risk genuinely lives in the markup.
+
 ---
 
 ## Where things are
@@ -164,8 +172,9 @@ or intake-related.** They are not style — breaking one has legal consequences.
 
 ## Known issues — so they do not surprise you
 
-**The web app has no tests at all.** 18 pages, 4,600 lines, zero test files. The API has 317
-tests; the front end has none. That asymmetry is the largest quality gap in this repository.
+**Web app coverage is thin.** 23 tests, on the pure logic where a mistake is silent and
+expensive — masked fields and permission mirrors. Component rendering is untested; adding
+jsdom and testing-library is the next step, not a rewrite.
 
 **29 `count() + 1` ref sites remain**, in `command`, `finance`, `intake`, `logistics` and
 `quality`.

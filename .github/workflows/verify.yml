@@ -1,0 +1,62 @@
+# Every push and pull request runs the same checks a developer runs locally.
+#
+# The point is that standards stop depending on discipline. Nobody has to remember to run
+# the suite before pushing, and nobody has to police it in review — a red tick does that,
+# consistently, for everyone.
+#
+# `pnpm verify` is deliberately the same command locally and here. When CI fails, you
+# reproduce it with one command rather than guessing which flags the pipeline used.
+name: verify
+
+on:
+  push:
+    branches: ['**']
+  pull_request:
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+
+    services:
+      # The API suite is not mocked — it exercises real SQL against a real Postgres,
+      # which is why it catches constraint and transaction bugs a mocked suite cannot.
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: uza
+          POSTGRES_PASSWORD: uza
+          POSTGRES_DB: uza_nexus_test
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U uza"
+          --health-interval 5s --health-timeout 5s --health-retries 20
+      redis:
+        image: redis:7-alpine
+        ports: ['6379:6379']
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s --health-timeout 5s --health-retries 20
+
+    env:
+      DATABASE_URL: postgresql://uza:uza@localhost:5432/uza_nexus_test?schema=public
+      REDIS_URL: redis://localhost:6379
+      JWT_SECRET: ci-only-not-a-real-secret
+      # Both refuse to run when unset, by design — see uza-id.hash.ts and mfa.ts.
+      UZA_ID_PEPPER: ci-only-not-a-real-pepper
+      MFA_ENCRYPTION_KEY: ci-only-not-a-real-key
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter @uza/api exec prisma generate
+      - run: pnpm --filter @uza/api exec prisma migrate deploy
+
+      # Types first: it is the fastest signal and it fails for the clearest reason.
+      - run: pnpm typecheck
+      - run: pnpm -r test
