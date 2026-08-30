@@ -22,6 +22,7 @@ const FUND_STAGE = ['identified', 'qualifying', 'preparing', 'submitted', 'in_di
 const SYS_KIND = ['repository', 'web_app', 'mobile_app', 'backend', 'admin_panel', 'prototype', 'document'] as const;
 const SYS_STATUS = ['live', 'building', 'prototype', 'dormant', 'retired'] as const;
 const SYS_VIS = ['public', 'private', 'unknown'] as const;
+const CHECK_OUTCOME = ['pass', 'fail', 'not_applicable', 'not_run'] as const;
 const MEMO_AUDIENCE = ['everyone', 'department', 'person'] as const;
 const RESP_KIND = ['standing', 'gate', 'approval'] as const;
 const RESP_TRIGGER = ['per_shipment', 'per_deal', 'per_request', 'daily', 'weekly', 'monthly', 'ad_hoc'] as const;
@@ -125,6 +126,17 @@ class CreateSystemDto {
   @IsOptional() @IsDateString() lastPushAt?: string;
   @IsOptional() @IsString() supersededBy?: string;
   @IsOptional() @IsString() initiativeRef?: string;
+  @IsOptional() @IsString() notes?: string;
+}
+class RecordVerificationDto {
+  @IsOptional() @IsDateString() verifiedAt?: string;
+  @IsOptional() @IsIn(CHECK_OUTCOME) typecheck?: (typeof CHECK_OUTCOME)[number];
+  @IsOptional() @IsIn(CHECK_OUTCOME) tests?: (typeof CHECK_OUTCOME)[number];
+  @IsOptional() @IsIn(CHECK_OUTCOME) imageBuilds?: (typeof CHECK_OUTCOME)[number];
+  @IsOptional() @Type(() => Number) @IsInt() @Min(0) testsPassed?: number;
+  @IsOptional() @Type(() => Number) @IsInt() @Min(0) testsTotal?: number;
+  @IsOptional() @IsString() gaps?: string;
+  @IsString() @MinLength(1) verifiedBy!: string;
   @IsOptional() @IsString() notes?: string;
 }
 class UpdateSystemDto {
@@ -296,6 +308,26 @@ export class PlanningEstateController {
   @Get('health')
   health(@CurrentActor() actor: Actor) {
     return this.estate.health(actor);
+  }
+  /**
+   * Where every system stands: last measured run, whether it is still current, and
+   * what is built but not connected. Before `:ref`, or the router reads it as a ref.
+   */
+  @Get('readiness')
+  readiness(@CurrentActor() actor: Actor) {
+    return this.estate.readiness(actor);
+  }
+  @Post(':ref/verifications')
+  verify(
+    @CurrentActor() actor: Actor,
+    @Param('ref') ref: string,
+    @Body() dto: RecordVerificationDto,
+  ) {
+    return this.estate.recordVerification(actor, {
+      ...dto,
+      systemRef: ref,
+      verifiedAt: date(dto.verifiedAt),
+    });
   }
   @Patch(':ref')
   update(@CurrentActor() actor: Actor, @Param('ref') ref: string, @Body() dto: UpdateSystemDto) {

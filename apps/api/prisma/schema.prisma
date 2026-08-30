@@ -1685,6 +1685,8 @@ model SystemRecord {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  verifications SystemVerification[]
+
   @@index([ventureCode, status])
   @@index([ownerId])
   @@index([status])
@@ -1712,6 +1714,64 @@ enum SystemVisibility {
   public
   private
   unknown
+}
+
+/// One occasion on which somebody actually RAN a system's checks, and what happened.
+///
+/// The estate says what UZA has and whether anyone still pushes to it. It does not say
+/// whether the thing currently works, and "is it ready?" was being answered in meetings
+/// from memory — which is how a system stays "nearly done" for two months.
+///
+/// Every field here is a measurement with a timestamp, never a judgement. "Ready" is a
+/// claim somebody can defend in a meeting; "149 tests passed at 11:42 on 30 August" is
+/// not, and it goes stale on its own without anyone having to admit anything.
+///
+/// Rows are append-only by convention: a verification is a historical fact about a
+/// moment, so a later run adds a row rather than editing this one. That gives the
+/// founder a trend — improving, stuck, or regressing — which a single mutable status
+/// field cannot.
+model SystemVerification {
+  ref       String @id // readable id, e.g. VER-2026-0001
+  systemRef String
+
+  /// When the checks were run, not when the row was written. A verification imported
+  /// later still belongs to the moment it measured.
+  verifiedAt DateTime
+
+  typecheck   CheckOutcome @default(not_run)
+  tests       CheckOutcome @default(not_run)
+  imageBuilds CheckOutcome @default(not_run)
+
+  /// Counts, where a suite ran. `testsPassed < testsTotal` with tests = pass would be a
+  /// contradiction, and the service refuses it rather than storing it.
+  testsPassed Int?
+  testsTotal  Int?
+
+  /// Endpoints, screens or features that exist but have nothing behind them yet.
+  /// Recorded because "builds clean" and "is finished" are different questions, and
+  /// only the first one is easy to measure.
+  gaps String?
+
+  /// Who or what ran it. A person's User.ref, or a pipeline name.
+  verifiedBy String
+
+  notes     String?
+  createdAt DateTime @default(now())
+
+  system SystemRecord @relation(fields: [systemRef], references: [ref], onDelete: Cascade)
+
+  @@index([systemRef, verifiedAt])
+  @@index([verifiedAt])
+}
+
+enum CheckOutcome {
+  pass
+  fail
+  /// The check does not apply — a document has no test suite, and recording that as a
+  /// failure would make the estate look broken when it is merely varied.
+  not_applicable
+  /// Nobody ran it. Distinct from not_applicable: this one is a gap in the evidence.
+  not_run
 }
 
 /// A message from the CEO or a project manager to the team, with proof it was read.

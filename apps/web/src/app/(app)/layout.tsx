@@ -93,6 +93,11 @@ export default async function AppLayout({ children }: { children: React.ReactNod
                   Command
                 </Link>
               )}
+              {showCommand && (
+                <Link href="/systems" className={NAV}>
+                  Systems
+                </Link>
+              )}
               {showVerifyQueue && (
                 <Link
                   href="/finance/payments"
