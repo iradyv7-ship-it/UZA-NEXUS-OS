@@ -84,6 +84,35 @@ describe('Google sign-in — alternate credential', () => {
     expect(linked?.role).toBe('finance');
   });
 
+  it('matches on alternateEmails when the Google account is a personal address routing to a company account', async () => {
+    const off = await office();
+    const user = await identity.createEmployee(ceo, {
+      ref: 'CEO-KGL-0001', email: 'yves@uzasolutions.com', password: 'sup3rsecret',
+      role: 'ceo', officeId: off.id,
+    });
+    // alternateEmails has no create-time input yet (by design — set via seed-users.ts today);
+    // set it the same way the disabled/expired tests below set fields identity.service.ts
+    // doesn't expose on create.
+    await prisma.user.update({
+      where: { id: user.id }, data: { alternateEmails: ['iradyv7@gmail.com'] },
+    });
+
+    // Different case, exactly like the primary-email test above — alternate matching must
+    // be case-insensitive too, even though Prisma's array `has` filter itself is not.
+    stubGoogle({ email: 'Iradyv7@Gmail.com', sub: 'sub-alt' });
+    const state = await google.createState();
+    const result = await google.handleCallback('fake-code', state);
+
+    expect(result.actor.role).toBe('ceo');
+    expect(result.actor.userId).toBe('CEO-KGL-0001');
+
+    // Signing in via the alternate address grants exactly the primary account's role/scope —
+    // nothing extra, nothing different.
+    const decoded = await jwt.verifyAsync<{ role: string; ref: string }>(result.accessToken);
+    expect(decoded.role).toBe('ceo');
+    expect(decoded.ref).toBe('CEO-KGL-0001');
+  });
+
   it('unknown email → denied, no token, audits NO_MATCHING_USER (no auto-provision)', async () => {
     stubGoogle({ email: 'stranger@gmail.com', sub: 'sub-x' });
     const state = await google.createState();

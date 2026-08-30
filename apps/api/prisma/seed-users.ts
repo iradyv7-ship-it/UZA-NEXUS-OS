@@ -32,6 +32,9 @@ const prisma = new PrismaClient();
 interface Seat {
   ref: string;
   email: string;
+  /** Additional addresses (e.g. a personal Gmail) that sign in as this same account via
+   *  Google — see User.alternateEmails and AuthService.loginWithGoogle. */
+  alternateEmails?: string[];
   role: RoleName;
   office: string;
   name: string;
@@ -43,7 +46,16 @@ const OFFICES = [
 ];
 
 const SEATS: Seat[] = [
-  { ref: 'CEO-KGL-0001', email: 'yves@uzasolutions.rw', role: 'ceo', office: 'KGL', name: 'Yves Iradukunda Nsengiyumva' },
+  {
+    ref: 'CEO-KGL-0001',
+    // Corrected from yves@uzasolutions.rw — the real company domain is .com (UNIFY House,
+    // Kiyovu; info@uzasolutions.com is the general address). The other nine seats below
+    // still carry the .rw domain and have not been changed — flag to the founder before
+    // touching them, since that affects everyone's password-login email, not just Google.
+    email: 'yves@uzasolutions.com',
+    alternateEmails: ['iradyv7@gmail.com'],
+    role: 'ceo', office: 'KGL', name: 'Yves Iradukunda Nsengiyumva',
+  },
   { ref: 'EMP-KGL-0002', email: 'scorah@uzasolutions.rw', role: 'venture_manager', office: 'KGL', name: 'Scorah — PM, UZA Mobility' },
   { ref: 'EMP-KGL-0003', email: 'badiane@uzasolutions.rw', role: 'venture_manager', office: 'KGL', name: 'Badiane Gahamanyi — PM, UZA Bulk' },
   { ref: 'EMP-KGL-0007', email: 'gad@uzasolutions.rw', role: 'venture_manager', office: 'KGL', name: 'Kalisa Gad — PM, IT' },
@@ -93,12 +105,18 @@ async function main() {
       create: {
         ref: seat.ref,
         email: seat.email,
+        alternateEmails: seat.alternateEmails ?? [],
         passwordHash,
         role: seat.role,
         kind: 'employee',
         officeId: officeIds.get(seat.office)!,
       },
-      update: { email: seat.email, role: seat.role, officeId: officeIds.get(seat.office)! },
+      update: {
+        email: seat.email,
+        alternateEmails: seat.alternateEmails ?? [],
+        role: seat.role,
+        officeId: officeIds.get(seat.office)!,
+      },
     });
   }
 

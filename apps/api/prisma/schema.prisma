@@ -62,6 +62,12 @@ model User {
   id           String   @id @default(uuid())
   ref          String   @unique // readable id, e.g. AGT-GOM-0021 (ID_PATTERNS)
   email        String   @unique
+  /// Additional emails that authenticate this SAME account — a company domain and a personal
+  /// Gmail both routing to one person is the common case Google sign-in needs to support.
+  /// Password login still uses `email` only; Google sign-in matches either. Not unique at the
+  /// DB level (SQLite/Postgres can't enforce uniqueness across array elements) — enforced in
+  /// application code instead, see AuthService.loginWithGoogle.
+  alternateEmails String[] @default([])
   passwordHash String
   role         RoleName
   kind         UserKind @default(employee)

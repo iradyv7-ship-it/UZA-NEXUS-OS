@@ -100,10 +100,15 @@ export class AuthService {
    * (GoogleAuthService verifies the ID token against GOOGLE_CLIENT_ID); this method only
    * decides authorisation. It is a pure alternate credential:
    *
-   *  - It matches an EXISTING active user by email (case-insensitive). It never
-   *    auto-provisions — an unmatched email is a denial, not a signup.
+   *  - It matches an EXISTING active user by their primary email OR any of their
+   *    `alternateEmails` (e.g. a personal Gmail routing to a company account), case-
+   *    insensitively. It never auto-provisions — an unmatched email is a denial, not a
+   *    signup. `alternateEmails` is stored pre-lowercased (see seed-users.ts), so a plain
+   *    `has` on the already-lowercased incoming address is a correct case-insensitive match
+   *    without needing Prisma's `mode: 'insensitive'`, which array filters don't support.
    *  - A matched user receives EXACTLY the JWT + Actor password login would issue, so the
-   *    role and object-scope come from the user record and nothing else.
+   *    role and object-scope come from the user record and nothing else — signing in via an
+   *    alternate email never grants anything the primary email wouldn't.
    *  - Disabled and expired accounts are refused, mirroring the password path, and every
    *    denial writes an audit row before throwing (NO_MATCHING_USER / ACCOUNT_DISABLED /
    *    ACCOUNT_EXPIRED / MFA_REQUIRED).
@@ -115,7 +120,12 @@ export class AuthService {
   async loginWithGoogle(email: string, googleSub?: string): Promise<LoginResult> {
     const normalised = email.trim().toLowerCase();
     const user = await this.prisma.user.findFirst({
-      where: { email: { equals: normalised, mode: 'insensitive' } },
+      where: {
+        OR: [
+          { email: { equals: normalised, mode: 'insensitive' } },
+          { alternateEmails: { has: normalised } },
+        ],
+      },
       include: { office: true },
     });
 
