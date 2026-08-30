@@ -13,13 +13,6 @@ const salesAgent: Actor = {
   office: 'GOM',
   scope: { customerIds: ['CUS-CD-000001'] },
 };
-const customerA: Actor = {
-  userId: 'c1',
-  role: 'customer',
-  office: 'CD',
-  scope: { customerId: 'CUS-CD-000001' },
-};
-
 beforeEach(async () => {
   await resetDb();
 });
@@ -49,15 +42,18 @@ describe('denials are audited BEFORE the throw', () => {
     expect(rows[0]!.reason).toBe('ACCESS_DENIED_ROLE');
   });
 
-  it('CF-027: a customer cannot reach another customer’s project — scope denial is audited', async () => {
-    // Same role, in-scope object: allowed.
+  it('CF-027: an agent cannot reach another customer’s order — scope denial is audited', async () => {
+    // Rewritten 30 Aug 2026 onto sales_agent (order:read, scope.customerIds) — the original
+    // used a 'customer' actor directly, but 'customer' is no longer a Nexus login role. The
+    // conformance goal is unchanged: role grant passes, object scope still denies a record
+    // outside the actor's own scope, and that denial is audited before the throw.
     await expect(
-      authz.authorize(customerA, 'project', 'read', { customerId: 'CUS-CD-000001' }),
+      authz.authorize(salesAgent, 'order', 'read', { customerId: 'CUS-CD-000001' }),
     ).resolves.toBeUndefined();
 
-    // Different customer's project: role passes, scope fails.
+    // A different customer's order: role passes, scope fails.
     const err = await authz
-      .authorize(customerA, 'project', 'read', { customerId: 'CUS-RW-000999' })
+      .authorize(salesAgent, 'order', 'read', { customerId: 'CUS-RW-000999' })
       .then(() => null)
       .catch((e) => e);
     expect(err).toBeInstanceOf(UzaError);

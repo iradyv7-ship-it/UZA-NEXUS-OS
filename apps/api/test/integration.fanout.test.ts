@@ -25,7 +25,9 @@ import {
   commissions,
   claims,
   payments,
-  customer as payer,
+  // front_office records the payment now that 'customer' isn't a Nexus login role — see
+  // packages/contracts/src/permissions.ts.
+  frontOffice as payer,
   finance,
 } from './finance-fixtures';
 import { scores, suppliedPo } from './sourcing-quality-fixtures';

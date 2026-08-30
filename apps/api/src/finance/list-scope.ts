@@ -8,8 +8,8 @@ import type { Actor } from '@uza/contracts';
  * `agentId` column, so the by-ref read (`PaymentService.read`) calls `inScope` with
  * `{ customerId: row.customerRef }` and NO agent key. This mirror therefore keys purely
  * on `customerRef`: a `sales_agent`'s `agentId === userId` branch of `inScope` can never
- * fire on a Payment (there is no agent field to match), leaving only the
- * customer-membership branch.
+ * fire on a Payment (there is no agent field to match), leaving only its
+ * customerId-membership branch.
  *
  * This is a deliberate, mechanical MIRROR of `inScope`'s switch: a list must never surface
  * a record the by-ref read would deny, and must never hide one it would admit. The unit
@@ -20,9 +20,9 @@ import type { Actor } from '@uza/contracts';
  * denied 403 and never reaches the query. Per `ROLE_GRANTS` only `finance` (`payment:*`),
  * `ceo` (`*:*`) and `venture_manager` (`payment:read`) hold `payment:read`; all three pass
  * `inScope` unconditionally, so in practice this predicate returns `{}` for every role that
- * can actually reach it. The `customer`/`sales_agent`/`logistics_partner` branches below
- * are unreachable via the grant gate but keep the mirror TOTAL — the agreement test
- * exercises them directly against `inScope`.
+ * can actually reach it. The `sales_agent`/`logistics_partner` branches below are
+ * unreachable via the grant gate but keep the mirror TOTAL — the agreement test exercises
+ * them directly against `inScope`.
  */
 export type FinanceScopeWhere = {
   customerRef?: string | { in: string[] };
@@ -41,10 +41,6 @@ export const financeScopeWhere = (actor: Actor): FinanceScopeWhere => {
     case 'china_warehouse':
     case 'front_office':
       return {};
-
-    // inScope → !!obj.customerId && obj.customerId === actor.scope.customerId
-    case 'customer':
-      return actor.scope.customerId ? { customerRef: actor.scope.customerId } : MATCH_NONE;
 
     // inScope → obj.agentId === actor.userId || (customerId ∈ scope.customerIds).
     // A Payment carries no agentId, so the first disjunct never fires ⇒ customer-set only.

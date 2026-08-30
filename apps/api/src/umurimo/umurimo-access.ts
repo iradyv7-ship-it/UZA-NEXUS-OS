@@ -25,7 +25,7 @@ import type { Role } from '@uza/contracts';
  *  - **Moderation is executive.** Editing or removing another person's comment is the one act
  *    that rewrites somebody else's words, so it sits with `ceo`/`venture_manager` only.
  *  - **External roles get 403 on everything.** Umurimo is the internal people layer; a
- *    customer or a logistics partner has no business in it at any level.
+ *    logistics partner has no business in it at any level.
  */
 export type UmurimoCapability =
   | 'comment:read'
@@ -105,7 +105,6 @@ export const UMURIMO_ACCESS: Record<Role, readonly UmurimoCapability[]> = {
   china_warehouse: INTERNAL,
   front_office: INTERNAL,
   sales_agent: NONE,
-  customer: NONE,
   logistics_partner: NONE,
 };
 

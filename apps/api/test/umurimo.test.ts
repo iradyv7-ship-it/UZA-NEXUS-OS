@@ -49,7 +49,7 @@ describe('umurimo access policy', () => {
   });
 
   it('denies external roles everything', () => {
-    for (const role of ['customer', 'sales_agent', 'logistics_partner'] as const) {
+    for (const role of ['sales_agent', 'logistics_partner'] as const) {
       expect(UMURIMO_ACCESS[role]).toHaveLength(0);
       expect(hasUmurimoCapability(role, 'comment:read')).toBe(false);
       expect(hasUmurimoCapability(role, 'digest')).toBe(false);
@@ -135,7 +135,7 @@ describe('the weekly loop', () => {
   });
 
   it('denies the whole weekly loop to external roles', () => {
-    for (const role of ['customer', 'sales_agent', 'logistics_partner'] as const) {
+    for (const role of ['sales_agent', 'logistics_partner'] as const) {
       expect(hasUmurimoCapability(role, 'week:read')).toBe(false);
       expect(hasUmurimoCapability(role, 'week:confirm')).toBe(false);
       expect(hasUmurimoCapability(role, 'minutes:ingest')).toBe(false);
@@ -162,7 +162,7 @@ describe('the workspace bridge', () => {
   });
 
   it('keeps external roles out of the bridge entirely', () => {
-    for (const role of ['customer', 'sales_agent', 'logistics_partner'] as const) {
+    for (const role of ['sales_agent', 'logistics_partner'] as const) {
       expect(hasUmurimoCapability(role, 'workspace:read')).toBe(false);
       expect(hasUmurimoCapability(role, 'workspace:sync')).toBe(false);
     }

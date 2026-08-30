@@ -50,12 +50,6 @@ export const agent: Actor = {
   office: 'GOM',
   scope: { customerIds: [CUSTOMER_REF] },
 };
-export const customer: Actor = {
-  userId: 'CUS-1',
-  role: 'customer',
-  office: 'GOM',
-  scope: { customerId: CUSTOMER_REF },
-};
 
 // ---- synthetic trade events ------------------------------------------------
 // Trade published these; finance consumes them. Standard order total is $6,163.00.
@@ -131,12 +125,19 @@ export async function invoicedOrder(opts: Parameters<typeof orderCreated>[0] = {
   return { event, result, invoice };
 }
 
-/** Upload a proof against the invoice for a named installment trigger. */
+/**
+ * Upload a proof against the invoice for a named installment trigger.
+ *
+ * Defaults to `frontOffice`, not a `customer` actor — 'customer' is not a Nexus login role
+ * (a customer never authenticates into Nexus; that access belongs on uzabulk.com). In the
+ * real flow, front_office receives proof from the customer directly (call/WhatsApp/email)
+ * and logs it here — front_office holds `payment:create` for exactly this.
+ */
 export async function uploadFor(
   invoiceRef: string,
   trigger: 'confirmation' | 'pre_loading' | 'pre_release',
   amountMinor: Minor,
-  actor: Actor = customer,
+  actor: Actor = frontOffice,
 ) {
   return payments.uploadProof(actor, {
     invoiceRef,

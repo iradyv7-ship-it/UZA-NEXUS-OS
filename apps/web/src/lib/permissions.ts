@@ -14,10 +14,11 @@ const PAYMENT_GRANTS: Record<Role, readonly string[]> = {
   ceo: ['payment:create', 'payment:read', 'payment:approve'],
   finance: ['payment:create', 'payment:read', 'payment:approve'],
   venture_manager: ['payment:read'],
-  customer: ['payment:create'],
   china_sourcing: [],
   china_warehouse: [],
-  front_office: [],
+  // Front office records a payment on the customer's behalf now that 'customer' isn't a
+  // login role — see packages/contracts/src/permissions.ts for the full reasoning.
+  front_office: ['payment:create'],
   sales_agent: [],
   logistics_partner: [],
 };
@@ -34,8 +35,7 @@ export function can(
  * Where a role's home lives. Role-aware navigation (charter): each persona lands only in
  * its own area. A `logistics_partner` holds none of the commercial grants the work queue
  * needs (`quotation:read`/`order:read`/`project:read`), so it would only see denials there
- * — send it to its shipments portal instead. Everyone else uses the shared queue, scoped
- * server-side to what they own (a `customer` sees only their own projects/orders there).
+ * — send it to its shipments portal instead. Everyone else uses the shared queue.
  *
  * This is a UI convenience, NOT a security boundary — the API still scopes every read.
  */

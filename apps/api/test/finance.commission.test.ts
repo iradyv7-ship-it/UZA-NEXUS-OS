@@ -7,7 +7,6 @@ import {
   commissions,
   finance,
   agent,
-  customer,
   invoicedOrder,
   uploadFor,
   orderCancelled,
@@ -27,7 +26,7 @@ const EXPECTED_COMMISSION = Math.round(Number(STANDARD_TOTAL) * COMMISSION_RATE)
 
 async function confirmOrder(opts: Parameters<typeof invoicedOrder>[0] = {}) {
   const { invoice } = await invoicedOrder({ tier: 'new', ...opts });
-  const payment = await uploadFor(invoice.ref, 'confirmation', CONF, customer);
+  const payment = await uploadFor(invoice.ref, 'confirmation', CONF);
   await payments.verify(finance, payment.ref);
   return invoice;
 }
@@ -73,7 +72,7 @@ describe('CF-010 — commission accrues 2% at confirmation, as a ledger row', ()
     const invoice = await confirmOrder();
     // A second confirmation upload cannot re-verify (installment already settled) and
     // therefore cannot double-accrue.
-    const dup = await uploadFor(invoice.ref, 'confirmation', CONF, customer);
+    const dup = await uploadFor(invoice.ref, 'confirmation', CONF);
     await expect(payments.verify(finance, dup.ref)).rejects.toThrow(/no due installment/);
     expect(
       await prisma.commissionEntry.count({

@@ -63,11 +63,17 @@ async function chainFor(a: Actor) {
   return { customer, project, quotation, order };
 }
 
-const customerActor = (customerRef: string): Actor => ({
-  userId: `cust-${customerRef}`,
-  role: 'customer',
+// A sales_agent whose customerIds cover a given customer, but whose userId matches no
+// order/quotation's agentId — isolates inScope's customerId branch from its agentId branch.
+// Stands in for the 'customer' role removed 30 Aug 2026 (no longer a Nexus login role — see
+// @uza/contracts/permissions.ts); 'customer' also reached `project:read`, which no remaining
+// role does (see 'a sales agent cannot list projects at all', below), so the covering-agent
+// version of this test is scoped to quotations/orders only.
+const coveringAgent = (customerRef: string): Actor => ({
+  userId: `agt-covering-${customerRef}`,
+  role: 'sales_agent',
   office: 'RW',
-  scope: { customerId: customerRef },
+  scope: { customerIds: [customerRef] },
 });
 
 describe('list scoping — mirrors inScope per role', () => {
@@ -98,19 +104,17 @@ describe('list scoping — mirrors inScope per role', () => {
     expect(os.map((o) => o.customerRef)).not.toContain(b.customer.ref);
   });
 
-  it('a customer sees only rows for their own customerRef', async () => {
+  it('an agent covering a customer (but not owning it) sees only that customer’s rows', async () => {
     const a = await approvedChain();
     await orders.create(vm, a.quotation.ref);
     const b = await chainFor(agentB);
 
-    const cust = customerActor(a.customer.ref);
-    const qs = await quotations.list(cust, {}, { limit: 20, offset: 0 });
-    const os = await orders.list(cust, {}, { limit: 20, offset: 0 });
-    const ps = await projects.list(cust, {}, { limit: 20, offset: 0 });
+    const covering = coveringAgent(a.customer.ref);
+    const qs = await quotations.list(covering, {}, { limit: 20, offset: 0 });
+    const os = await orders.list(covering, {}, { limit: 20, offset: 0 });
 
     expect(qs.every((q) => q.customerRef === a.customer.ref)).toBe(true);
     expect(os.every((o) => o.customerRef === a.customer.ref)).toBe(true);
-    expect(ps.every((p) => p.customerRef === a.customer.ref)).toBe(true);
     expect(qs.map((q) => q.ref)).not.toContain(b.quotation.ref);
   });
 
@@ -128,14 +132,19 @@ describe('list scoping — mirrors inScope per role', () => {
     });
   });
 
-  it('a filter can only NARROW scope, never widen it (customer passing another customerRef gets nothing)', async () => {
+  it('a filter can only NARROW scope, never widen it (an agent passing another customerRef gets nothing)', async () => {
     const a = await approvedChain();
     await orders.create(vm, a.quotation.ref);
     const b = await chainFor(agentB);
 
-    const cust = customerActor(a.customer.ref);
-    // Customer A explicitly asks for customer B's ref — scope AND filter ⇒ empty, no leak.
-    const os = await orders.list(cust, { customerRef: b.customer.ref }, { limit: 20, offset: 0 });
+    const covering = coveringAgent(a.customer.ref);
+    // The covering agent explicitly asks for customer B's ref — scope AND filter ⇒ empty,
+    // no leak.
+    const os = await orders.list(
+      covering,
+      { customerRef: b.customer.ref },
+      { limit: 20, offset: 0 },
+    );
     expect(os).toHaveLength(0);
   });
 });

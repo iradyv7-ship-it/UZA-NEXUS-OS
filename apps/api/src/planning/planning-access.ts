@@ -22,7 +22,7 @@ import type { Role } from '@uza/contracts';
  *    sit in their department. Managers additionally see their department's plans/reports
  *    (that widening is object-scope, applied in `planning-scope.ts`, not here). Creating
  *    KPIs/initiatives is an executive act — internal roles do NOT hold those create/write caps.
- *  - `customer`, `sales_agent`, `logistics_partner` → NO planning access (403 on everything).
+ *  - `sales_agent`, `logistics_partner` → NO planning access (403 on everything).
  */
 export type PlanningCapability =
   | 'plan:create'
@@ -118,7 +118,6 @@ export const PLANNING_ACCESS: Record<Role, readonly PlanningCapability[]> = {
   front_office: INTERNAL,
   // Explicitly denied: the brief requires these roles get a 403 on every planning route.
   sales_agent: NONE,
-  customer: NONE,
   logistics_partner: NONE,
 };
 

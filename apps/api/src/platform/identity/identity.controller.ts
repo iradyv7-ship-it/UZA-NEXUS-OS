@@ -6,6 +6,8 @@ import { CurrentActor } from '../auth/current-actor.decorator';
 import { IdentityService } from './identity.service';
 import type { RoleName } from '@prisma/client';
 
+// 'customer' deliberately excluded — see packages/contracts/src/permissions.ts. No account
+// with this role can be created through Nexus; customer-facing access belongs on uzabulk.com.
 const ROLES = [
   'ceo',
   'venture_manager',
@@ -14,7 +16,6 @@ const ROLES = [
   'front_office',
   'finance',
   'sales_agent',
-  'customer',
   'logistics_partner',
 ] as const;
 

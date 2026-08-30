@@ -185,21 +185,24 @@ describe('partner shipments list agrees with inScope (the predicate is a mirror,
   });
 
   it('a role with no shipment:read grant is denied 403 before the predicate runs', async () => {
+    // Rewritten 30 Aug 2026 — the previous version used a 'customer' actor (no longer a
+    // Nexus login role) and, despite its own title, actually asserted the OPPOSITE of what
+    // it claimed: 'customer' held shipment:read, so it hit the empty-scope path (an empty
+    // list), never the 403 the title describes. sales_agent genuinely holds no shipment:read
+    // grant at all, so this now actually tests what its title says.
     await bookShipment({
       orderRef: 'ORD-BULK-2026-0001',
       poRef: 'PO-CN-2026-0001',
       container: 'MSKU-A',
     });
-    // A customer holds no shipment:read? Customers DO hold shipment:read but a Shipment
-    // carries no customerRef, so the scope predicate admits nothing — the list is empty,
-    // not a 403. We assert the empty-set path here (grant present, scope empty).
-    const cust: Actor = {
-      userId: 'CUS-1',
-      role: 'customer',
+    const agentActor: Actor = {
+      userId: 'AGT-GOM-0021',
+      role: 'sales_agent',
       office: 'GOM',
-      scope: { customerId: 'CUS-CD-000001' },
+      scope: { customerIds: ['CUS-CD-000001'] },
     };
-    const rows = await partnerPortal.listShipments(cust, { limit: 20, offset: 0 });
-    expect(rows).toHaveLength(0);
+    await expect(
+      partnerPortal.listShipments(agentActor, { limit: 20, offset: 0 }),
+    ).rejects.toMatchObject({ code: 'ACCESS_DENIED_ROLE' });
   });
 });

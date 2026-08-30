@@ -42,6 +42,9 @@ enum UserKind {
   partner
 }
 
+/// 'customer' deliberately excluded (removed 30 Aug 2026, zero accounts held it) — Nexus is
+/// the internal operating layer, a customer never authenticates into it. Customer-facing
+/// access belongs on uzabulk.com, reading Nexus as its source of truth.
 enum RoleName {
   ceo
   venture_manager
@@ -50,7 +53,6 @@ enum RoleName {
   front_office
   finance
   sales_agent
-  customer
   logistics_partner
 }
 

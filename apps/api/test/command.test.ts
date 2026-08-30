@@ -18,11 +18,14 @@ const overview = new OverviewService(prisma as never, access);
 const ceo: Actor = { userId: 'CEO-1', role: 'ceo', office: 'RW', scope: {} };
 const finance: Actor = { userId: 'FIN-1', role: 'finance', office: 'RW', scope: {} };
 const sourcing: Actor = { userId: 'CN-1', role: 'china_sourcing', office: 'CN', scope: {} };
-const customer: Actor = {
-  userId: 'CUS-1',
-  role: 'customer',
+// An external role, not 'customer' — that role was removed 30 Aug 2026 (a customer never
+// authenticates into Nexus). logistics_partner is an equally valid stand-in: also external,
+// also holds zero command grants, per command-access.ts.
+const partner: Actor = {
+  userId: 'PTR-1',
+  role: 'logistics_partner',
   office: 'GOM',
-  scope: { customerId: 'X' },
+  scope: { shipmentRefs: [] },
 };
 
 async function reset(): Promise<void> {
@@ -63,8 +66,8 @@ describe('Command Center — tasks', () => {
     expect(done.status).toBe('done');
   });
 
-  it('denies a customer (403, audited before the throw)', async () => {
-    await expect(tasks.create(customer, { title: 'x', assigneeId: 'CUS-1' })).rejects.toThrow();
+  it('denies an external role (403, audited before the throw)', async () => {
+    await expect(tasks.create(partner, { title: 'x', assigneeId: 'PTR-1' })).rejects.toThrow();
     const deny = await prisma.auditLog.findFirst({ where: { decision: 'deny' } });
     expect(deny).not.toBeNull();
   });

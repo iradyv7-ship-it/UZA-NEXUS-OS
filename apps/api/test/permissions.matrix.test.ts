@@ -83,15 +83,18 @@ describe('authorisation matrix: every role against every resource', () => {
     );
   });
 
-  it('CEO wildcard grants everything; customer reaches almost nothing', () => {
+  it('CEO wildcard grants everything; logistics_partner reaches almost nothing', () => {
     const ceo = actorFor('ceo');
     for (const resource of RESOURCES) {
       for (const action of ACTIONS) {
         expect(can(ceo, resource, action)).toBe(true);
       }
     }
-    const customer = actorFor('customer');
-    expect(can(customer, 'supplier', 'read')).toBe(false);
-    expect(can(customer, 'project', 'read')).toBe(true);
+    // 'customer' was the original example here; it's no longer a Nexus login role (30 Aug
+    // 2026 — see @uza/contracts/permissions.ts). logistics_partner is the narrowest
+    // remaining role and illustrates the same point.
+    const partner = actorFor('logistics_partner');
+    expect(can(partner, 'supplier', 'read')).toBe(false);
+    expect(can(partner, 'shipment', 'read')).toBe(true);
   });
 });

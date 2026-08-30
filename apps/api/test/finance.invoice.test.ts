@@ -6,7 +6,6 @@ import {
   invoices,
   payments,
   finance,
-  customer,
   invoicedOrder,
   uploadFor,
   orderCreated,
@@ -68,7 +67,7 @@ describe('CF-028 — release eligibility is the fully-paid determination', () =>
     expect(before.outstandingTriggers).toEqual(['confirmation', 'pre_loading']);
 
     // Settle the confirmation installment only — still not fully paid.
-    const p1 = await uploadFor(invoice.ref, 'confirmation', 308150 as Minor, customer);
+    const p1 = await uploadFor(invoice.ref, 'confirmation', 308150 as Minor);
     await payments.verify(finance, p1.ref);
     const mid = await invoices.releaseEligibility(finance, invoice.orderRef);
     expect(mid.fullyPaid).toBe(false);
@@ -78,9 +77,9 @@ describe('CF-028 — release eligibility is the fully-paid determination', () =>
 
   it('becomes release-eligible only when every installment is settled', async () => {
     const { invoice } = await invoicedOrder({ tier: 'new' });
-    const p1 = await uploadFor(invoice.ref, 'confirmation', 308150 as Minor, customer);
+    const p1 = await uploadFor(invoice.ref, 'confirmation', 308150 as Minor);
     await payments.verify(finance, p1.ref);
-    const p2 = await uploadFor(invoice.ref, 'pre_loading', 308150 as Minor, customer);
+    const p2 = await uploadFor(invoice.ref, 'pre_loading', 308150 as Minor);
     await payments.verify(finance, p2.ref);
 
     const after = await invoices.releaseEligibility(finance, invoice.orderRef);
@@ -91,20 +90,11 @@ describe('CF-028 — release eligibility is the fully-paid determination', () =>
   });
 });
 
-describe('invoice read — masking + scope', () => {
-  it('a customer reads only their own invoice; another customer is scope-denied', async () => {
-    const { invoice } = await invoicedOrder({ tier: 'new' });
-    const seen = await invoices.read(customer, invoice.ref);
-    expect(seen.ref).toBe(invoice.ref);
-
-    const stranger = {
-      userId: 'CUS-9',
-      role: 'customer' as const,
-      office: 'GOM',
-      scope: { customerId: 'CUS-CD-999999' },
-    };
-    await expect(invoices.read(stranger, invoice.ref)).rejects.toThrow(
-      /ACCESS_DENIED_SCOPE|outside/,
-    );
-  });
-});
+// The customerId-scope-isolation test that used to live here (a 'customer' actor reading only
+// their own invoice, denied on another's) was removed 30 Aug 2026 along with the 'customer'
+// login role — see packages/contracts/src/permissions.ts. No remaining role reaches
+// invoices.read() with a customerId-restricted scope (front_office, which now records
+// payments on a customer's behalf, sees every invoice unconditionally, same as finance/ceo/
+// venture_manager) — the scenario this test modeled is no longer a reachable code path, not
+// just an untested one. The underlying customerId branch of inScope() (permissions.ts) still
+// exists and is still exercised directly by the sales_agent-scoped tests in trade.list.test.ts.

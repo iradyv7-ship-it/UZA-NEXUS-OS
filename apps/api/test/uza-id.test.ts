@@ -19,11 +19,14 @@ const ids = new UzaIdService(prisma as never, authz);
 // as the default actor throughout this file so the pre-existing tests exercise the normal
 // path. The dedicated 'authorization' describe block below covers the boundary.
 const vm: Actor = { userId: 'VM-1', role: 'venture_manager', office: 'RW', scope: {} };
-const customer: Actor = {
-  userId: 'CUS-1',
-  role: 'customer',
+// 'customer' was the original actor for the no-uza-id-grant case; no longer a Nexus login
+// role. logistics_partner also holds zero uza-id grants (see ROLE_GRANTS), same conformance
+// point.
+const partner: Actor = {
+  userId: 'PTR-1',
+  role: 'logistics_partner',
   office: 'RW',
-  scope: { customerId: 'X' },
+  scope: { shipmentRefs: [] },
 };
 const financeActor: Actor = { userId: 'FIN-1', role: 'finance', office: 'RW', scope: {} };
 
@@ -330,12 +333,12 @@ describe('authorization', () => {
 
   it('refuses resolve, link and links to a role with no uza-id grant', async () => {
     await expect(
-      ids.resolve(customer, { system: 'mobility', externalId: 'm-1', displayName: 'One' }),
+      ids.resolve(partner, { system: 'mobility', externalId: 'm-1', displayName: 'One' }),
     ).rejects.toMatchObject({ code: 'ACCESS_DENIED_ROLE' });
 
     const a = await ids.resolve(vm, { system: 'mobility', externalId: 'm-2', displayName: 'Two' });
-    await expect(ids.links(customer, a.ref)).rejects.toMatchObject({ code: 'ACCESS_DENIED_ROLE' });
-    await expect(ids.link(customer, a.ref, 'charge', 'c-1')).rejects.toMatchObject({
+    await expect(ids.links(partner, a.ref)).rejects.toMatchObject({ code: 'ACCESS_DENIED_ROLE' });
+    await expect(ids.link(partner, a.ref, 'charge', 'c-1')).rejects.toMatchObject({
       code: 'ACCESS_DENIED_ROLE',
     });
   });

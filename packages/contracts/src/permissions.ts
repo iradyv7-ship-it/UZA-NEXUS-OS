@@ -2,6 +2,13 @@
  * Role grants, object scope and field masking.
  * Authorisation happens at the SERVICE layer, because object scope depends on
  * the record being touched, not on the route.
+ *
+ * `customer` is deliberately NOT a login role here. UZA Nexus OS is the internal operating
+ * layer — a customer never authenticates into it. Customer-facing access (their own
+ * quotation, order status, payment) belongs on uzabulk.com, reading Nexus as its source of
+ * truth through a service integration, not by handing a customer a Nexus login. The
+ * `Customer` business record (packages/contracts and the trade chain) is unaffected —
+ * this removes only the login role, not the record every order/quotation still points at.
  */
 export type Role =
   | 'ceo'
@@ -11,7 +18,6 @@ export type Role =
   | 'front_office'
   | 'finance'
   | 'sales_agent'
-  | 'customer'
   | 'logistics_partner';
 
 export interface Actor {
@@ -97,6 +103,14 @@ export const ROLE_GRANTS: Record<Role, readonly string[]> = {
     'order:read',
     'shipment:read',
     'pettyCash:*',
+    // Added when the `customer` login role was removed (30 Aug 2026): a customer never
+    // authenticates into Nexus, so someone on staff has to be the one who records that a
+    // payment came in — front_office is the customer-facing coordination role (already
+    // holds customer:read, call:*, promise:*), receiving proof by call/WhatsApp/email and
+    // logging it here. Finance still holds sole verification authority (payment:*) — this
+    // only lets front_office create the unverified record; rule 1 (payment gates
+    // procurement, verified by Finance) is untouched.
+    'payment:create',
     'uza-id:resolve',
     'uza-id:link',
     'uza-id:links',
@@ -128,15 +142,6 @@ export const ROLE_GRANTS: Record<Role, readonly string[]> = {
     'uza-id:resolve',
     'uza-id:link',
     'uza-id:links',
-  ],
-  customer: [
-    'project:read',
-    'quotation:read',
-    'order:read',
-    'invoice:read',
-    'payment:create',
-    'shipment:read',
-    'package:read',
   ],
   logistics_partner: ['shipment:read', 'package:read', 'delivery:*', 'customsDoc:*'],
 };
@@ -192,8 +197,6 @@ export const inScope = (actor: Actor, obj: Scopable): boolean => {
     case 'china_warehouse':
     case 'front_office':
       return true;
-    case 'customer':
-      return !!obj.customerId && obj.customerId === actor.scope.customerId;
     case 'sales_agent':
       return (
         obj.agentId === actor.userId ||

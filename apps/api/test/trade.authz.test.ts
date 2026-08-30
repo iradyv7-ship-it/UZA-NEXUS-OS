@@ -60,31 +60,37 @@ describe('authorisation is enforced at the service layer', () => {
     });
   });
 
-  it('a customer cannot read another customer’s order (ACCESS_DENIED_SCOPE, audited)', async () => {
+  it('an agent outside the customer’s scope cannot read the order (ACCESS_DENIED_SCOPE, audited)', async () => {
+    // Rewritten 30 Aug 2026 onto sales_agent (order:read, scope.customerIds) — the original
+    // used a 'customer' actor directly; 'customer' is no longer a Nexus login role (see
+    // @uza/contracts/permissions.ts). Both new actors use a userId that doesn't match the
+    // order's own agentId, so only the customerId branch of inScope is exercised — the
+    // direct replacement for what the removed role's scope check did.
     const { quotation, customer } = await approvedChain();
     const order = await orders.create(vm, quotation.ref);
 
-    const otherCustomer: Actor = {
-      userId: 'cust-other',
-      role: 'customer',
+    const unrelatedAgent: Actor = {
+      userId: 'AGT-OTHER',
+      role: 'sales_agent',
       office: 'CD',
-      scope: { customerId: 'CUS-CD-999999' },
+      scope: { customerIds: ['CUS-CD-999999'] },
     };
     const err = await orders
-      .read(otherCustomer, order.ref)
+      .read(unrelatedAgent, order.ref)
       .then(() => null)
       .catch((e) => e);
     expect(err).toBeInstanceOf(UzaError);
     expect((err as UzaError).code).toBe('ACCESS_DENIED_SCOPE');
 
-    // The owning customer CAN read it.
-    const owner: Actor = {
-      userId: 'cust',
-      role: 'customer',
+    // An agent whose customerIds includes this customer CAN read it, even with no agentId
+    // match — proving the customerId branch, not just the agentId branch, actually admits.
+    const coveringAgent: Actor = {
+      userId: 'AGT-COVERING',
+      role: 'sales_agent',
       office: 'CD',
-      scope: { customerId: customer.ref },
+      scope: { customerIds: [customer.ref] },
     };
-    await expect(orders.read(owner, order.ref)).resolves.toBeTruthy();
+    await expect(orders.read(coveringAgent, order.ref)).resolves.toBeTruthy();
 
     const denies = await prisma.auditLog.findMany({
       where: { decision: 'deny', resource: 'order', action: 'read' },
@@ -98,15 +104,17 @@ describe('authorisation is enforced at the service layer', () => {
     await expect(quotations.read(agent, quotation.ref)).resolves.toBeTruthy();
   });
 
-  it('a customer cannot create a lead', async () => {
-    const cust: Actor = {
-      userId: 'c',
-      role: 'customer',
+  it('an external role cannot create a lead', async () => {
+    // 'customer' was the original actor here; no longer a Nexus login role.
+    // logistics_partner holds no lead grant at all, same conformance point.
+    const partner: Actor = {
+      userId: 'PTR-1',
+      role: 'logistics_partner',
       office: 'CD',
-      scope: { customerId: 'CUS-CD-000001' },
+      scope: { shipmentRefs: [] },
     };
     await expect(
-      intake.createLead(cust, { customerRef: 'CUS-CD-000001', rawText: 'hi' }),
+      intake.createLead(partner, { customerRef: 'CUS-CD-000001', rawText: 'hi' }),
     ).rejects.toMatchObject({ code: 'ACCESS_DENIED_ROLE' });
   });
 });

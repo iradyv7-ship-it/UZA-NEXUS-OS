@@ -54,12 +54,6 @@ export const agent: Actor = {
   office: 'GOM',
   scope: { customerIds: [CUSTOMER_REF] },
 };
-export const customer: Actor = {
-  userId: 'CUS-1',
-  role: 'customer',
-  office: 'GOM',
-  scope: { customerId: CUSTOMER_REF },
-};
 export const partner = (shipmentRefs: readonly string[]): Actor => ({
   userId: 'IMARI',
   role: 'logistics_partner',

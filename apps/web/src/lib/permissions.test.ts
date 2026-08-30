@@ -13,7 +13,6 @@ const ROLES: Role[] = [
   'front_office',
   'finance',
   'sales_agent',
-  'customer',
   'logistics_partner',
 ];
 
@@ -41,11 +40,12 @@ describe('who is offered payment actions', () => {
     expect(can(as('venture_manager'), 'payment', 'approve')).toBe(false);
   });
 
-  it('lets a customer create a payment but not approve or read the queue', () => {
-    // A customer pays; they do not review the finance queue.
-    expect(can(as('customer'), 'payment', 'create')).toBe(true);
-    expect(can(as('customer'), 'payment', 'read')).toBe(false);
-    expect(can(as('customer'), 'payment', 'approve')).toBe(false);
+  it('lets front_office create a payment but not approve or read the queue', () => {
+    // front_office records a payment on the customer's behalf (a customer never logs into
+    // Nexus — see @uza/contracts/permissions.ts) but does not review the finance queue.
+    expect(can(as('front_office'), 'payment', 'create')).toBe(true);
+    expect(can(as('front_office'), 'payment', 'read')).toBe(false);
+    expect(can(as('front_office'), 'payment', 'approve')).toBe(false);
   });
 
   it('offers approve to exactly two roles, and no others', () => {
@@ -86,7 +86,7 @@ describe('where each role lands', () => {
   });
 
   it('sends everyone else to their own week', () => {
-    for (const role of ['finance', 'front_office', 'sales_agent', 'customer'] as const) {
+    for (const role of ['finance', 'front_office', 'sales_agent'] as const) {
       expect(homePathFor(as(role))).toBe('/week');
     }
   });

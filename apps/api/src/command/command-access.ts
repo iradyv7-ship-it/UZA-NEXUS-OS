@@ -20,7 +20,7 @@ import type { Role } from '@uza/contracts';
  *    `front_office`) → tasks they own/are assigned + their department's (managers);
  *    grants only where they are the assigned owner. They hold the read/write capability;
  *    object-scope narrows what they actually see.
- *  - `customer`, `sales_agent`, `logistics_partner` → NO command access (403 on everything).
+ *  - `sales_agent`, `logistics_partner` → NO command access (403 on everything).
  */
 export type CommandCapability =
   | 'org:read' // view departments + org structure
@@ -71,7 +71,6 @@ export const COMMAND_ACCESS: Record<Role, readonly CommandCapability[]> = {
   front_office: INTERNAL,
   // Explicitly denied: the brief requires these roles get a 403 on every command route.
   sales_agent: NONE,
-  customer: NONE,
   logistics_partner: NONE,
 };
 
