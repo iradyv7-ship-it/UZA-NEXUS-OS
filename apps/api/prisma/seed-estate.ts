@@ -12,7 +12,12 @@
  * where the work actually happens and the personal copies are three months of divergence
  * waiting for someone to read the wrong one.
  */
-import { PrismaClient, type SystemKind, type SystemStatus, type SystemVisibility } from '@prisma/client';
+import {
+  PrismaClient,
+  type SystemKind,
+  type SystemStatus,
+  type SystemVisibility,
+} from '@prisma/client';
 
 const prisma = new PrismaClient();
 
@@ -55,7 +60,8 @@ const SYSTEMS: Sys[] = [
     visibility: 'private',
     lastPush: d('2026-08-22'),
     initiativeRef: 'INIT-2026-0020',
-    notes: 'The register, the decision queue, responsibilities, intake and the advisor. Not yet deployed.',
+    notes:
+      'The register, the decision queue, responsibilities, intake and the advisor. Not yet deployed.',
   },
   {
     ref: 'SYS-2026-0002',
@@ -67,7 +73,8 @@ const SYSTEMS: Sys[] = [
     repoUrl: `${ME}/UZA-SOLUTIONS-GUIDE`,
     visibility: 'private',
     lastPush: d('2026-08-22'),
-    notes: 'Every published artifact and its source. Holds the Mento and Unguka material — must stay private.',
+    notes:
+      'Every published artifact and its source. Holds the Mento and Unguka material — must stay private.',
   },
 
   // ── UZA Mobility ─────────────────────────────────────────────────────────
@@ -82,7 +89,8 @@ const SYSTEMS: Sys[] = [
     visibility: 'public',
     lastPush: d('2026-08-12'),
     initiativeRef: 'INIT-2026-0015',
-    notes: '~100 models, 125 endpoints. The UZA ID migration lands here first. Source is publicly readable.',
+    notes:
+      '~100 models, 125 endpoints. The UZA ID migration lands here first. Source is publicly readable.',
   },
   {
     ref: 'SYS-2026-0004',
@@ -356,7 +364,11 @@ async function main() {
       initiativeRef: s.initiativeRef ?? null,
       notes: s.notes ?? null,
     };
-    await prisma.systemRecord.upsert({ where: { ref: s.ref }, create: { ref: s.ref, ...data }, update: data });
+    await prisma.systemRecord.upsert({
+      where: { ref: s.ref },
+      create: { ref: s.ref, ...data },
+      update: data,
+    });
   }
 
   const pub = SYSTEMS.filter((s) => s.visibility === 'public').length;

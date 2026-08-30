@@ -38,7 +38,12 @@ export class FreightService {
    * (never overwriting measured), flags a claim when billed exceeds measured beyond
    * BILLING_CLAIM_THRESHOLD, and emits `shipment.billedWeightRecorded`.
    */
-  async recordBilledWeight(actor: Actor, shipmentRef: string, billedRevenueTon: number, freightPaidMinor: Minor) {
+  async recordBilledWeight(
+    actor: Actor,
+    shipmentRef: string,
+    billedRevenueTon: number,
+    freightPaidMinor: Minor,
+  ) {
     await this.authz.authorize(actor, 'shipment', 'create');
     const shipment = await this.prisma.shipment.findUnique({ where: { ref: shipmentRef } });
     if (!shipment) throw new NotFoundException(`shipment ${shipmentRef} not found`);
@@ -73,7 +78,9 @@ export class FreightService {
     const shipment = await this.prisma.shipment.findUnique({ where: { ref: shipmentRef } });
     if (!shipment) throw new NotFoundException(`shipment ${shipmentRef} not found`);
     if (shipment.freightPaidMinor === null) {
-      throw new NotFoundException(`shipment ${shipmentRef} has no recorded freight paid; record billed weight first`);
+      throw new NotFoundException(
+        `shipment ${shipmentRef} has no recorded freight paid; record billed weight first`,
+      );
     }
     const freightPaidMinor = shipment.freightPaidMinor;
 
@@ -107,7 +114,12 @@ export class FreightService {
       await tx.freightAllocation.deleteMany({ where: { shipmentRef } });
       for (const a of allocations) {
         await tx.freightAllocation.create({
-          data: { shipmentRef, orderRef: a.orderRef, revenueTon: a.revenueTon, amountMinor: a.amountMinor },
+          data: {
+            shipmentRef,
+            orderRef: a.orderRef,
+            revenueTon: a.revenueTon,
+            amountMinor: a.amountMinor,
+          },
         });
       }
     });

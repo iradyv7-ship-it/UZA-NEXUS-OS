@@ -14,7 +14,12 @@ afterAll(async () => {
 const bookShipment = async () => {
   const { refs } = await loadableLot({ destination: 'KIGALI' });
   const { shipment } = await containers.createShipment(vm, {
-    packageRefs: refs, container: 'MSKU-1', carrier: 'Maersk', etd: '2026-08-01', eta: '2026-09-15', partnerId: 'IMARI',
+    packageRefs: refs,
+    container: 'MSKU-1',
+    carrier: 'Maersk',
+    etd: '2026-08-01',
+    eta: '2026-09-15',
+    partnerId: 'IMARI',
   });
   return shipment;
 };
@@ -44,11 +49,15 @@ describe('CF-023 — delay fans out to five distinct parties', () => {
   it('notifies client, agent, owner, front office and partner, and publishes shipment.delayed', async () => {
     const s = await bookShipment();
     const out = await tracking.delayShipment(vm, s.ref, '2026-10-01', 'typhoon at origin port', {
-      agentId: 'AGT-GOM-0021', ownerId: 'VM-1', frontOfficeId: 'FO-1',
+      agentId: 'AGT-GOM-0021',
+      ownerId: 'VM-1',
+      frontOfficeId: 'FO-1',
     });
 
     const audiences = new Set(out.notified);
-    expect(audiences).toEqual(new Set(['customer', 'agent', 'project_owner', 'front_office', 'logistics_partner']));
+    expect(audiences).toEqual(
+      new Set(['customer', 'agent', 'project_owner', 'front_office', 'logistics_partner']),
+    );
 
     const notes = await prisma.notification.findMany({ where: { subjectRef: s.ref } });
     expect(notes).toHaveLength(5);

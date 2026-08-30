@@ -22,7 +22,14 @@ describe('quality — inspection grading, the CAPA gate and release', () => {
       critical: 1,
       major: 0,
       minor: 2,
-      evidence: [{ kind: 'photo', uri: 's3://ev/1.jpg', lotRef: 'LOT-ORD0001-01', packageRef: 'PKG-ORD0001-001' }],
+      evidence: [
+        {
+          kind: 'photo',
+          uri: 's3://ev/1.jpg',
+          lotRef: 'LOT-ORD0001-01',
+          packageRef: 'PKG-ORD0001-001',
+        },
+      ],
     });
 
     expect(inspection.result).toBe('fail');
@@ -40,10 +47,16 @@ describe('quality — inspection grading, the CAPA gate and release', () => {
 
     const failed = await prisma.outboxEvent.findMany({ where: { name: 'quality.failed' } });
     expect(failed).toHaveLength(1);
-    expect(failed[0]!.payload).toMatchObject({ inspectionRef: inspection.ref, poRef: po.ref, supplierRef: supplier.ref });
+    expect(failed[0]!.payload).toMatchObject({
+      inspectionRef: inspection.ref,
+      poRef: po.ref,
+      supplierRef: supplier.ref,
+    });
 
     // Evidence is stored bound to its lot + package refs, not loose.
-    const evidence = await prisma.inspectionEvidence.findMany({ where: { inspectionRef: inspection.ref } });
+    const evidence = await prisma.inspectionEvidence.findMany({
+      where: { inspectionRef: inspection.ref },
+    });
     expect(evidence).toHaveLength(1);
     expect(evidence[0]).toMatchObject({ lotRef: 'LOT-ORD0001-01', packageRef: 'PKG-ORD0001-001' });
   });
@@ -51,14 +64,22 @@ describe('quality — inspection grading, the CAPA gate and release', () => {
   it('grades > 2 major defects as conditional, and a clean inspection as pass — publishing no quality.failed', async () => {
     const conditional = await assignedVisit();
     const cond = await inspections.record(francois, {
-      visitRef: conditional.visit.ref, stage: 'during_production', critical: 0, major: 3, minor: 1,
+      visitRef: conditional.visit.ref,
+      stage: 'during_production',
+      critical: 0,
+      major: 3,
+      minor: 1,
     });
     expect(cond.inspection.result).toBe('conditional');
     expect(cond.capa).toBeNull();
 
     const clean = await assignedVisit();
     const pass = await inspections.record(francois, {
-      visitRef: clean.visit.ref, stage: 'pre_shipment', critical: 0, major: 1, minor: 4,
+      visitRef: clean.visit.ref,
+      stage: 'pre_shipment',
+      critical: 0,
+      major: 1,
+      minor: 4,
     });
     expect(pass.inspection.result).toBe('pass');
 
@@ -68,9 +89,17 @@ describe('quality — inspection grading, the CAPA gate and release', () => {
 
   it('release gate: an open CAPA blocks release; it clears only once the CAPA is closed', async () => {
     const { visit, po } = await assignedVisit();
-    await inspections.record(francois, { visitRef: visit.ref, stage: 'pre_shipment', critical: 2, major: 0, minor: 0 });
+    await inspections.record(francois, {
+      visitRef: visit.ref,
+      stage: 'pre_shipment',
+      critical: 2,
+      major: 0,
+      minor: 0,
+    });
 
-    await expect(inspections.assertReleasable(cecilia, po.ref)).rejects.toMatchObject({ code: 'GATE_QC_NOT_RELEASED' });
+    await expect(inspections.assertReleasable(cecilia, po.ref)).rejects.toMatchObject({
+      code: 'GATE_QC_NOT_RELEASED',
+    });
   });
 
   it('offline capture: a resynced inspection (same clientRequestId) does not double-open a CAPA or double-publish', async () => {
@@ -78,10 +107,22 @@ describe('quality — inspection grading, the CAPA gate and release', () => {
     const key = randomUUID();
 
     const first = await inspections.record(francois, {
-      visitRef: visit.ref, stage: 'pre_shipment', critical: 1, major: 0, minor: 0, capturedOffline: true, clientRequestId: key,
+      visitRef: visit.ref,
+      stage: 'pre_shipment',
+      critical: 1,
+      major: 0,
+      minor: 0,
+      capturedOffline: true,
+      clientRequestId: key,
     });
     const second = await inspections.record(francois, {
-      visitRef: visit.ref, stage: 'pre_shipment', critical: 1, major: 0, minor: 0, capturedOffline: true, clientRequestId: key,
+      visitRef: visit.ref,
+      stage: 'pre_shipment',
+      critical: 1,
+      major: 0,
+      minor: 0,
+      capturedOffline: true,
+      clientRequestId: key,
     });
 
     expect(second.replayed).toBe(true);
@@ -97,9 +138,17 @@ describe('quality — inspection grading, the CAPA gate and release', () => {
     const { visit } = await assignedVisit();
     const { agent } = await import('./sourcing-quality-fixtures');
     await expect(
-      inspections.record(agent, { visitRef: visit.ref, stage: 'pre_shipment', critical: 0, major: 0, minor: 0 }),
+      inspections.record(agent, {
+        visitRef: visit.ref,
+        stage: 'pre_shipment',
+        critical: 0,
+        major: 0,
+        minor: 0,
+      }),
     ).rejects.toThrow();
-    const deny = await prisma.auditLog.findFirst({ where: { actorId: agent.userId, resource: 'inspection', decision: 'deny' } });
+    const deny = await prisma.auditLog.findFirst({
+      where: { actorId: agent.userId, resource: 'inspection', decision: 'deny' },
+    });
     expect(deny).not.toBeNull();
   });
 });

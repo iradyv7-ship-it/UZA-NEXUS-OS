@@ -20,7 +20,13 @@ export const outbox = new OutboxService(prisma as never);
 export const notifications = new NotificationService(prisma as never);
 export const commissions = new CommissionService(prisma as never, authz, notifications, outbox);
 export const invoices = new InvoiceService(prisma as never, authz);
-export const payments = new PaymentService(prisma as never, authz, outbox, notifications, commissions);
+export const payments = new PaymentService(
+  prisma as never,
+  authz,
+  outbox,
+  notifications,
+  commissions,
+);
 export const claims = new ForwarderClaimService(prisma as never, authz, notifications);
 export const pettyCash = new PettyCashService(prisma as never, authz);
 export const supplierBank = new SupplierBankService(prisma as never, authz);
@@ -32,9 +38,24 @@ export const finance: Actor = { userId: 'FIN-1', role: 'finance', office: 'RW', 
 export const finance2: Actor = { userId: 'FIN-2', role: 'finance', office: 'RW', scope: {} };
 export const ceo: Actor = { userId: 'CEO', role: 'ceo', office: 'RW', scope: {} };
 export const vm: Actor = { userId: 'VM-1', role: 'venture_manager', office: 'RW', scope: {} };
-export const frontOffice: Actor = { userId: 'FO-1', role: 'front_office', office: 'GOM', scope: {} };
-export const agent: Actor = { userId: AGENT_ID, role: 'sales_agent', office: 'GOM', scope: { customerIds: [CUSTOMER_REF] } };
-export const customer: Actor = { userId: 'CUS-1', role: 'customer', office: 'GOM', scope: { customerId: CUSTOMER_REF } };
+export const frontOffice: Actor = {
+  userId: 'FO-1',
+  role: 'front_office',
+  office: 'GOM',
+  scope: {},
+};
+export const agent: Actor = {
+  userId: AGENT_ID,
+  role: 'sales_agent',
+  office: 'GOM',
+  scope: { customerIds: [CUSTOMER_REF] },
+};
+export const customer: Actor = {
+  userId: 'CUS-1',
+  role: 'customer',
+  office: 'GOM',
+  scope: { customerId: CUSTOMER_REF },
+};
 
 // ---- synthetic trade events ------------------------------------------------
 // Trade published these; finance consumes them. Standard order total is $6,163.00.
@@ -117,5 +138,10 @@ export async function uploadFor(
   amountMinor: Minor,
   actor: Actor = customer,
 ) {
-  return payments.uploadProof(actor, { invoiceRef, targetTrigger: trigger, amountMinor, proofRef: `PROOF-${trigger}` });
+  return payments.uploadProof(actor, {
+    invoiceRef,
+    targetTrigger: trigger,
+    amountMinor,
+    proofRef: `PROOF-${trigger}`,
+  });
 }

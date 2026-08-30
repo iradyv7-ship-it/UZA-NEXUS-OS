@@ -1,4 +1,9 @@
-import { Injectable, BadRequestException, ConflictException, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  BadRequestException,
+  ConflictException,
+  NotFoundException,
+} from '@nestjs/common';
 import type { Actor } from '@uza/contracts';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AuthorizationService } from '../authorization/authorization.service';
@@ -178,7 +183,8 @@ export class UzaIdService {
     // Scoped on the winner: the surviving record is the one whose future this decision
     // actually shapes, and it is always present (loserRef===winnerRef is rejected next).
     await this.authz.authorize(actor, 'uza-id', 'merge', { ref: winnerRef });
-    if (loserRef === winnerRef) throw new BadRequestException('cannot merge a person into themselves');
+    if (loserRef === winnerRef)
+      throw new BadRequestException('cannot merge a person into themselves');
     const [loser, winner] = await Promise.all([
       this.prisma.person.findUnique({ where: { ref: loserRef } }),
       this.prisma.person.findUnique({ where: { ref: winnerRef } }),

@@ -44,11 +44,17 @@ export class DeliveryService {
       ref: input.shipmentRef,
     });
 
-    const packages = await this.prisma.package.findMany({ where: { ref: { in: [...input.packageRefs] } } });
+    const packages = await this.prisma.package.findMany({
+      where: { ref: { in: [...input.packageRefs] } },
+    });
     if (packages.length !== input.packageRefs.length) {
       const found = new Set(packages.map((p) => p.ref));
       const missing = input.packageRefs.filter((r) => !found.has(r));
-      throw new UzaError({ code: 'GATE_BALANCE_OUTSTANDING', message: `Unknown package(s): ${missing.join(', ')}`, responsibleRole: actor.role });
+      throw new UzaError({
+        code: 'GATE_BALANCE_OUTSTANDING',
+        message: `Unknown package(s): ${missing.join(', ')}`,
+        responsibleRole: actor.role,
+      });
     }
 
     // RELEASE GATE — every order behind the packages must be fully paid.
@@ -83,10 +89,20 @@ export class DeliveryService {
           status: 'delivered',
         },
       });
-      await tx.package.updateMany({ where: { ref: { in: [...input.packageRefs] } }, data: { delivered: true } });
-      await tx.shipment.update({ where: { ref: input.shipmentRef }, data: { status: 'delivered' } });
+      await tx.package.updateMany({
+        where: { ref: { in: [...input.packageRefs] } },
+        data: { delivered: true },
+      });
+      await tx.shipment.update({
+        where: { ref: input.shipmentRef },
+        data: { status: 'delivered' },
+      });
 
-      await emit('delivery.completed', { deliveryRef: ref, orderRef, shipmentRef: input.shipmentRef });
+      await emit('delivery.completed', {
+        deliveryRef: ref,
+        orderRef,
+        shipmentRef: input.shipmentRef,
+      });
       return delivery;
     });
   }

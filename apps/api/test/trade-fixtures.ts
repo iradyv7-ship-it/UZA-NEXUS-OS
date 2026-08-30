@@ -23,7 +23,12 @@ export const orders = new OrderService(prisma as never, authz, outbox);
 // ---- actors ----------------------------------------------------------------
 export const AGENT_ID = 'AGT-GOM-0021';
 export const vm: Actor = { userId: 'VM-1', role: 'venture_manager', office: 'RW', scope: {} };
-export const agent: Actor = { userId: AGENT_ID, role: 'sales_agent', office: 'GOM', scope: { customerIds: [] } };
+export const agent: Actor = {
+  userId: AGENT_ID,
+  role: 'sales_agent',
+  office: 'GOM',
+  scope: { customerIds: [] },
+};
 export const finance: Actor = { userId: 'FIN-1', role: 'finance', office: 'RW', scope: {} };
 export const ceo: Actor = { userId: 'CEO', role: 'ceo', office: 'RW', scope: {} };
 
@@ -47,7 +52,9 @@ export const standardEst = (): Partial<Record<CostRung, Minor>> => ({
  * does: customer → informal lead → human-clarified request → project → priced quotation.
  * `completedOrders` seeds the customer's tier (0 = new, ≥3 = established).
  */
-export async function approvedChain(opts: { qty?: number; completedOrders?: number; requiredMargin?: number } = {}) {
+export async function approvedChain(
+  opts: { qty?: number; completedOrders?: number; requiredMargin?: number } = {},
+) {
   // Customers are created by the sales agent (only sales_agent / ceo hold customer:create).
   const customer = await customers.create(agent, {
     name: 'Badiane Traders',

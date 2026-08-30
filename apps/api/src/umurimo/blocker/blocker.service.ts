@@ -36,7 +36,8 @@ export class BlockerService {
     await this.access.assertRole(actor, 'blocker:raise', RESOURCE, 'create', reportRef);
 
     const clean = summary.trim();
-    if (!clean) throw new BadRequestException('a blocker needs a sentence saying what is in the way');
+    if (!clean)
+      throw new BadRequestException('a blocker needs a sentence saying what is in the way');
 
     const report = await this.prisma.weeklyReport.findUnique({
       where: { ref: reportRef },
@@ -86,7 +87,9 @@ export class BlockerService {
 
     const clean = note.trim();
     if (!clean) {
-      throw new BadRequestException('say how it was cleared, or the record teaches nobody anything');
+      throw new BadRequestException(
+        'say how it was cleared, or the record teaches nobody anything',
+      );
     }
 
     const updated = await this.prisma.blocker.update({

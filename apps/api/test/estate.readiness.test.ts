@@ -48,8 +48,7 @@ async function addSystem(name: string, ventureCode = 'MOBILITY') {
 type Readiness = Awaited<ReturnType<EstateService['readiness']>>;
 
 /** The row for one system. Typed from the service so the test tracks its real shape. */
-const rowFor = (readiness: Readiness, ref: string) =>
-  readiness.systems.find((s) => s.ref === ref)!;
+const rowFor = (readiness: Readiness, ref: string) => readiness.systems.find((s) => s.ref === ref)!;
 
 beforeEach(reset);
 afterAll(async () => {
@@ -82,7 +81,9 @@ describe('a system nobody has measured', () => {
         ref: 'VER-9999-0001',
         systemRef: s.ref,
         verifiedAt: new Date(Date.now() + 3 * 60 * 60 * 1000),
-        typecheck: 'pass', tests: 'pass', imageBuilds: 'pass',
+        typecheck: 'pass',
+        tests: 'pass',
+        imageBuilds: 'pass',
         verifiedBy: 'a clock that is ahead',
       },
     });
@@ -183,14 +184,24 @@ describe('the latest run is the one that counts', () => {
   it('reports the most recent measurement, not the first or the best', async () => {
     const s = await addSystem('uza-mobility-bn');
     await estate.recordVerification(vm, {
-      systemRef: s.ref, verifiedAt: daysAgo(5),
-      typecheck: 'pass', tests: 'pass', imageBuilds: 'pass',
-      testsPassed: 140, testsTotal: 140, verifiedBy: 'CI',
+      systemRef: s.ref,
+      verifiedAt: daysAgo(5),
+      typecheck: 'pass',
+      tests: 'pass',
+      imageBuilds: 'pass',
+      testsPassed: 140,
+      testsTotal: 140,
+      verifiedBy: 'CI',
     });
     await estate.recordVerification(vm, {
-      systemRef: s.ref, verifiedAt: daysAgo(1),
-      typecheck: 'pass', tests: 'fail', imageBuilds: 'pass',
-      testsPassed: 145, testsTotal: 149, verifiedBy: 'CI',
+      systemRef: s.ref,
+      verifiedAt: daysAgo(1),
+      typecheck: 'pass',
+      tests: 'fail',
+      imageBuilds: 'pass',
+      testsPassed: 145,
+      testsTotal: 149,
+      verifiedBy: 'CI',
     });
     const row = rowFor(await estate.readiness(vm), s.ref);
     expect(row.state).toBe('failing');
@@ -200,14 +211,24 @@ describe('the latest run is the one that counts', () => {
   it('shows a growing suite as growing', async () => {
     const s = await addSystem('uza-nexus');
     await estate.recordVerification(vm, {
-      systemRef: s.ref, verifiedAt: daysAgo(7),
-      typecheck: 'pass', tests: 'pass', imageBuilds: 'pass',
-      testsPassed: 301, testsTotal: 301, verifiedBy: 'CI',
+      systemRef: s.ref,
+      verifiedAt: daysAgo(7),
+      typecheck: 'pass',
+      tests: 'pass',
+      imageBuilds: 'pass',
+      testsPassed: 301,
+      testsTotal: 301,
+      verifiedBy: 'CI',
     });
     await estate.recordVerification(vm, {
-      systemRef: s.ref, verifiedAt: daysAgo(1),
-      typecheck: 'pass', tests: 'pass', imageBuilds: 'pass',
-      testsPassed: 327, testsTotal: 327, verifiedBy: 'CI',
+      systemRef: s.ref,
+      verifiedAt: daysAgo(1),
+      typecheck: 'pass',
+      tests: 'pass',
+      imageBuilds: 'pass',
+      testsPassed: 327,
+      testsTotal: 327,
+      verifiedBy: 'CI',
     });
     expect(rowFor(await estate.readiness(vm), s.ref).trend).toBe('growing');
   });
@@ -215,14 +236,24 @@ describe('the latest run is the one that counts', () => {
   it('flags a shrinking suite, which is how coverage quietly disappears', async () => {
     const s = await addSystem('uzacharge');
     await estate.recordVerification(vm, {
-      systemRef: s.ref, verifiedAt: daysAgo(7),
-      typecheck: 'pass', tests: 'pass', imageBuilds: 'pass',
-      testsPassed: 40, testsTotal: 40, verifiedBy: 'CI',
+      systemRef: s.ref,
+      verifiedAt: daysAgo(7),
+      typecheck: 'pass',
+      tests: 'pass',
+      imageBuilds: 'pass',
+      testsPassed: 40,
+      testsTotal: 40,
+      verifiedBy: 'CI',
     });
     await estate.recordVerification(vm, {
-      systemRef: s.ref, verifiedAt: daysAgo(1),
-      typecheck: 'pass', tests: 'pass', imageBuilds: 'pass',
-      testsPassed: 12, testsTotal: 12, verifiedBy: 'CI',
+      systemRef: s.ref,
+      verifiedAt: daysAgo(1),
+      typecheck: 'pass',
+      tests: 'pass',
+      imageBuilds: 'pass',
+      testsPassed: 12,
+      testsTotal: 12,
+      verifiedBy: 'CI',
     });
     expect(rowFor(await estate.readiness(vm), s.ref).trend).toBe('shrinking');
   });
@@ -231,9 +262,14 @@ describe('the latest run is the one that counts', () => {
     // One run is not a trend, and guessing one would be inventing information.
     const s = await addSystem('uza-mobility-bn');
     await estate.recordVerification(vm, {
-      systemRef: s.ref, verifiedAt: daysAgo(1),
-      typecheck: 'pass', tests: 'pass', imageBuilds: 'pass',
-      testsPassed: 149, testsTotal: 149, verifiedBy: 'CI',
+      systemRef: s.ref,
+      verifiedAt: daysAgo(1),
+      typecheck: 'pass',
+      tests: 'pass',
+      imageBuilds: 'pass',
+      testsPassed: 149,
+      testsTotal: 149,
+      verifiedBy: 'CI',
     });
     expect(rowFor(await estate.readiness(vm), s.ref).trend).toBeNull();
   });
@@ -244,8 +280,11 @@ describe('a measurement that contradicts itself is refused, not stored', () => {
     const s = await addSystem('uza-mobility-bn');
     await expect(
       estate.recordVerification(vm, {
-        systemRef: s.ref, testsPassed: 200, testsTotal: 149,
-        tests: 'pass', verifiedBy: 'CI',
+        systemRef: s.ref,
+        testsPassed: 200,
+        testsTotal: 149,
+        tests: 'pass',
+        verifiedBy: 'CI',
       }),
     ).rejects.toThrow(/cannot exceed/);
   });
@@ -255,8 +294,11 @@ describe('a measurement that contradicts itself is refused, not stored', () => {
     const s = await addSystem('uza-nexus');
     await expect(
       estate.recordVerification(vm, {
-        systemRef: s.ref, testsPassed: 300, testsTotal: 327,
-        tests: 'pass', verifiedBy: 'CI',
+        systemRef: s.ref,
+        testsPassed: 300,
+        testsTotal: 327,
+        tests: 'pass',
+        verifiedBy: 'CI',
       }),
     ).rejects.toThrow(/cannot be "pass"/);
   });
@@ -268,7 +310,8 @@ describe('a measurement that contradicts itself is refused, not stored', () => {
       estate.recordVerification(vm, {
         systemRef: s.ref,
         verifiedAt: new Date(Date.now() + 7 * DAY),
-        tests: 'pass', verifiedBy: 'CI',
+        tests: 'pass',
+        verifiedBy: 'CI',
       }),
     ).rejects.toThrow(/future/);
   });
@@ -292,9 +335,14 @@ describe('what the summary is allowed to claim', () => {
     const measured = await addSystem('uza-mobility-bn');
     await addSystem('never-measured');
     await estate.recordVerification(vm, {
-      systemRef: measured.ref, verifiedAt: daysAgo(1),
-      typecheck: 'pass', tests: 'pass', imageBuilds: 'pass',
-      testsPassed: 149, testsTotal: 149, verifiedBy: 'CI',
+      systemRef: measured.ref,
+      verifiedAt: daysAgo(1),
+      typecheck: 'pass',
+      tests: 'pass',
+      imageBuilds: 'pass',
+      testsPassed: 149,
+      testsTotal: 149,
+      verifiedBy: 'CI',
     });
     const r = await estate.readiness(vm);
     expect(r.summary.testsPassing).toBe(149);
@@ -311,9 +359,13 @@ describe('what the summary is allowed to claim', () => {
   it('keeps the gaps a system reported, because that is the unfinished half', async () => {
     const s = await addSystem('uza-mobility-frontend');
     await estate.recordVerification(vm, {
-      systemRef: s.ref, verifiedAt: daysAgo(1),
-      typecheck: 'pass', tests: 'pass', imageBuilds: 'pass',
-      testsPassed: 12, testsTotal: 12,
+      systemRef: s.ref,
+      verifiedAt: daysAgo(1),
+      typecheck: 'pass',
+      tests: 'pass',
+      imageBuilds: 'pass',
+      testsPassed: 12,
+      testsTotal: 12,
       gaps: 'Workshop and lender screens have no API behind them yet.',
       verifiedBy: 'CI',
     });

@@ -92,11 +92,7 @@ export interface LenderFacingFile {
 export interface DisclosureDecision {
   allowed: boolean;
   /** Present when refused. Safe to log; never contains personal data. */
-  reason?:
-    | 'no-such-person'
-    | 'not-this-lenders-borrower'
-    | 'no-consent'
-    | 'consent-withdrawn';
+  reason?: 'no-such-person' | 'not-this-lenders-borrower' | 'no-consent' | 'consent-withdrawn';
 }
 
 export const normaliseLender = (lender: string): string => lender.trim().toLowerCase();

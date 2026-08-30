@@ -43,7 +43,9 @@ export class ClaudeCodeSource {
     try {
       projects = await readdir(this.root);
     } catch {
-      this.logger.warn(`no transcripts at ${this.root} — set CLAUDE_PROJECTS_DIR if they live elsewhere`);
+      this.logger.warn(
+        `no transcripts at ${this.root} — set CLAUDE_PROJECTS_DIR if they live elsewhere`,
+      );
       return [];
     }
 

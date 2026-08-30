@@ -43,10 +43,25 @@ const PEOPLE = [
   // rather than to either project manager. That is a deliberate choice and it has a cost:
   // when Badiane and Scorah both need her in the same week, nobody but the CEO can
   // sequence her. See DEC-2026-0015.
-  { userId: CECILIA, title: 'China operations lead (Bulk and Mobility)', dept: 'BULK', managerId: YVES },
-  { userId: FRANCOIS, title: 'China verification officer (from September)', dept: 'BULK', managerId: CECILIA },
+  {
+    userId: CECILIA,
+    title: 'China operations lead (Bulk and Mobility)',
+    dept: 'BULK',
+    managerId: YVES,
+  },
+  {
+    userId: FRANCOIS,
+    title: 'China verification officer (from September)',
+    dept: 'BULK',
+    managerId: CECILIA,
+  },
   { userId: ADELINE, title: 'Customer care — all ventures', dept: 'GROUP', managerId: YVES },
-  { userId: TRESOR, title: 'Garage & high-voltage technician', dept: 'MOBILITY', managerId: SCORAH },
+  {
+    userId: TRESOR,
+    title: 'Garage & high-voltage technician',
+    dept: 'MOBILITY',
+    managerId: SCORAH,
+  },
   { userId: SADDOCK, title: 'Engineering', dept: 'CLOUD', managerId: GAD },
   { userId: ABIJURU, title: 'Web & brand', dept: 'CLOUD', managerId: GAD },
 ];
@@ -83,7 +98,8 @@ const RESPONSIBILITIES: Resp[] = [
     owner: CECILIA,
     kind: 'standing',
     trigger: 'per_deal',
-    notes: 'Only starts once the handover gate has passed. Everything before that is the Rwanda side.',
+    notes:
+      'Only starts once the handover gate has passed. Everything before that is the Rwanda side.',
   },
   {
     ref: 'RESP-2026-0002',
@@ -136,7 +152,8 @@ const RESPONSIBILITIES: Resp[] = [
     kind: 'approval',
     trigger: 'per_deal',
     hours: 72,
-    notes: 'Meeting action 1. Without this, dormant projects consume China-side attention indefinitely.',
+    notes:
+      'Meeting action 1. Without this, dormant projects consume China-side attention indefinitely.',
   },
   {
     ref: 'RESP-2026-0007',
@@ -334,7 +351,8 @@ const RESPONSIBILITIES: Resp[] = [
     backup: SCORAH,
     kind: 'standing',
     trigger: 'weekly',
-    notes: 'Owners file; the CEO reads. Missing check-ins are the finding, not the absence of a report.',
+    notes:
+      'Owners file; the CEO reads. Missing check-ins are the finding, not the absence of a report.',
   },
   {
     ref: 'RESP-2026-0025',
@@ -367,7 +385,8 @@ const RESPONSIBILITIES: Resp[] = [
     owner: SCORAH,
     kind: 'standing',
     trigger: 'monthly',
-    notes: 'Vehicle supply, Tunga Taxi, charging, solar and the garage. The whole venture, not a slice of it.',
+    notes:
+      'Vehicle supply, Tunga Taxi, charging, solar and the garage. The whole venture, not a slice of it.',
   },
   {
     ref: 'RESP-2026-0028',
@@ -444,7 +463,8 @@ const RESPONSIBILITIES: Resp[] = [
     owner: GAD,
     kind: 'standing',
     trigger: 'weekly',
-    notes: 'Nexus, the portals, the mobility backend and the website. Saddock and Abijuru report here.',
+    notes:
+      'Nexus, the portals, the mobility backend and the website. Saddock and Abijuru report here.',
   },
   {
     ref: 'RESP-2026-0036',
@@ -555,7 +575,12 @@ async function main() {
   for (const p of PEOPLE) {
     await prisma.employeeProfile.upsert({
       where: { userId: p.userId },
-      create: { userId: p.userId, title: p.title, departmentId: deptIds.get(p.dept)!, managerId: p.managerId },
+      create: {
+        userId: p.userId,
+        title: p.title,
+        departmentId: deptIds.get(p.dept)!,
+        managerId: p.managerId,
+      },
       update: { title: p.title, departmentId: deptIds.get(p.dept)!, managerId: p.managerId },
     });
   }
@@ -563,7 +588,8 @@ async function main() {
   // The same invariants the service enforces. A seed that writes rows the API would have
   // refused is a seed that quietly disables the rule.
   for (const r of RESPONSIBILITIES) {
-    if (r.kind === 'approval' && !r.hours) throw new Error(`${r.ref}: approval with no responseHours`);
+    if (r.kind === 'approval' && !r.hours)
+      throw new Error(`${r.ref}: approval with no responseHours`);
     if (r.kind !== 'standing' && (!r.backup || r.backup === r.owner)) {
       throw new Error(`${r.ref}: ${r.kind} needs a backup who is not the owner`);
     }
@@ -582,7 +608,11 @@ async function main() {
       startsOn: r.startsOn ?? null,
       active: true,
     };
-    await prisma.responsibility.upsert({ where: { ref: r.ref }, create: { ref: r.ref, ...data }, update: data });
+    await prisma.responsibility.upsert({
+      where: { ref: r.ref },
+      create: { ref: r.ref, ...data },
+      update: data,
+    });
   }
 
   const byOwner = new Map<string, number>();
@@ -593,11 +623,15 @@ async function main() {
   }
   const approvals = RESPONSIBILITIES.filter((r) => r.kind === 'approval').length;
 
-  console.log(`${DEPARTMENTS.length} departments, ${PEOPLE.length} people, ${RESPONSIBILITIES.length} responsibilities`);
+  console.log(
+    `${DEPARTMENTS.length} departments, ${PEOPLE.length} people, ${RESPONSIBILITIES.length} responsibilities`,
+  );
   console.log('\nload by owner:');
   for (const [who, n] of [...byOwner.entries()].sort((a, b) => b[1] - a[1])) {
     const a = approvalsBy.get(who) ?? 0;
-    console.log(`  ${who.padEnd(14)} ${String(n).padStart(2)} duties${a ? `, ${a} of them approvals` : ''}`);
+    console.log(
+      `  ${who.padEnd(14)} ${String(n).padStart(2)} duties${a ? `, ${a} of them approvals` : ''}`,
+    );
   }
   const top = [...approvalsBy.entries()].sort((a, b) => b[1] - a[1])[0];
   if (top) {
@@ -605,7 +639,9 @@ async function main() {
       `\napproval concentration: ${top[0]} holds ${top[1]} of ${approvals} approvals (${Math.round((top[1] / approvals) * 100)}%).`,
     );
   }
-  console.log(`${RESPONSIBILITIES.filter((r) => r.startsOn).length} duties do not start until September.`);
+  console.log(
+    `${RESPONSIBILITIES.filter((r) => r.startsOn).length} duties do not start until September.`,
+  );
 }
 
 main()

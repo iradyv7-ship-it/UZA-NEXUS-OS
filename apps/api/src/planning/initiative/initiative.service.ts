@@ -3,7 +3,14 @@ import type { AttentionState, InitiativeKind, InitiativeStatus } from '@prisma/c
 import type { Actor } from '@uza/contracts';
 import { PrismaService } from '../../prisma/prisma.service';
 import { PlanningAccessService } from '../planning-authz.service';
-import { initiativeRef, weeklyReportRef, mondayOf, weekKey, nextSequence, refPrefix } from '../planning-ids';
+import {
+  initiativeRef,
+  weeklyReportRef,
+  mondayOf,
+  weekKey,
+  nextSequence,
+  refPrefix,
+} from '../planning-ids';
 
 const RESOURCE = 'initiative';
 
@@ -74,7 +81,11 @@ export class InitiativeService {
   }
 
   /** The two register invariants. Applied on create and on every update. */
-  private assertRegisterRules(attention: AttentionState, nextAction: string | null, reviewAt: Date | null): void {
+  private assertRegisterRules(
+    attention: AttentionState,
+    nextAction: string | null,
+    reviewAt: Date | null,
+  ): void {
     if (attention === 'runs' && !nextAction?.trim()) {
       throw new BadRequestException(
         'an initiative cannot be set to runs without a nextAction — a running initiative with no next action is a wish',
@@ -132,7 +143,10 @@ export class InitiativeService {
     return found;
   }
 
-  async list(actor: Actor, filters: { attention?: AttentionState; ventureCode?: string; ownerId?: string } = {}) {
+  async list(
+    actor: Actor,
+    filters: { attention?: AttentionState; ventureCode?: string; ownerId?: string } = {},
+  ) {
     await this.access.assertRole(actor, 'initiative:read', RESOURCE, 'list');
     const where: Record<string, unknown> = {};
     if (filters.attention) where.attention = filters.attention;
@@ -173,7 +187,9 @@ export class InitiativeService {
         ...(input.ownerId ? { ownerId: input.ownerId } : {}),
         ...(input.artifactUrl !== undefined ? { artifactUrl: input.artifactUrl } : {}),
         ...(attention === 'runs' && !existing.startedAt ? { startedAt: new Date() } : {}),
-        ...(input.status === 'done' || input.status === 'cancelled' ? { closedAt: new Date() } : {}),
+        ...(input.status === 'done' || input.status === 'cancelled'
+          ? { closedAt: new Date() }
+          : {}),
       },
     });
     await this.access.allow(actor, RESOURCE, 'update', ref);
@@ -189,8 +205,16 @@ export class InitiativeService {
    * lighter `InitiativeCheckin` row. Both are readable by the review.
    */
   async checkin(actor: Actor, input: CheckinInput) {
-    await this.access.assertRole(actor, 'report:create', 'initiativeCheckin', 'create', input.initiativeRef);
-    const initiative = await this.prisma.initiative.findUnique({ where: { ref: input.initiativeRef } });
+    await this.access.assertRole(
+      actor,
+      'report:create',
+      'initiativeCheckin',
+      'create',
+      input.initiativeRef,
+    );
+    const initiative = await this.prisma.initiative.findUnique({
+      where: { ref: input.initiativeRef },
+    });
     if (!initiative) throw new NotFoundException(`initiative ${input.initiativeRef} not found`);
     if (!this.seesAll(actor) && initiative.ownerId !== actor.userId) {
       return this.access.denyScope(actor, 'initiativeCheckin', 'create', input.initiativeRef);

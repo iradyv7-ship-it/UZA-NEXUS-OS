@@ -27,14 +27,18 @@ describe('CF-020 — forwarder over-billing raises a claim + notifies finance', 
     const result = await claims.handleBilledWeightRecorded(env);
     expect(result.status).toBe('claim_raised');
 
-    const claim = await prisma.forwarderClaim.findFirstOrThrow({ where: { shipmentRef: env.payload.shipmentRef } });
+    const claim = await prisma.forwarderClaim.findFirstOrThrow({
+      where: { shipmentRef: env.payload.shipmentRef },
+    });
     expect(claim.measuredRevenueTon).toBe(10);
     expect(claim.billedRevenueTon).toBe(10.5);
     expect(claim.overRevenueTon).toBeCloseTo(0.5, 3);
     expect(claim.status).toBe('raised');
 
     // Finance is told — and no customer is addressed.
-    const notes = await prisma.notification.findMany({ where: { subjectRef: env.payload.shipmentRef } });
+    const notes = await prisma.notification.findMany({
+      where: { subjectRef: env.payload.shipmentRef },
+    });
     expect(notes).toHaveLength(1);
     expect(notes[0]!.audience).toBe('finance');
   });

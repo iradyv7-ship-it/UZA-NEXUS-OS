@@ -39,7 +39,14 @@ export class TrackingService {
     return CONFIRMED_SOURCES.includes(source);
   }
 
-  async track(actor: Actor, shipmentRef: string, milestone: string, source: TrackingSource, occurredAt?: Date, note?: string) {
+  async track(
+    actor: Actor,
+    shipmentRef: string,
+    milestone: string,
+    source: TrackingSource,
+    occurredAt?: Date,
+    note?: string,
+  ) {
     await this.authz.authorize(actor, 'shipment', 'read');
     const shipment = await this.prisma.shipment.findUnique({ where: { ref: shipmentRef } });
     if (!shipment) throw new NotFoundException(`shipment ${shipmentRef} not found`);
@@ -72,7 +79,13 @@ export class TrackingService {
    * Delay a shipment: update the ETA + status, publish `shipment.delayed`, and fan out to
    * the five affected parties, each in their own role (CF-023).
    */
-  async delayShipment(actor: Actor, shipmentRef: string, newEta: string, reason: string, parties: DelayParties = {}) {
+  async delayShipment(
+    actor: Actor,
+    shipmentRef: string,
+    newEta: string,
+    reason: string,
+    parties: DelayParties = {},
+  ) {
     await this.authz.authorize(actor, 'shipment', 'create');
     const shipment = await this.prisma.shipment.findUnique({ where: { ref: shipmentRef } });
     if (!shipment) throw new NotFoundException(`shipment ${shipmentRef} not found`);
@@ -92,11 +105,31 @@ export class TrackingService {
 
     // Role-appropriate messages — one durable row per recipient, five distinct audiences.
     const targets: { audience: NotificationAudience; recipientId: string; body: string }[] = [
-      { audience: 'customer', recipientId: customerRef, body: `Your shipment ${shipmentRef} is delayed. New ETA ${newEta}. We are on it.` },
-      { audience: 'agent', recipientId: parties.agentId ?? 'agent', body: `Shipment ${shipmentRef} for ${customerRef} delayed to ${newEta} (${reason}). Manage the client conversation.` },
-      { audience: 'project_owner', recipientId: parties.ownerId ?? 'project_owner', body: `Delay on ${shipmentRef}: ${oldEta} → ${newEta}. Reason: ${reason}. Review the plan.` },
-      { audience: 'front_office', recipientId: parties.frontOfficeId ?? 'front_office', body: `Front office: ${shipmentRef} delayed to ${newEta}. Expect a client call re ${reason}.` },
-      { audience: 'logistics_partner', recipientId: shipment.partnerId ?? 'logistics_partner', body: `Partner: ${shipmentRef} ETA moved to ${newEta}. Confirm downstream handling.` },
+      {
+        audience: 'customer',
+        recipientId: customerRef,
+        body: `Your shipment ${shipmentRef} is delayed. New ETA ${newEta}. We are on it.`,
+      },
+      {
+        audience: 'agent',
+        recipientId: parties.agentId ?? 'agent',
+        body: `Shipment ${shipmentRef} for ${customerRef} delayed to ${newEta} (${reason}). Manage the client conversation.`,
+      },
+      {
+        audience: 'project_owner',
+        recipientId: parties.ownerId ?? 'project_owner',
+        body: `Delay on ${shipmentRef}: ${oldEta} → ${newEta}. Reason: ${reason}. Review the plan.`,
+      },
+      {
+        audience: 'front_office',
+        recipientId: parties.frontOfficeId ?? 'front_office',
+        body: `Front office: ${shipmentRef} delayed to ${newEta}. Expect a client call re ${reason}.`,
+      },
+      {
+        audience: 'logistics_partner',
+        recipientId: shipment.partnerId ?? 'logistics_partner',
+        body: `Partner: ${shipmentRef} ETA moved to ${newEta}. Confirm downstream handling.`,
+      },
     ];
     await this.notify.dispatchMany(shipmentRef, targets);
 

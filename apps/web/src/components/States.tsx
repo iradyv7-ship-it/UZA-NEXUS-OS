@@ -13,7 +13,11 @@ export function StatePanel({
   tone?: 'slate' | 'red' | 'amber';
 }) {
   const ring =
-    tone === 'red' ? 'border-red-200 bg-red-50' : tone === 'amber' ? 'border-amber-200 bg-amber-50' : 'border-slate-200 bg-white';
+    tone === 'red'
+      ? 'border-red-200 bg-red-50'
+      : tone === 'amber'
+        ? 'border-amber-200 bg-amber-50'
+        : 'border-slate-200 bg-white';
   return (
     <div className={`rounded-xl border p-6 text-center ${ring}`}>
       <p className="text-base font-semibold text-slate-900">{title}</p>
@@ -37,9 +41,17 @@ export function LoadingPanel({ t }: { t: Translate }) {
  * Render a non-ok ApiResult into the right panel. `unauthorized` is handled by the caller
  * (redirect to login) — this covers denied / not-found / error.
  */
-export function ResultError({ result, t }: { result: Exclude<ApiResult<unknown>, { kind: 'ok' }>; t: Translate }) {
+export function ResultError({
+  result,
+  t,
+}: {
+  result: Exclude<ApiResult<unknown>, { kind: 'ok' }>;
+  t: Translate;
+}) {
   if (result.kind === 'denied') {
-    return <StatePanel tone="amber" title={t('state.denied.title')} body={t('state.denied.body')} />;
+    return (
+      <StatePanel tone="amber" title={t('state.denied.title')} body={t('state.denied.body')} />
+    );
   }
   if (result.kind === 'notfound') {
     return <StatePanel title={t('state.notfound.title')} body={t('state.notfound.body')} />;

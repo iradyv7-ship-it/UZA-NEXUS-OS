@@ -22,7 +22,11 @@ const PAYMENT_GRANTS: Record<Role, readonly string[]> = {
   logistics_partner: [],
 };
 
-export function can(actor: Actor, resource: 'payment', action: 'create' | 'read' | 'approve'): boolean {
+export function can(
+  actor: Actor,
+  resource: 'payment',
+  action: 'create' | 'read' | 'approve',
+): boolean {
   return PAYMENT_GRANTS[actor.role]?.includes(`${resource}:${action}`) ?? false;
 }
 

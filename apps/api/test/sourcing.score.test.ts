@@ -32,7 +32,9 @@ describe('sourcing — declared-vs-measured variance lowers the supplier score (
     expect(row.score).toBeCloseTo(-1.2, 2);
 
     // The move is an append-only ledger row carrying the CAUSE and before/after scores.
-    const ledger = await prisma.supplierScoreEvent.findMany({ where: { supplierRef: supplier.ref } });
+    const ledger = await prisma.supplierScoreEvent.findMany({
+      where: { supplierRef: supplier.ref },
+    });
     expect(ledger).toHaveLength(1);
     expect(ledger[0]).toMatchObject({
       cause: SCORE_CAUSE.declaredVsMeasuredVariance,
@@ -62,7 +64,11 @@ describe('sourcing — declared-vs-measured variance lowers the supplier score (
 
   it('is idempotent on eventId — a redelivered receipt cannot double-penalise', async () => {
     const { supplier, po } = await suppliedPo();
-    const env = receiptEnvelope(po.ref, { variance: 0.12, discrepancy: true, eventId: randomUUID() });
+    const env = receiptEnvelope(po.ref, {
+      variance: 0.12,
+      discrepancy: true,
+      eventId: randomUUID(),
+    });
 
     const first = await scores.handleWarehouseReceipt(env);
     const second = await scores.handleWarehouseReceipt(env); // same eventId

@@ -33,7 +33,10 @@ describe('compartmentalisation walls', () => {
   });
 
   it('walls a bank-detail change even with no counterparty named', () => {
-    const c = classify('Urgent: change of account', 'Please use the new account number for this invoice.');
+    const c = classify(
+      'Urgent: change of account',
+      'Please use the new account number for this invoice.',
+    );
     expect(c.lane).toBe('private');
     expect(c.wallTags.some((t) => t.startsWith('restricted:'))).toBe(true);
   });

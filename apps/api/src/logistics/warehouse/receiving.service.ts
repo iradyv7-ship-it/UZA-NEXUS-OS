@@ -30,7 +30,11 @@ export interface ReceiveInput {
   readonly clientRequestId?: string;
 }
 
-const VARIANCE_DECISIONS: readonly VarianceDecision[] = ['client_pays', 'uza_absorbs', 'reduce_qty'];
+const VARIANCE_DECISIONS: readonly VarianceDecision[] = [
+  'client_pays',
+  'uza_absorbs',
+  'reduce_qty',
+];
 
 /**
  * Warehouse receiving — the first of the three volumetric numbers made real.
@@ -169,7 +173,9 @@ export class ReceivingService {
       });
     }
 
-    const receipt = await this.prisma.warehouseReceipt.findUnique({ where: { lotRef: lotRefValue } });
+    const receipt = await this.prisma.warehouseReceipt.findUnique({
+      where: { lotRef: lotRefValue },
+    });
     if (!receipt) {
       throw new UzaError({
         code: 'GATE_VARIANCE_UNRESOLVED',
@@ -184,7 +190,10 @@ export class ReceivingService {
         data: { decision, decidedBy: actor.userId, decidedNote: note, decidedAt: new Date() },
       });
       // Clear the commercial hold ONLY. qcReleased is untouched.
-      await tx.package.updateMany({ where: { lotRef: lotRefValue }, data: { varianceHold: false } });
+      await tx.package.updateMany({
+        where: { lotRef: lotRefValue },
+        data: { varianceHold: false },
+      });
 
       await emit('warehouse.varianceResolved', {
         orderRef: receipt.orderRef,

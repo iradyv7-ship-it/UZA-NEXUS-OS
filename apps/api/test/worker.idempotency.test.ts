@@ -53,9 +53,15 @@ describe('worker idempotency (keyed on eventId)', () => {
     const eventId = randomUUID();
     let a = 0;
     let b = 0;
-    await processOutboxEvent(prisma, 'consumer-a', envelope(eventId), async () => { a += 1; });
-    await processOutboxEvent(prisma, 'consumer-a', envelope(eventId), async () => { a += 1; });
-    await processOutboxEvent(prisma, 'consumer-b', envelope(eventId), async () => { b += 1; });
+    await processOutboxEvent(prisma, 'consumer-a', envelope(eventId), async () => {
+      a += 1;
+    });
+    await processOutboxEvent(prisma, 'consumer-a', envelope(eventId), async () => {
+      a += 1;
+    });
+    await processOutboxEvent(prisma, 'consumer-b', envelope(eventId), async () => {
+      b += 1;
+    });
     expect(a).toBe(1);
     expect(b).toBe(1);
   });
@@ -70,8 +76,12 @@ describe('worker idempotency (keyed on eventId)', () => {
     });
 
     let delivered = 0;
-    const publishedFirst = await drainOutbox(prisma, 'bus', async () => { delivered += 1; });
-    const publishedSecond = await drainOutbox(prisma, 'bus', async () => { delivered += 1; });
+    const publishedFirst = await drainOutbox(prisma, 'bus', async () => {
+      delivered += 1;
+    });
+    const publishedSecond = await drainOutbox(prisma, 'bus', async () => {
+      delivered += 1;
+    });
 
     expect(publishedFirst).toBe(2);
     expect(publishedSecond).toBe(0); // nothing left pending

@@ -18,7 +18,12 @@ const overview = new OverviewService(prisma as never, access);
 const ceo: Actor = { userId: 'CEO-1', role: 'ceo', office: 'RW', scope: {} };
 const finance: Actor = { userId: 'FIN-1', role: 'finance', office: 'RW', scope: {} };
 const sourcing: Actor = { userId: 'CN-1', role: 'china_sourcing', office: 'CN', scope: {} };
-const customer: Actor = { userId: 'CUS-1', role: 'customer', office: 'GOM', scope: { customerId: 'X' } };
+const customer: Actor = {
+  userId: 'CUS-1',
+  role: 'customer',
+  office: 'GOM',
+  scope: { customerId: 'X' },
+};
 
 async function reset(): Promise<void> {
   await prisma.$executeRawUnsafe(
@@ -27,12 +32,18 @@ async function reset(): Promise<void> {
 }
 
 beforeEach(reset);
-afterAll(async () => { await prisma.$disconnect(); });
+afterAll(async () => {
+  await prisma.$disconnect();
+});
 
 describe('Command Center — tasks', () => {
   it('ceo creates a task; the assignee (finance) sees it, ceo sees all, an unrelated internal user does not', async () => {
     await depts.create(ceo, { code: 'OPS', name: 'Operations' });
-    const t = await tasks.create(ceo, { title: 'Q3 supplier review', assigneeId: 'FIN-1', priority: 'high' });
+    const t = await tasks.create(ceo, {
+      title: 'Q3 supplier review',
+      assigneeId: 'FIN-1',
+      priority: 'high',
+    });
     expect(t.ref).toMatch(/^CTSK-/);
     expect(t.status).toBe('todo');
 
@@ -62,7 +73,10 @@ describe('Command Center — tasks', () => {
 describe('Command Center — grants', () => {
   it('creates a grant and advances its status along the pipeline', async () => {
     const g = await grants.create(ceo, {
-      name: 'AfDB Trade Facilitation', funder: 'AfDB', amountMinor: minor(250000) as Minor, currency: 'USD',
+      name: 'AfDB Trade Facilitation',
+      funder: 'AfDB',
+      amountMinor: minor(250000) as Minor,
+      currency: 'USD',
     });
     expect(g.ref).toMatch(/^GRNT-/);
     expect(g.status).toBe('identified');
@@ -81,12 +95,18 @@ describe('Command Center — grants', () => {
 });
 
 describe('Command Center — overview', () => {
-  it('aggregates the caller\'s tasks, attention items, upcoming deadlines and the grant pipeline', async () => {
+  it("aggregates the caller's tasks, attention items, upcoming deadlines and the grant pipeline", async () => {
     const soon = new Date(Date.now() + 3 * 86_400_000);
     const past = new Date(Date.now() - 2 * 86_400_000);
-    await tasks.create(ceo, { title: 'mine', assigneeId: 'CEO-1', dueAt: soon });     // my open + upcoming
-    await tasks.create(ceo, { title: 'overdue', assigneeId: 'FIN-1', dueAt: past });   // needs attention
-    await grants.create(ceo, { name: 'G', funder: 'F', amountMinor: minor(1000) as Minor, currency: 'USD', deadlineAt: soon });
+    await tasks.create(ceo, { title: 'mine', assigneeId: 'CEO-1', dueAt: soon }); // my open + upcoming
+    await tasks.create(ceo, { title: 'overdue', assigneeId: 'FIN-1', dueAt: past }); // needs attention
+    await grants.create(ceo, {
+      name: 'G',
+      funder: 'F',
+      amountMinor: minor(1000) as Minor,
+      currency: 'USD',
+      deadlineAt: soon,
+    });
 
     const o = await overview.overview(ceo, {});
     expect(o.counts.myOpenTasks).toBeGreaterThanOrEqual(1);

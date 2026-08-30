@@ -50,30 +50,50 @@ export type PlanningCapability =
   | 'review';
 
 const FULL: readonly PlanningCapability[] = [
-  'plan:create', 'plan:read', 'plan:write', 'plan:all',
-  'report:create', 'report:read', 'report:all',
-  'kpi:create', 'kpi:read', 'kpi:write', 'kpi:all',
-  'initiative:create', 'initiative:read', 'initiative:write', 'initiative:all',
-  'decision:create', 'decision:read', 'decision:answer',
+  'plan:create',
+  'plan:read',
+  'plan:write',
+  'plan:all',
+  'report:create',
+  'report:read',
+  'report:all',
+  'kpi:create',
+  'kpi:read',
+  'kpi:write',
+  'kpi:all',
+  'initiative:create',
+  'initiative:read',
+  'initiative:write',
+  'initiative:all',
+  'decision:create',
+  'decision:read',
+  'decision:answer',
   'advisor',
-  'intake:read', 'intake:write', 'intake:declassify',
+  'intake:read',
+  'intake:write',
+  'intake:declassify',
   'review',
 ];
 
 /** Internal individual contributors + managers: own plans/reports + scoped reads of KPIs/initiatives. */
 const INTERNAL: readonly PlanningCapability[] = [
-  'plan:create', 'plan:read', 'plan:write',
-  'report:create', 'report:read',
+  'plan:create',
+  'plan:read',
+  'plan:write',
+  'report:create',
+  'report:read',
   'kpi:read',
   'initiative:read',
   // Anyone internal may put a question in front of the CEO — that queue is the
   // bottleneck metric, and it only works if raising is friction-free. Answering is not
   // granted here: `decision:answer` stays executive.
-  'decision:create', 'decision:read',
+  'decision:create',
+  'decision:read',
   // Read the shared queue and act on it. NOT `intake:declassify` — moving a walled
   // signal into the shared lane is the one intake act that cannot be undone, because
   // by the time you would undo it, it has been read.
-  'intake:read', 'intake:write',
+  'intake:read',
+  'intake:write',
 ];
 
 /** No Planning access — external / commercial roles. */
@@ -110,7 +130,9 @@ export const hasPlanningCapability = (role: Role, capability: PlanningCapability
 export const seesAllPlans = (role: Role): boolean => hasPlanningCapability(role, 'plan:all');
 export const seesAllReports = (role: Role): boolean => hasPlanningCapability(role, 'report:all');
 export const seesAllKpis = (role: Role): boolean => hasPlanningCapability(role, 'kpi:all');
-export const seesAllInitiatives = (role: Role): boolean => hasPlanningCapability(role, 'initiative:all');
+export const seesAllInitiatives = (role: Role): boolean =>
+  hasPlanningCapability(role, 'initiative:all');
 /** Only the executive may answer/defer a decision or query the advisor. */
-export const mayAnswerDecisions = (role: Role): boolean => hasPlanningCapability(role, 'decision:answer');
+export const mayAnswerDecisions = (role: Role): boolean =>
+  hasPlanningCapability(role, 'decision:answer');
 export const mayUseAdvisor = (role: Role): boolean => hasPlanningCapability(role, 'advisor');

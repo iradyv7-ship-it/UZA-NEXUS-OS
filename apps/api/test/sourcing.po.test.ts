@@ -3,7 +3,15 @@ import { beforeEach, afterAll, describe, expect, it } from 'vitest';
 import { prisma, resetDb } from './db';
 import { resetSourcingQualityDb } from './sourcing-quality-db';
 import {
-  suppliers, rfqs, pos, cecilia, agent, UNIT_COST, ORDER_REF, PROJECT_REF, suppliedPo,
+  suppliers,
+  rfqs,
+  pos,
+  cecilia,
+  agent,
+  UNIT_COST,
+  ORDER_REF,
+  PROJECT_REF,
+  suppliedPo,
 } from './sourcing-quality-fixtures';
 
 beforeEach(async () => {
@@ -26,19 +34,38 @@ describe('sourcing — purchase order issuance', () => {
     const events = await prisma.outboxEvent.findMany({ where: { name: 'po.issued' } });
     expect(events).toHaveLength(1);
     const payload = events[0]!.payload as Record<string, unknown>;
-    expect(payload).toMatchObject({ poRef: po.ref, supplierRef: supplier.ref, orderRef: ORDER_REF });
+    expect(payload).toMatchObject({
+      poRef: po.ref,
+      supplierRef: supplier.ref,
+      orderRef: ORDER_REF,
+    });
   });
 
   it('records cost basis: an FOB quote is forced inlandSeparable=false, an EXW quote stays true', async () => {
-    const supplier = await suppliers.register(cecilia, { nameEn: 'Anhui Freight Co', nameZh: '安徽货运' });
+    const supplier = await suppliers.register(cecilia, {
+      nameEn: 'Anhui Freight Co',
+      nameZh: '安徽货运',
+    });
 
     const fob = await rfqs.addQuote(cecilia, {
-      supplierRef: supplier.ref, projectRef: PROJECT_REF, unitCostMinor: UNIT_COST,
-      moq: 50, leadTimeDays: 20, unitCbm: 0.05, unitKg: 12, basis: 'FOB',
+      supplierRef: supplier.ref,
+      projectRef: PROJECT_REF,
+      unitCostMinor: UNIT_COST,
+      moq: 50,
+      leadTimeDays: 20,
+      unitCbm: 0.05,
+      unitKg: 12,
+      basis: 'FOB',
     });
     const exw = await rfqs.addQuote(cecilia, {
-      supplierRef: supplier.ref, projectRef: PROJECT_REF, unitCostMinor: UNIT_COST,
-      moq: 50, leadTimeDays: 20, unitCbm: 0.05, unitKg: 12, basis: 'EXW',
+      supplierRef: supplier.ref,
+      projectRef: PROJECT_REF,
+      unitCostMinor: UNIT_COST,
+      moq: 50,
+      leadTimeDays: 20,
+      unitCbm: 0.05,
+      unitKg: 12,
+      basis: 'EXW',
     });
 
     expect(fob.basis).toBe('FOB');
@@ -47,7 +74,9 @@ describe('sourcing — purchase order issuance', () => {
     expect(exw.inlandSeparable).toBe(true);
 
     // Each quote appends a supplier price-history point carrying the basis.
-    const history = await prisma.supplierPricePoint.findMany({ where: { supplierRef: supplier.ref } });
+    const history = await prisma.supplierPricePoint.findMany({
+      where: { supplierRef: supplier.ref },
+    });
     expect(history).toHaveLength(2);
     expect(new Set(history.map((h) => h.basis))).toEqual(new Set(['FOB', 'EXW']));
   });
@@ -57,12 +86,22 @@ describe('sourcing — purchase order issuance', () => {
     const key = randomUUID();
 
     const first = await pos.create(cecilia, {
-      supplierRef: supplier.ref, orderRef: ORDER_REF, qty: 10, unitCostMinor: UNIT_COST,
-      unitCbm: 0.05, unitKg: 12, clientRequestId: key,
+      supplierRef: supplier.ref,
+      orderRef: ORDER_REF,
+      qty: 10,
+      unitCostMinor: UNIT_COST,
+      unitCbm: 0.05,
+      unitKg: 12,
+      clientRequestId: key,
     });
     const second = await pos.create(cecilia, {
-      supplierRef: supplier.ref, orderRef: ORDER_REF, qty: 10, unitCostMinor: UNIT_COST,
-      unitCbm: 0.05, unitKg: 12, clientRequestId: key,
+      supplierRef: supplier.ref,
+      orderRef: ORDER_REF,
+      qty: 10,
+      unitCostMinor: UNIT_COST,
+      unitCbm: 0.05,
+      unitKg: 12,
+      clientRequestId: key,
     });
 
     expect(second.ref).toBe(first.ref);
@@ -70,17 +109,26 @@ describe('sourcing — purchase order issuance', () => {
     expect(rows).toHaveLength(1);
     const events = await prisma.outboxEvent.findMany({ where: { name: 'po.issued' } });
     // one from suppliedPo's PO + exactly one from the first create; the replay adds none.
-    expect(events.filter((e) => (e.payload as Record<string, unknown>).poRef === first.ref)).toHaveLength(1);
+    expect(
+      events.filter((e) => (e.payload as Record<string, unknown>).poRef === first.ref),
+    ).toHaveLength(1);
   });
 
   it('denies a sales agent from creating a purchase order (audited)', async () => {
     const { supplier } = await suppliedPo();
     await expect(
       pos.create(agent, {
-        supplierRef: supplier.ref, orderRef: ORDER_REF, qty: 1, unitCostMinor: UNIT_COST, unitCbm: 0.05, unitKg: 12,
+        supplierRef: supplier.ref,
+        orderRef: ORDER_REF,
+        qty: 1,
+        unitCostMinor: UNIT_COST,
+        unitCbm: 0.05,
+        unitKg: 12,
       }),
     ).rejects.toThrow();
-    const deny = await prisma.auditLog.findFirst({ where: { actorId: agent.userId, resource: 'po', decision: 'deny' } });
+    const deny = await prisma.auditLog.findFirst({
+      where: { actorId: agent.userId, resource: 'po', decision: 'deny' },
+    });
     expect(deny).not.toBeNull();
   });
 });

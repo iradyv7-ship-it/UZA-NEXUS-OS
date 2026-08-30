@@ -42,7 +42,10 @@ export interface DispatchDeps {
   readonly claim: Pick<ForwarderClaimService, 'handleBilledWeightRecorded'>;
   readonly supplierScore: Pick<SupplierScoreService, 'handleWarehouseReceipt'>;
   readonly orderPayment: Pick<OrderPaymentService, 'handlePaymentVerified'>;
-  readonly qualityGate: Pick<QualityGateService, 'handleInspectionRecorded' | 'handleQualityFailed'>;
+  readonly qualityGate: Pick<
+    QualityGateService,
+    'handleInspectionRecorded' | 'handleQualityFailed'
+  >;
 }
 
 export type DispatchMap = ReadonlyMap<UzaEventName, readonly ConsumerBinding[]>;
@@ -83,13 +86,25 @@ export function buildDispatchMap(deps: DispatchDeps): DispatchMap {
   };
 
   bind('order.created', 'finance.order-created', (e) => deps.invoice.handleOrderCreated(e));
-  bind('order.cancelled', 'finance.order-cancelled', (e) => deps.commission.handleOrderCancelled(e));
+  bind('order.cancelled', 'finance.order-cancelled', (e) =>
+    deps.commission.handleOrderCancelled(e),
+  );
   bind('payment.verified', 'trade.payment-verified', (e) => deps.order.handlePaymentVerified(e));
-  bind('payment.verified', 'logistics.payment-verified', (e) => deps.orderPayment.handlePaymentVerified(e));
-  bind('inspection.recorded', 'logistics.inspection-recorded', (e) => deps.qualityGate.handleInspectionRecorded(e));
-  bind('quality.failed', 'logistics.quality-failed', (e) => deps.qualityGate.handleQualityFailed(e));
-  bind('warehouse.receiptRecorded', 'sourcing.warehouse-receipt', (e) => deps.supplierScore.handleWarehouseReceipt(e));
-  bind('shipment.billedWeightRecorded', 'finance.billed-weight', (e) => deps.claim.handleBilledWeightRecorded(e));
+  bind('payment.verified', 'logistics.payment-verified', (e) =>
+    deps.orderPayment.handlePaymentVerified(e),
+  );
+  bind('inspection.recorded', 'logistics.inspection-recorded', (e) =>
+    deps.qualityGate.handleInspectionRecorded(e),
+  );
+  bind('quality.failed', 'logistics.quality-failed', (e) =>
+    deps.qualityGate.handleQualityFailed(e),
+  );
+  bind('warehouse.receiptRecorded', 'sourcing.warehouse-receipt', (e) =>
+    deps.supplierScore.handleWarehouseReceipt(e),
+  );
+  bind('shipment.billedWeightRecorded', 'finance.billed-weight', (e) =>
+    deps.claim.handleBilledWeightRecorded(e),
+  );
 
   return map;
 }

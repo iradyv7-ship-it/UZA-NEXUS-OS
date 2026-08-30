@@ -23,25 +23,33 @@ export function TaskActions({ taskRef, status }: { taskRef: string; status: stri
         <form action={advanceTaskAction}>
           <input type="hidden" name="ref" value={taskRef} />
           <input type="hidden" name="to" value="in_progress" />
-          <button className="rounded border border-slate-300 px-2 py-1 text-[11px] text-slate-600">Start</button>
+          <button className="rounded border border-slate-300 px-2 py-1 text-[11px] text-slate-600">
+            Start
+          </button>
         </form>
       ) : null}
       {status !== 'blocked' ? (
         <form action={advanceTaskAction}>
           <input type="hidden" name="ref" value={taskRef} />
           <input type="hidden" name="to" value="blocked" />
-          <button className="rounded border border-slate-300 px-2 py-1 text-[11px] text-slate-600">Blocked</button>
+          <button className="rounded border border-slate-300 px-2 py-1 text-[11px] text-slate-600">
+            Blocked
+          </button>
         </form>
       ) : (
         <form action={advanceTaskAction}>
           <input type="hidden" name="ref" value={taskRef} />
           <input type="hidden" name="to" value="in_progress" />
-          <button className="rounded border border-slate-300 px-2 py-1 text-[11px] text-slate-600">Unblock</button>
+          <button className="rounded border border-slate-300 px-2 py-1 text-[11px] text-slate-600">
+            Unblock
+          </button>
         </form>
       )}
       <form action={completeTaskAction}>
         <input type="hidden" name="ref" value={taskRef} />
-        <button className="rounded bg-brand px-2 py-1 text-[11px] font-semibold text-white">Done</button>
+        <button className="rounded bg-brand px-2 py-1 text-[11px] font-semibold text-white">
+          Done
+        </button>
       </form>
     </div>
   );
@@ -96,7 +104,11 @@ export function NewTask() {
       <div className="flex flex-wrap gap-3">
         <label className="block">
           <span className="text-xs font-medium text-slate-600">Who</span>
-          <select name="assigneeId" required className="mt-1 rounded-lg border border-slate-300 px-3 py-2 text-sm">
+          <select
+            name="assigneeId"
+            required
+            className="mt-1 rounded-lg border border-slate-300 px-3 py-2 text-sm"
+          >
             {PEOPLE.map(([ref, label]) => (
               <option key={ref} value={ref}>
                 {label}
@@ -117,7 +129,11 @@ export function NewTask() {
 
         <label className="block">
           <span className="text-xs font-medium text-slate-600">Priority</span>
-          <select name="priority" defaultValue="medium" className="mt-1 rounded-lg border border-slate-300 px-3 py-2 text-sm">
+          <select
+            name="priority"
+            defaultValue="medium"
+            className="mt-1 rounded-lg border border-slate-300 px-3 py-2 text-sm"
+          >
             <option value="low">Low</option>
             <option value="medium">Medium</option>
             <option value="high">High</option>
@@ -141,7 +157,9 @@ export function NewTask() {
       </p>
 
       <div className="flex gap-2">
-        <button className="rounded-lg bg-brand px-4 py-2 text-sm font-semibold text-white">Create</button>
+        <button className="rounded-lg bg-brand px-4 py-2 text-sm font-semibold text-white">
+          Create
+        </button>
         <button
           type="button"
           onClick={() => setOpen(false)}

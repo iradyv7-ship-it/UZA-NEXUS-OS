@@ -141,10 +141,16 @@ describe('the audit row', () => {
   it('uses kind:id so one prefix finds every read by a party kind', () => {
     // "Show me everything any lender looked at" must be one query, not a join.
     const a = portalAudit({
-      party: { kind: 'lender', id: 'unguka' }, portal: 'bank', subjectRef: 'X', decision: 'allow',
+      party: { kind: 'lender', id: 'unguka' },
+      portal: 'bank',
+      subjectRef: 'X',
+      decision: 'allow',
     });
     const b = portalAudit({
-      party: { kind: 'lender', id: 'equity' }, portal: 'bank', subjectRef: 'Y', decision: 'allow',
+      party: { kind: 'lender', id: 'equity' },
+      portal: 'bank',
+      subjectRef: 'Y',
+      decision: 'allow',
     });
     expect(a.actorId.startsWith('lender:')).toBe(true);
     expect(b.actorId.startsWith('lender:')).toBe(true);

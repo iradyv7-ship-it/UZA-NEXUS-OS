@@ -42,18 +42,33 @@ export default async function DashboardPage({
   const result = await loadQueue(Number.isFinite(requested) ? requested : PAGE_SIZE);
   if (result.kind === 'unauthorized') redirect('/login');
 
-  const { quotations, orders, projects, quotationsState, ordersState, projectsState, hasMore, count } = result;
+  const {
+    quotations,
+    orders,
+    projects,
+    quotationsState,
+    ordersState,
+    projectsState,
+    hasMore,
+    count,
+  } = result;
   // Customers also see a Projects section; count it toward "is there anything to show".
   const total = quotations.length + orders.length + (isCustomer ? projects.length : 0);
   const bothDenied = quotationsState === 'denied' && ordersState === 'denied';
   const bothFailed =
-    quotationsState !== 'ok' && ordersState !== 'ok' && !(quotationsState === 'denied' && ordersState === 'denied');
+    quotationsState !== 'ok' &&
+    ordersState !== 'ok' &&
+    !(quotationsState === 'denied' && ordersState === 'denied');
 
   return (
     <div className="space-y-4">
       <div>
-        <h1 className="text-xl font-bold text-slate-900">{t(isCustomer ? 'home.title' : 'dash.title')}</h1>
-        <p className="text-sm text-slate-500">{t(isCustomer ? 'home.subtitle' : 'dash.subtitle')}</p>
+        <h1 className="text-xl font-bold text-slate-900">
+          {t(isCustomer ? 'home.title' : 'dash.title')}
+        </h1>
+        <p className="text-sm text-slate-500">
+          {t(isCustomer ? 'home.subtitle' : 'dash.subtitle')}
+        </p>
       </div>
 
       {err === 'track' && (
@@ -81,7 +96,12 @@ export default async function DashboardPage({
       ) : (
         <div className="space-y-5">
           {isCustomer && (
-            <ProjectSection title={t('record.project')} projects={projects} state={projectsState} t={t} />
+            <ProjectSection
+              title={t('record.project')}
+              projects={projects}
+              state={projectsState}
+              t={t}
+            />
           )}
           <QueueSection
             title={t('record.quotation')}
@@ -90,7 +110,13 @@ export default async function DashboardPage({
             t={t}
             locale={locale}
           />
-          <QueueSection title={t('record.order')} cards={orders} state={ordersState} t={t} locale={locale} />
+          <QueueSection
+            title={t('record.order')}
+            cards={orders}
+            state={ordersState}
+            t={t}
+            locale={locale}
+          />
 
           {hasMore && (
             <Link
@@ -127,12 +153,18 @@ function ProjectSection({
     <section className="space-y-3">
       <div className="flex items-center justify-between">
         <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-500">{title}</h2>
-        {state === 'ok' && <span className="text-xs font-medium text-slate-400">{projects.length}</span>}
+        {state === 'ok' && (
+          <span className="text-xs font-medium text-slate-400">{projects.length}</span>
+        )}
       </div>
       {state === 'denied' ? (
-        <p className="rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-800">{t('dash.section.denied')}</p>
+        <p className="rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-800">
+          {t('dash.section.denied')}
+        </p>
       ) : state === 'error' ? (
-        <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{t('dash.section.error')}</p>
+        <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">
+          {t('dash.section.error')}
+        </p>
       ) : (
         <CardGrid>
           {projects.map((p) => (
@@ -142,8 +174,11 @@ function ProjectSection({
                 <Badge tone="slate">{p.stage}</Badge>
               </div>
               <p className="mt-2 text-xs text-slate-500">
-                {t('dash.col.owner')}: <span className="font-medium text-slate-700">{t('owner.venture_manager')}</span>
-                {p.owner ? <span className="ml-1 font-mono text-[11px] text-slate-400">{p.owner}</span> : null}
+                {t('dash.col.owner')}:{' '}
+                <span className="font-medium text-slate-700">{t('owner.venture_manager')}</span>
+                {p.owner ? (
+                  <span className="ml-1 font-mono text-[11px] text-slate-400">{p.owner}</span>
+                ) : null}
               </p>
               <p className="mt-1 font-mono text-[11px] text-slate-400">{p.ref}</p>
             </li>
@@ -209,9 +244,13 @@ function QueueSection({
       </div>
 
       {state === 'denied' ? (
-        <p className="rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-800">{t('dash.section.denied')}</p>
+        <p className="rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-800">
+          {t('dash.section.denied')}
+        </p>
       ) : state === 'error' ? (
-        <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{t('dash.section.error')}</p>
+        <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">
+          {t('dash.section.error')}
+        </p>
       ) : (
         <CardGrid>
           {cards.map((card) => (
@@ -238,7 +277,8 @@ function DealCard({ card, t, locale }: { card: QueueCard; t: Translate; locale: 
               {card.projectName ?? recordLabel}
             </p>
             <p className="truncate text-xs text-slate-500">
-              {recordLabel} · {t('record.for')} <span className="font-mono">{card.customerRef}</span>
+              {recordLabel} · {t('record.for')}{' '}
+              <span className="font-mono">{card.customerRef}</span>
             </p>
           </div>
           <Badge tone={toneForStage(promise.stageKey)}>{t(promise.stageKey)}</Badge>
@@ -250,7 +290,9 @@ function DealCard({ card, t, locale }: { card: QueueCard; t: Translate; locale: 
           <p className="mt-0.5 text-xs text-slate-500">
             {t('dash.col.owner')}:{' '}
             <span className="font-medium text-slate-700">{t(`owner.${promise.ownerRole}`)}</span>
-            {card.ownerId ? <span className="ml-1 font-mono text-[11px] text-slate-400">{card.ownerId}</span> : null}
+            {card.ownerId ? (
+              <span className="ml-1 font-mono text-[11px] text-slate-400">{card.ownerId}</span>
+            ) : null}
           </p>
         </div>
 
@@ -258,7 +300,9 @@ function DealCard({ card, t, locale }: { card: QueueCard; t: Translate; locale: 
           <p className="font-mono text-[11px] text-slate-400">{card.ref}</p>
           <p className="text-xs tabular-nums text-slate-600">
             <span className="font-medium text-slate-800">{amount}</span>
-            {card.amount.per === 'unit' ? <span className="text-slate-400"> {t('dash.perUnit')}</span> : null}
+            {card.amount.per === 'unit' ? (
+              <span className="text-slate-400"> {t('dash.perUnit')}</span>
+            ) : null}
           </p>
         </div>
       </Link>

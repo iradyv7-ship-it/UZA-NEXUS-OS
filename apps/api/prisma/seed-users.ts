@@ -54,17 +54,73 @@ const SEATS: Seat[] = [
     // touching them, since that affects everyone's password-login email, not just Google.
     email: 'yves@uzasolutions.com',
     alternateEmails: ['iradyv7@gmail.com'],
-    role: 'ceo', office: 'KGL', name: 'Yves Iradukunda Nsengiyumva',
+    role: 'ceo',
+    office: 'KGL',
+    name: 'Yves Iradukunda Nsengiyumva',
   },
-  { ref: 'EMP-KGL-0002', email: 'scorah@uzasolutions.rw', role: 'venture_manager', office: 'KGL', name: 'Scorah — PM, UZA Mobility' },
-  { ref: 'EMP-KGL-0003', email: 'badiane@uzasolutions.rw', role: 'venture_manager', office: 'KGL', name: 'Badiane Gahamanyi — PM, UZA Bulk' },
-  { ref: 'EMP-KGL-0007', email: 'gad@uzasolutions.rw', role: 'venture_manager', office: 'KGL', name: 'Kalisa Gad — PM, IT' },
-  { ref: 'EMP-CHN-0004', email: 'cecilia@uzasolutions.rw', role: 'china_sourcing', office: 'CN', name: 'Cecilia — China operations' },
-  { ref: 'EMP-CHN-0005', email: 'francois@uzasolutions.rw', role: 'china_warehouse', office: 'CN', name: 'Francois Habineza — China verification' },
-  { ref: 'EMP-KGL-0010', email: 'adeline@uzasolutions.rw', role: 'front_office', office: 'KGL', name: 'Adeline Uwibambe — customer care' },
-  { ref: 'EMP-KGL-0006', email: 'tresor@uzasolutions.rw', role: 'front_office', office: 'KGL', name: 'Tresor — garage' },
-  { ref: 'EMP-KGL-0008', email: 'saddock@uzasolutions.rw', role: 'front_office', office: 'KGL', name: 'Saddock Kabandana — engineering' },
-  { ref: 'EMP-KGL-0009', email: 'abijuru@uzasolutions.rw', role: 'front_office', office: 'KGL', name: 'Abijuru — web and brand' },
+  {
+    ref: 'EMP-KGL-0002',
+    email: 'scorah@uzasolutions.rw',
+    role: 'venture_manager',
+    office: 'KGL',
+    name: 'Scorah — PM, UZA Mobility',
+  },
+  {
+    ref: 'EMP-KGL-0003',
+    email: 'badiane@uzasolutions.rw',
+    role: 'venture_manager',
+    office: 'KGL',
+    name: 'Badiane Gahamanyi — PM, UZA Bulk',
+  },
+  {
+    ref: 'EMP-KGL-0007',
+    email: 'gad@uzasolutions.rw',
+    role: 'venture_manager',
+    office: 'KGL',
+    name: 'Kalisa Gad — PM, IT',
+  },
+  {
+    ref: 'EMP-CHN-0004',
+    email: 'cecilia@uzasolutions.rw',
+    role: 'china_sourcing',
+    office: 'CN',
+    name: 'Cecilia — China operations',
+  },
+  {
+    ref: 'EMP-CHN-0005',
+    email: 'francois@uzasolutions.rw',
+    role: 'china_warehouse',
+    office: 'CN',
+    name: 'Francois Habineza — China verification',
+  },
+  {
+    ref: 'EMP-KGL-0010',
+    email: 'adeline@uzasolutions.rw',
+    role: 'front_office',
+    office: 'KGL',
+    name: 'Adeline Uwibambe — customer care',
+  },
+  {
+    ref: 'EMP-KGL-0006',
+    email: 'tresor@uzasolutions.rw',
+    role: 'front_office',
+    office: 'KGL',
+    name: 'Tresor — garage',
+  },
+  {
+    ref: 'EMP-KGL-0008',
+    email: 'saddock@uzasolutions.rw',
+    role: 'front_office',
+    office: 'KGL',
+    name: 'Saddock Kabandana — engineering',
+  },
+  {
+    ref: 'EMP-KGL-0009',
+    email: 'abijuru@uzasolutions.rw',
+    role: 'front_office',
+    office: 'KGL',
+    name: 'Abijuru — web and brand',
+  },
 ];
 
 async function main() {
@@ -122,7 +178,9 @@ async function main() {
 
   console.log(`${SEATS.length} accounts ready. Existing passwords were NOT reset.`);
   for (const s of SEATS) console.log(`  ${s.ref.padEnd(14)} ${s.email.padEnd(30)} ${s.role}`);
-  console.log('\nEveryone changes their password on first sign-in. Three people hold venture_manager');
+  console.log(
+    '\nEveryone changes their password on first sign-in. Three people hold venture_manager',
+  );
   console.log('and therefore see the whole register, not only their own venture.');
 }
 

@@ -47,7 +47,8 @@ export class MemoService {
       return [input.toId];
     }
     if (input.audience === 'department') {
-      if (!input.departmentCode) throw new BadRequestException('a memo to a department needs departmentCode');
+      if (!input.departmentCode)
+        throw new BadRequestException('a memo to a department needs departmentCode');
       const dept = await this.prisma.department.findUnique({
         where: { code: input.departmentCode.toUpperCase() },
         select: { id: true },
@@ -131,7 +132,10 @@ export class MemoService {
     });
     if (!receipt) throw new NotFoundException(`memo ${ref} was not sent to you`);
     if (receipt.readAt) return receipt;
-    return this.prisma.memoReceipt.update({ where: { id: receipt.id }, data: { readAt: new Date() } });
+    return this.prisma.memoReceipt.update({
+      where: { id: receipt.id },
+      data: { readAt: new Date() },
+    });
   }
 
   /** Acknowledging it. A second, deliberate act — reading is not agreeing to do something. */

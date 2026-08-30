@@ -37,19 +37,30 @@ export default async function VerifyQueuePage({
       </div>
 
       {verified && (
-        <div role="status" className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2.5 text-sm text-emerald-800">
+        <div
+          role="status"
+          className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2.5 text-sm text-emerald-800"
+        >
           <p className="font-medium">{t('verify.done')}</p>
-          <Link href={`/orders/${verified}`} className="mt-0.5 inline-block text-xs font-semibold underline">
+          <Link
+            href={`/orders/${verified}`}
+            className="mt-0.5 inline-block text-xs font-semibold underline"
+          >
             {t('verify.doneLink')} → {verified}
           </Link>
         </div>
       )}
       {rejected && (
-        <p role="status" className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700">
+        <p
+          role="status"
+          className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700"
+        >
           {t('verify.rejected')}
         </p>
       )}
-      {err === 'denied' && <StatePanel tone="amber" title={t('state.denied.title')} body={t('state.denied.body')} />}
+      {err === 'denied' && (
+        <StatePanel tone="amber" title={t('state.denied.title')} body={t('state.denied.body')} />
+      )}
       {err === 'verify' && <ErrLine msg={t('verify.error')} />}
       {err === 'reject' && <ErrLine msg={t('verify.error')} />}
       {err === 'reason' && <ErrLine msg={t('verify.reasonRequired')} />}
@@ -111,7 +122,9 @@ function PaymentCard({ p, t, locale }: { p: PaymentView; t: Translate; locale: L
         </div>
 
         <details className="mt-2">
-          <summary className="cursor-pointer text-xs font-medium text-slate-500">{t('verify.reject')}</summary>
+          <summary className="cursor-pointer text-xs font-medium text-slate-500">
+            {t('verify.reject')}
+          </summary>
           <form action={rejectPaymentAction} className="mt-2 space-y-2">
             <input type="hidden" name="ref" value={p.ref} />
             <input

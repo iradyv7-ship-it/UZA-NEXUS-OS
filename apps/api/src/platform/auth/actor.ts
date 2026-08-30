@@ -9,10 +9,12 @@ import type { User } from '@prisma/client';
  * orders and leads. `inScope` for a sales_agent compares `obj.agentId === actor.userId`,
  * so the readable ref is the correct key.
  */
-export function toActor(user: Pick<
-  User,
-  'ref' | 'role' | 'officeId' | 'scopeCustomerId' | 'scopeCustomerIds' | 'scopeShipmentRefs'
-> & { officeCode?: string }): Actor {
+export function toActor(
+  user: Pick<
+    User,
+    'ref' | 'role' | 'officeId' | 'scopeCustomerId' | 'scopeCustomerIds' | 'scopeShipmentRefs'
+  > & { officeCode?: string },
+): Actor {
   return {
     userId: user.ref,
     role: user.role as Role,

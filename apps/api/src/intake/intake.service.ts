@@ -101,7 +101,9 @@ export class IntakeService {
       if (stored.lane === 'private') privateCount += 1;
     }
 
-    this.logger.log(`sweep: ${written} new signals since ${since.toISOString()} (${privateCount} private)`);
+    this.logger.log(
+      `sweep: ${written} new signals since ${since.toISOString()} (${privateCount} private)`,
+    );
     return { captured: written, private: privateCount, bySource };
   }
 
@@ -124,7 +126,10 @@ export class IntakeService {
     if (existing) return null;
 
     const { lane, wallTags } = classify(input.title, input.body);
-    const seq = await nextSequence(this.prisma.signal, (n) => `SIG-${new Date().getFullYear()}-${String(n).padStart(4, '0')}`);
+    const seq = await nextSequence(
+      this.prisma.signal,
+      (n) => `SIG-${new Date().getFullYear()}-${String(n).padStart(4, '0')}`,
+    );
     const ref = `SIG-${new Date().getFullYear()}-${String(seq).padStart(4, '0')}`;
 
     return this.prisma.signal.create({
@@ -147,7 +152,8 @@ export class IntakeService {
   /** Type it in yourself. The same rules apply — an idea typed in is still classified. */
   async add(actor: Actor, input: { title: string; body: string }) {
     await this.access.assertRole(actor, 'intake:write', RESOURCE, 'create');
-    if (!input.title.trim() || !input.body.trim()) throw new BadRequestException('a signal needs a title and a body');
+    if (!input.title.trim() || !input.body.trim())
+      throw new BadRequestException('a signal needs a title and a body');
     const created = await this.record({
       source: 'manual' as SignalSource,
       externalId: `${actor.userId}:${input.title.trim().slice(0, 60)}:${Date.now()}`,
@@ -177,9 +183,18 @@ export class IntakeService {
       // `body` is deliberately excluded from the list projection. A queue is scanned, and
       // raw captured text does not belong in something that gets scanned.
       select: {
-        ref: true, source: true, lane: true, title: true, summary: true, wallTags: true,
-        status: true, proposedInitiativeRef: true, proposedAction: true, proposedConfidence: true,
-        occurredAt: true, capturedAt: true,
+        ref: true,
+        source: true,
+        lane: true,
+        title: true,
+        summary: true,
+        wallTags: true,
+        status: true,
+        proposedInitiativeRef: true,
+        proposedAction: true,
+        proposedConfidence: true,
+        occurredAt: true,
+        capturedAt: true,
       },
     });
     await this.access.allow(actor, RESOURCE, 'list');
@@ -225,11 +240,18 @@ export class IntakeService {
     await this.access.assertRole(actor, 'intake:write', RESOURCE, 'dismiss', ref);
     const signal = await this.read(actor, ref);
     if (!reason.trim()) {
-      throw new BadRequestException('say why — a queue emptied without reasons teaches nothing about what to stop capturing');
+      throw new BadRequestException(
+        'say why — a queue emptied without reasons teaches nothing about what to stop capturing',
+      );
     }
     const updated = await this.prisma.signal.update({
       where: { ref: signal.ref },
-      data: { status: 'dismissed', dismissedReason: reason.trim(), resolvedById: actor.userId, resolvedAt: new Date() },
+      data: {
+        status: 'dismissed',
+        dismissedReason: reason.trim(),
+        resolvedById: actor.userId,
+        resolvedAt: new Date(),
+      },
     });
     await this.access.allow(actor, RESOURCE, 'dismiss', ref);
     return this.redactBody(updated);

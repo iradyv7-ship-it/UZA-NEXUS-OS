@@ -206,8 +206,15 @@ export class AuthService {
     return { accessToken, actor, mfaRequired: false };
   }
 
-  private actorFor(user: { ref: string; role: string; officeId: string; office?: { code: string };
-    scopeCustomerId: string | null; scopeCustomerIds: string[]; scopeShipmentRefs: string[] }): Actor {
+  private actorFor(user: {
+    ref: string;
+    role: string;
+    officeId: string;
+    office?: { code: string };
+    scopeCustomerId: string | null;
+    scopeCustomerIds: string[];
+    scopeShipmentRefs: string[];
+  }): Actor {
     return toActor({
       ref: user.ref,
       role: user.role as Actor['role'],

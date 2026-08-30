@@ -33,7 +33,8 @@ const COLUMNS: { key: TaskStatus; label: string }[] = [
 
 const fmt = (iso: string | null) =>
   iso ? new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) : null;
-const overdue = (t: Task) => !!t.dueAt && new Date(t.dueAt).getTime() < Date.now() && t.status !== 'done';
+const overdue = (t: Task) =>
+  !!t.dueAt && new Date(t.dueAt).getTime() < Date.now() && t.status !== 'done';
 
 /**
  * Tasks.
@@ -57,7 +58,9 @@ export default async function TasksPage() {
     return (
       <Card>
         <p className="text-sm text-slate-600">
-          {res.kind === 'denied' ? 'You do not have access to tasks.' : 'Tasks could not be loaded.'}
+          {res.kind === 'denied'
+            ? 'You do not have access to tasks.'
+            : 'Tasks could not be loaded.'}
         </p>
       </Card>
     );
@@ -89,7 +92,10 @@ export default async function TasksPage() {
           <Card>
             <ul className="divide-y divide-slate-100">
               {late.map((t) => (
-                <li key={t.ref} className="flex flex-wrap items-baseline justify-between gap-2 py-2">
+                <li
+                  key={t.ref}
+                  className="flex flex-wrap items-baseline justify-between gap-2 py-2"
+                >
                   <span className="text-sm text-slate-800">{t.title}</span>
                   <span className="shrink-0 font-mono text-[11px] text-slate-400">
                     {t.assigneeId} · was due {fmt(t.dueAt)}

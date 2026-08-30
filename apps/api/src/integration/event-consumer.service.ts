@@ -47,7 +47,9 @@ export class EventConsumerService implements OnModuleInit, OnApplicationShutdown
     );
 
     this.worker.on('failed', (job, err) => {
-      this.logger.error(`job ${job?.id} (${job?.name}) failed attempt ${job?.attemptsMade}: ${err?.message}`);
+      this.logger.error(
+        `job ${job?.id} (${job?.name}) failed attempt ${job?.attemptsMade}: ${err?.message}`,
+      );
     });
 
     this.logger.log(`consuming "${EVENTS_QUEUE}" for module fan-out`);

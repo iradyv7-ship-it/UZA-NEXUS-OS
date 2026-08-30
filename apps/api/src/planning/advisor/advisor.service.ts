@@ -1,4 +1,9 @@
-import { Injectable, Logger, ServiceUnavailableException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  ServiceUnavailableException,
+  BadRequestException,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import Anthropic from '@anthropic-ai/sdk';
 import type { Actor } from '@uza/contracts';

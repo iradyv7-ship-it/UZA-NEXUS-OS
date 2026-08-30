@@ -28,7 +28,9 @@ export class CustomerService {
     await this.authz.authorize(actor, 'customer', 'create');
     const agentId = input.agentId ?? (actor.role === 'sales_agent' ? actor.userId : null);
     return this.prisma.$transaction(async (tx) => {
-      const seq = await nextSequence(tx.customer, (n) => makeRef('customer', { country: input.country, seq: n }));
+      const seq = await nextSequence(tx.customer, (n) =>
+        makeRef('customer', { country: input.country, seq: n }),
+      );
       const ref = makeRef('customer', { country: input.country, seq });
       return tx.customer.create({
         data: {

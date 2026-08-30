@@ -1,7 +1,17 @@
 import { Body, Controller, Get, Param, Patch, Post, Query } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import {
-  IsArray, IsBoolean, IsDateString, IsIn, IsInt, IsNumber, IsOptional, IsString, Min, MinLength, ValidateNested,
+  IsArray,
+  IsBoolean,
+  IsDateString,
+  IsIn,
+  IsInt,
+  IsNumber,
+  IsOptional,
+  IsString,
+  Min,
+  MinLength,
+  ValidateNested,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import type { Actor } from '@uza/contracts';
@@ -17,15 +27,49 @@ import { FundingService } from './funding/funding.service';
 
 const ATTENTION = ['runs', 'holds', 'parked'] as const;
 const INITIATIVE_KIND = ['client', 'internal', 'venture'] as const;
-const FUND_INSTRUMENT = ['grant', 'concessional', 'debt', 'revolver', 'facility', 'equity', 'offtake'] as const;
-const FUND_STAGE = ['identified', 'qualifying', 'preparing', 'submitted', 'in_diligence', 'approved', 'closed', 'declined', 'parked'] as const;
-const SYS_KIND = ['repository', 'web_app', 'mobile_app', 'backend', 'admin_panel', 'prototype', 'document'] as const;
+const FUND_INSTRUMENT = [
+  'grant',
+  'concessional',
+  'debt',
+  'revolver',
+  'facility',
+  'equity',
+  'offtake',
+] as const;
+const FUND_STAGE = [
+  'identified',
+  'qualifying',
+  'preparing',
+  'submitted',
+  'in_diligence',
+  'approved',
+  'closed',
+  'declined',
+  'parked',
+] as const;
+const SYS_KIND = [
+  'repository',
+  'web_app',
+  'mobile_app',
+  'backend',
+  'admin_panel',
+  'prototype',
+  'document',
+] as const;
 const SYS_STATUS = ['live', 'building', 'prototype', 'dormant', 'retired'] as const;
 const SYS_VIS = ['public', 'private', 'unknown'] as const;
 const CHECK_OUTCOME = ['pass', 'fail', 'not_applicable', 'not_run'] as const;
 const MEMO_AUDIENCE = ['everyone', 'department', 'person'] as const;
 const RESP_KIND = ['standing', 'gate', 'approval'] as const;
-const RESP_TRIGGER = ['per_shipment', 'per_deal', 'per_request', 'daily', 'weekly', 'monthly', 'ad_hoc'] as const;
+const RESP_TRIGGER = [
+  'per_shipment',
+  'per_deal',
+  'per_request',
+  'daily',
+  'weekly',
+  'monthly',
+  'ad_hoc',
+] as const;
 const INITIATIVE_STATUS = ['active', 'paused', 'done', 'cancelled'] as const;
 
 // ---------- DTOs ----------
@@ -84,7 +128,10 @@ class AdvisorTurnDto {
 }
 class AskDto {
   @IsString() @MinLength(1) question!: string;
-  @IsOptional() @IsArray() @ValidateNested({ each: true }) @Type(() => AdvisorTurnDto)
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => AdvisorTurnDto)
   history?: AdvisorTurnDto[];
 }
 
@@ -224,12 +271,20 @@ export class PlanningInitiativeController {
     return this.initiatives.byRef(actor, ref);
   }
   @Patch(':ref')
-  update(@CurrentActor() actor: Actor, @Param('ref') ref: string, @Body() dto: UpdateInitiativeDto) {
+  update(
+    @CurrentActor() actor: Actor,
+    @Param('ref') ref: string,
+    @Body() dto: UpdateInitiativeDto,
+  ) {
     return this.initiatives.update(actor, ref, { ...dto, reviewAt: date(dto.reviewAt) });
   }
   @Post(':ref/checkin')
   checkin(@CurrentActor() actor: Actor, @Param('ref') ref: string, @Body() dto: CheckinDto) {
-    return this.initiatives.checkin(actor, { ...dto, initiativeRef: ref, weekOf: date(dto.weekOf) });
+    return this.initiatives.checkin(actor, {
+      ...dto,
+      initiativeRef: ref,
+      weekOf: date(dto.weekOf),
+    });
   }
 }
 
@@ -285,7 +340,11 @@ export class PlanningResponsibilityController {
     return this.responsibilities.forPerson(actor, userRef);
   }
   @Patch(':ref')
-  update(@CurrentActor() actor: Actor, @Param('ref') ref: string, @Body() dto: UpdateResponsibilityDto) {
+  update(
+    @CurrentActor() actor: Actor,
+    @Param('ref') ref: string,
+    @Body() dto: UpdateResponsibilityDto,
+  ) {
     return this.responsibilities.update(actor, ref, dto);
   }
 }

@@ -184,7 +184,9 @@ export default async function RegisterPage() {
         </section>
       ) : (
         <Card>
-          <p className="text-sm text-slate-600">Nothing is waiting on you. That is rare — enjoy it.</p>
+          <p className="text-sm text-slate-600">
+            Nothing is waiting on you. That is rare — enjoy it.
+          </p>
         </Card>
       )}
 

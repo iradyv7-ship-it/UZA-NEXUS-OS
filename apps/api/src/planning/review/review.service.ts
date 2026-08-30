@@ -85,13 +85,17 @@ export class ReviewService {
         daysLate: Math.floor((now.getTime() - i.reviewAt!.getTime()) / 86_400_000),
       }));
 
-    const escalations = moved.filter((m) => m.needsFromCeo).map((m) => ({
-      initiativeRef: m.ref,
-      name: m.name,
-      needsFromCeo: m.needsFromCeo,
-    }));
+    const escalations = moved
+      .filter((m) => m.needsFromCeo)
+      .map((m) => ({
+        initiativeRef: m.ref,
+        name: m.name,
+        needsFromCeo: m.needsFromCeo,
+      }));
 
-    const decisionAges = openDecisions.map((d) => (now.getTime() - d.raisedAt.getTime()) / 86_400_000);
+    const decisionAges = openDecisions.map(
+      (d) => (now.getTime() - d.raisedAt.getTime()) / 86_400_000,
+    );
 
     await this.access.allow(actor, RESOURCE, 'read');
     return {
@@ -119,8 +123,17 @@ export class ReviewService {
         raisedById: d.raisedById,
         ageDays: Math.floor((now.getTime() - d.raisedAt.getTime()) / 86_400_000),
       })),
-      deferralsNowDue: dueDeferrals.map((d) => ({ ref: d.ref, question: d.question, deferredTo: d.deferredTo })),
-      overdueTasks: overdueTasks.map((t) => ({ ref: t.ref, title: t.title, assigneeId: t.assigneeId, dueAt: t.dueAt })),
+      deferralsNowDue: dueDeferrals.map((d) => ({
+        ref: d.ref,
+        question: d.question,
+        deferredTo: d.deferredTo,
+      })),
+      overdueTasks: overdueTasks.map((t) => ({
+        ref: t.ref,
+        title: t.title,
+        assigneeId: t.assigneeId,
+        dueAt: t.dueAt,
+      })),
     };
   }
 
@@ -141,7 +154,9 @@ export class ReviewService {
     if (r.moved.length) {
       lines.push('', 'MOVED');
       for (const m of r.moved) {
-        lines.push(`- [${m.ref}] ${m.name} (${m.ventureCode ?? 'unassigned'}, owner ${m.ownerId}): ${m.moved}`);
+        lines.push(
+          `- [${m.ref}] ${m.name} (${m.ventureCode ?? 'unassigned'}, owner ${m.ownerId}): ${m.moved}`,
+        );
         if (m.blocked) lines.push(`  blocked: ${m.blocked}`);
       }
     }
@@ -151,12 +166,15 @@ export class ReviewService {
     }
     if (r.overdueReviews.length) {
       lines.push('', 'HELD PAST THEIR REVIEW DATE');
-      for (const h of r.overdueReviews) lines.push(`- [${h.ref}] ${h.name} — ${h.daysLate} days late`);
+      for (const h of r.overdueReviews)
+        lines.push(`- [${h.ref}] ${h.name} — ${h.daysLate} days late`);
     }
     if (r.decisions.length) {
       lines.push('', 'WAITING ON THE CEO');
       for (const d of r.decisions) {
-        lines.push(`- [${d.ref}] ${d.question} (${d.ageDays}d${d.initiativeRef ? `, ${d.initiativeRef}` : ''})`);
+        lines.push(
+          `- [${d.ref}] ${d.question} (${d.ageDays}d${d.initiativeRef ? `, ${d.initiativeRef}` : ''})`,
+        );
       }
     }
     if (r.deferralsNowDue.length) {
@@ -165,7 +183,8 @@ export class ReviewService {
     }
     if (r.escalations.length) {
       lines.push('', 'ASKED OF THE CEO IN CHECK-INS');
-      for (const e of r.escalations) lines.push(`- [${e.initiativeRef}] ${e.name}: ${e.needsFromCeo}`);
+      for (const e of r.escalations)
+        lines.push(`- [${e.initiativeRef}] ${e.name}: ${e.needsFromCeo}`);
     }
     if (r.overdueTasks.length) {
       lines.push('', 'OVERDUE TASKS');

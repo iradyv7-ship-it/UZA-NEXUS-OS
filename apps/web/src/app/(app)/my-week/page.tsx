@@ -44,7 +44,13 @@ interface Inbox {
 }
 interface Nudges {
   mine: { confirmYourPlan: boolean; writeYourReport: boolean; overdueBlockers: Blocker[] };
-  counts?: { staff: number; unconfirmed: number; noPlan: number; noReport: number; overdueBlockers: number };
+  counts?: {
+    staff: number;
+    unconfirmed: number;
+    noPlan: number;
+    noReport: number;
+    overdueBlockers: number;
+  };
   everyone?: { unconfirmed: string[]; noPlan: string[]; noReport: string[] };
 }
 
@@ -130,7 +136,9 @@ export default async function MyWeekPage({
         <Card>
           <div className="flex flex-wrap items-center justify-between gap-2">
             <h2 className="text-sm font-semibold text-slate-900">
-              {unreadMemos.length === 1 ? 'One message for you' : `${unreadMemos.length} messages for you`}
+              {unreadMemos.length === 1
+                ? 'One message for you'
+                : `${unreadMemos.length} messages for you`}
             </h2>
             <a
               href="/memos"
@@ -143,7 +151,9 @@ export default async function MyWeekPage({
             {unreadMemos.slice(0, 4).map((m) => (
               <li key={m.ref} className="flex flex-wrap items-center gap-2 text-sm text-slate-800">
                 <span>{m.subject}</span>
-                <span className="text-xs text-slate-500">from {m.fromId} · {day(m.sentAt)}</span>
+                <span className="text-xs text-slate-500">
+                  from {m.fromId} · {day(m.sentAt)}
+                </span>
                 {m.needsAck && <Badge tone="amber">needs your reply</Badge>}
               </li>
             ))}
@@ -172,7 +182,10 @@ export default async function MyWeekPage({
             {w.iOwe.map((b) => {
               const overdue = b.dueAt ? new Date(b.dueAt) < new Date() : false;
               return (
-                <li key={b.ref} className="border-t border-slate-100 pt-3 first:border-0 first:pt-0">
+                <li
+                  key={b.ref}
+                  className="border-t border-slate-100 pt-3 first:border-0 first:pt-0"
+                >
                   <div className="flex flex-wrap items-start justify-between gap-2">
                     <span className="text-sm text-slate-800">{b.summary}</span>
                     <Badge tone={overdue ? 'red' : 'slate'}>
@@ -207,13 +220,20 @@ export default async function MyWeekPage({
           {w.waitingOnSomebody.length > 0 && (
             <>
               <p className="mb-2 mt-0.5 text-xs text-slate-600">
-                I said these were stopping me and nobody has taken them yet. Chase someone, or take it yourself.
+                I said these were stopping me and nobody has taken them yet. Chase someone, or take
+                it yourself.
               </p>
               <ul className="space-y-3">
                 {w.waitingOnSomebody.map((b) => (
-                  <li key={b.ref} className="border-t border-slate-100 pt-3 first:border-0 first:pt-0">
+                  <li
+                    key={b.ref}
+                    className="border-t border-slate-100 pt-3 first:border-0 first:pt-0"
+                  >
                     <span className="text-sm text-slate-800">{b.summary}</span>
-                    <form action={ownBlockerAction} className="mt-2 flex flex-wrap items-center gap-2">
+                    <form
+                      action={ownBlockerAction}
+                      className="mt-2 flex flex-wrap items-center gap-2"
+                    >
                       <input type="hidden" name="ref" value={b.ref} />
                       <input
                         type="text"
@@ -276,7 +296,11 @@ export default async function MyWeekPage({
           <h2 className="text-sm font-semibold text-slate-900">What the system is asking for</h2>
           <ul className="mt-2 space-y-1 text-sm text-slate-700">
             {unreadMemos.length > 0 && (
-              <li>· Read {unreadMemos.length === 1 ? 'the message' : `the ${unreadMemos.length} messages`} above.</li>
+              <li>
+                · Read{' '}
+                {unreadMemos.length === 1 ? 'the message' : `the ${unreadMemos.length} messages`}{' '}
+                above.
+              </li>
             )}
             {n.mine.confirmYourPlan && <li>· Agree your week above.</li>}
             {n.mine.writeYourReport && <li>· Write your report before Friday ends.</li>}
@@ -285,9 +309,12 @@ export default async function MyWeekPage({
                 · Late: {b.summary}
               </li>
             ))}
-            {!unreadMemos.length && !n.mine.confirmYourPlan && !n.mine.writeYourReport && !n.mine.overdueBlockers.length && (
-              <li className="text-emerald-700">· Nothing is waiting on you.</li>
-            )}
+            {!unreadMemos.length &&
+              !n.mine.confirmYourPlan &&
+              !n.mine.writeYourReport &&
+              !n.mine.overdueBlockers.length && (
+                <li className="text-emerald-700">· Nothing is waiting on you.</li>
+              )}
           </ul>
 
           {n.counts && (

@@ -115,7 +115,7 @@ const TRACKS: Track[] = [
     stage: 'identified',
     unlocks: ['INIT-2026-0206', 'INIT-2026-0208'],
     evidence:
-      'The structure is designed: one SPV per site cluster, UZA operates under a management agreement and takes a fee plus the software subscription. The investor exposure ends at the SPV and so does UZA\'s.',
+      "The structure is designed: one SPV per site cluster, UZA operates under a management agreement and takes a fee plus the software subscription. The investor exposure ends at the SPV and so does UZA's.",
     blocker:
       'The site-owner portal does not exist, and an investor with no reporting surface is being asked to trust a spreadsheet.',
   },
@@ -151,13 +151,16 @@ const TRACKS: Track[] = [
 ];
 
 async function main() {
-  const known = new Set((await prisma.initiative.findMany({ select: { ref: true } })).map((i) => i.ref));
+  const known = new Set(
+    (await prisma.initiative.findMany({ select: { ref: true } })).map((i) => i.ref),
+  );
 
   // A dangling unlock is recorded, not rejected — a track routinely releases work that has
   // not been entered yet. But it is reported, because an unlock nobody can find is intent
   // with nowhere to land.
   const dangling: string[] = [];
-  for (const t of TRACKS) for (const u of t.unlocks) if (!known.has(u)) dangling.push(`${t.ref} -> ${u}`);
+  for (const t of TRACKS)
+    for (const u of t.unlocks) if (!known.has(u)) dangling.push(`${t.ref} -> ${u}`);
 
   for (const t of TRACKS) {
     const data = {
@@ -174,7 +177,11 @@ async function main() {
       blocker: t.blocker ?? null,
       decisionBy: t.decisionBy ?? null,
     };
-    await prisma.fundingTrack.upsert({ where: { ref: t.ref }, create: { ref: t.ref, ...data }, update: data });
+    await prisma.fundingTrack.upsert({
+      where: { ref: t.ref },
+      create: { ref: t.ref, ...data },
+      update: data,
+    });
   }
 
   const live = TRACKS.filter((t) => t.stage !== 'parked' && t.stage !== 'declined');
@@ -183,11 +190,18 @@ async function main() {
 
   console.log(`${TRACKS.length} funding tracks — ${live.length} live`);
   for (const t of TRACKS) {
-    console.log(`  ${t.ref}  ${fmt(t.amount).padStart(7)} RWF  ${t.instrument.padEnd(12)} ${t.stage.padEnd(12)} ${t.name.slice(0, 46)}`);
+    console.log(
+      `  ${t.ref}  ${fmt(t.amount).padStart(7)} RWF  ${t.instrument.padEnd(12)} ${t.stage.padEnd(12)} ${t.name.slice(0, 46)}`,
+    );
   }
-  console.log(`\ntotal sought across live tracks: RWF ${fmt(live.reduce((a, t) => a + t.amount, 0))}`);
-  console.log(`${noOwner.length} tracks have no owner. An unowned funder conversation does not happen.`);
-  if (dangling.length) console.log(`dangling unlocks (recorded, not in the register): ${dangling.join(', ')}`);
+  console.log(
+    `\ntotal sought across live tracks: RWF ${fmt(live.reduce((a, t) => a + t.amount, 0))}`,
+  );
+  console.log(
+    `${noOwner.length} tracks have no owner. An unowned funder conversation does not happen.`,
+  );
+  if (dangling.length)
+    console.log(`dangling unlocks (recorded, not in the register): ${dangling.join(', ')}`);
 }
 
 main()

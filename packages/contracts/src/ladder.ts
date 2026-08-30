@@ -23,15 +23,14 @@ export const lineValue = (l: CostLine): Minor => l.actMinor ?? l.estMinor;
 export const ladderAt = (ladder: CostLadder, incoterm: Incoterm): Minor => {
   const ceiling = INCOTERMS.indexOf(incoterm);
   return sum(
-    ...LADDER.filter(([, rung]) => INCOTERMS.indexOf(rung) <= ceiling)
-             .map(([key]) => lineValue(ladder[key])),
+    ...LADDER.filter(([, rung]) => INCOTERMS.indexOf(rung) <= ceiling).map(([key]) =>
+      lineValue(ladder[key]),
+    ),
   );
 };
 
 /** Margin as a fraction of sell price, at a given incoterm. */
-export const marginAt = (
-  ladder: CostLadder, sellPriceMinor: Minor, incoterm: Incoterm,
-): number => {
+export const marginAt = (ladder: CostLadder, sellPriceMinor: Minor, incoterm: Incoterm): number => {
   if (sellPriceMinor <= 0) return 0;
   const cost = ladderAt(ladder, incoterm);
   return Math.round(((sellPriceMinor - cost) / sellPriceMinor) * 10_000) / 10_000;

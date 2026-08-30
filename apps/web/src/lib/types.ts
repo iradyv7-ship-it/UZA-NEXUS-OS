@@ -28,7 +28,7 @@ export interface QuotationView {
 }
 
 export type OrderStatus =
-  | 'awaiting_payment' | 'procurement_active' | 'in_transit' | 'delivered' | 'cancelled';
+  'awaiting_payment' | 'procurement_active' | 'in_transit' | 'delivered' | 'cancelled';
 
 export type InstallmentTrigger = 'confirmation' | 'pre_loading' | 'pre_release';
 
@@ -163,7 +163,7 @@ export interface ShipmentView {
 }
 
 export type WarehouseZone =
-  | 'AWAITING_INSPECTION' | 'QC_HOLD' | 'RELEASED' | 'STAGED' | 'LOADED' | string;
+  'AWAITING_INSPECTION' | 'QC_HOLD' | 'RELEASED' | 'STAGED' | 'LOADED' | string;
 
 /** A package on the partner's shipment. Weight/CBM are visible; no cost field exists here. */
 export interface PackageView {

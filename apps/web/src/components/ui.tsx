@@ -12,7 +12,11 @@ export const SHELL_WIDTH = 'max-w-md sm:max-w-2xl lg:max-w-5xl xl:max-w-6xl';
 export const SHELL_PADDING_X = 'px-4 sm:px-6 lg:px-8';
 
 export function Card({ children, className = '' }: { children: ReactNode; className?: string }) {
-  return <div className={`rounded-xl border border-slate-200 bg-white p-4 shadow-sm ${className}`}>{children}</div>;
+  return (
+    <div className={`rounded-xl border border-slate-200 bg-white p-4 shadow-sm ${className}`}>
+      {children}
+    </div>
+  );
 }
 
 /**
@@ -21,9 +25,17 @@ export function Card({ children, className = '' }: { children: ReactNode; classN
  * dashboard queue, the partner shipments list and the finance verify queue so they all
  * flow the same way as the viewport grows.
  */
-export function CardGrid({ children, className = '' }: { children: ReactNode; className?: string }) {
+export function CardGrid({
+  children,
+  className = '',
+}: {
+  children: ReactNode;
+  className?: string;
+}) {
   return (
-    <ul className={`grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-3 ${className}`}>{children}</ul>
+    <ul className={`grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-3 ${className}`}>
+      {children}
+    </ul>
   );
 }
 
@@ -32,7 +44,13 @@ export function CardGrid({ children, className = '' }: { children: ReactNode; cl
  * top-to-bottom wants a capped line length — this centres the content and stops it
  * sprawling edge-to-edge on a large monitor while still using more room than a phone.
  */
-export function DetailShell({ children, className = '' }: { children: ReactNode; className?: string }) {
+export function DetailShell({
+  children,
+  className = '',
+}: {
+  children: ReactNode;
+  className?: string;
+}) {
   return <div className={`mx-auto w-full max-w-3xl space-y-4 ${className}`}>{children}</div>;
 }
 
@@ -55,13 +73,22 @@ const TONES: Record<Tone, string> = {
 };
 
 export function Badge({ children, tone = 'slate' }: { children: ReactNode; tone?: Tone }) {
-  return <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${TONES[tone]}`}>{children}</span>;
+  return (
+    <span
+      className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${TONES[tone]}`}
+    >
+      {children}
+    </span>
+  );
 }
 
 /** Masked confidential value indicator — makes clear the API hid this, it is not empty. */
 export function Masked() {
   return (
-    <span className="inline-flex items-center rounded bg-slate-100 px-1.5 font-mono text-slate-400" title="Hidden for your role">
+    <span
+      className="inline-flex items-center rounded bg-slate-100 px-1.5 font-mono text-slate-400"
+      title="Hidden for your role"
+    >
       ***
     </span>
   );
@@ -72,7 +99,9 @@ export function Provenance({ confirmed, label }: { confirmed: boolean; label: st
   return (
     <span
       className={`inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-xs ${
-        confirmed ? 'bg-emerald-50 text-emerald-700' : 'border border-dashed border-amber-300 text-amber-700'
+        confirmed
+          ? 'bg-emerald-50 text-emerald-700'
+          : 'border border-dashed border-amber-300 text-amber-700'
       }`}
     >
       <span aria-hidden>{confirmed ? '●' : '◌'}</span>

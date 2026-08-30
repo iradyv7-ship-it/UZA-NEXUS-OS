@@ -82,7 +82,10 @@ describe('denials are audited BEFORE the throw', () => {
     expect(agentView.customerUnitPriceMinor).toBe(6163);
 
     const partner: Actor = {
-      userId: 'imari', role: 'logistics_partner', office: 'GOM', scope: { shipmentRefs: ['SHP-2026-0001'] },
+      userId: 'imari',
+      role: 'logistics_partner',
+      office: 'GOM',
+      scope: { shipmentRefs: ['SHP-2026-0001'] },
     };
     const partnerView = authz.mask(partner, { cbm: 1.55, kg: 287.5, supplierUnitCost: 4100 });
     expect(partnerView.supplierUnitCost).toBe(MASK);

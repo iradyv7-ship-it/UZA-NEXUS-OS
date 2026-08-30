@@ -26,7 +26,11 @@ function statusTone(status: ShipmentView['status']): 'slate' | 'green' | 'amber'
   }
 }
 
-export default async function PartnerShipmentPage({ params }: { params: Promise<{ ref: string }> }) {
+export default async function PartnerShipmentPage({
+  params,
+}: {
+  params: Promise<{ ref: string }>;
+}) {
   const { ref } = await params;
   const locale = await getLocale();
   const t = translator(locale);
@@ -56,7 +60,11 @@ export default async function PartnerShipmentPage({ params }: { params: Promise<
     authedCall<DeliveryView>(`/partner-portal/shipments/${ref}/delivery`),
     authedCall<TrackingEventView[]>(`/tracking/${ref}/timeline`),
   ]);
-  if (pkgRes.kind === 'unauthorized' || delRes.kind === 'unauthorized' || tlRes.kind === 'unauthorized') {
+  if (
+    pkgRes.kind === 'unauthorized' ||
+    delRes.kind === 'unauthorized' ||
+    tlRes.kind === 'unauthorized'
+  ) {
     redirect('/login');
   }
 
@@ -76,40 +84,45 @@ export default async function PartnerShipmentPage({ params }: { params: Promise<
         <p className="text-[11px] uppercase tracking-wide text-brand/70">{t('dash.col.next')}</p>
         <p className="text-base font-semibold text-slate-900">{t(promise.nextKey)}</p>
         <p className="mt-0.5 text-sm text-slate-600">
-          {t('dash.col.owner')}: <span className="font-medium">{t(`owner.${promise.ownerRole}`)}</span>
+          {t('dash.col.owner')}:{' '}
+          <span className="font-medium">{t(`owner.${promise.ownerRole}`)}</span>
         </p>
       </div>
 
       {/* Two reading columns on large screens (carrier + packages | delivery + timeline);
           on a phone they stack in the same top-to-bottom order. */}
       <div className="grid gap-4 lg:grid-cols-2 lg:items-start">
-      <div className="space-y-4">
-      <Card>
-        <dl className="divide-y divide-slate-100">
-          <Field label={t('ship.carrier')}>{s.carrier}</Field>
-          <Field label={t('ship.container')}>
-            <span className="font-mono text-xs">{s.container}</span>
-          </Field>
-          <Field label={t('ship.destination')}>{t(`dest.${s.destination}`)}</Field>
-          <Field label={t('ship.etd')}>{s.etd}</Field>
-          <Field label={t('ship.eta')}>{s.eta}</Field>
-          <Field label={t('ship.daysWaiting')}>{s.daysWaitingForConsolidation}</Field>
-          {/* Freight cost is NEVER shown to the partner — the API returns "***"; render the
+        <div className="space-y-4">
+          <Card>
+            <dl className="divide-y divide-slate-100">
+              <Field label={t('ship.carrier')}>{s.carrier}</Field>
+              <Field label={t('ship.container')}>
+                <span className="font-mono text-xs">{s.container}</span>
+              </Field>
+              <Field label={t('ship.destination')}>{t(`dest.${s.destination}`)}</Field>
+              <Field label={t('ship.etd')}>{s.etd}</Field>
+              <Field label={t('ship.eta')}>{s.eta}</Field>
+              <Field label={t('ship.daysWaiting')}>{s.daysWaitingForConsolidation}</Field>
+              {/* Freight cost is NEVER shown to the partner — the API returns "***"; render the
               mask honestly rather than omit the row, so the masking is visible, not silent. */}
-          <Field label={t('ship.freight')}>
-            {isMasked(s.freightPaidMinor) ? <Masked /> : <span>{String(s.freightPaidMinor)}</span>}
-          </Field>
-        </dl>
-        <p className="mt-2 text-[11px] text-slate-400">{t('ship.freightNote')}</p>
-      </Card>
+              <Field label={t('ship.freight')}>
+                {isMasked(s.freightPaidMinor) ? (
+                  <Masked />
+                ) : (
+                  <span>{String(s.freightPaidMinor)}</span>
+                )}
+              </Field>
+            </dl>
+            <p className="mt-2 text-[11px] text-slate-400">{t('ship.freightNote')}</p>
+          </Card>
 
-      <PackagesSection res={pkgRes} t={t} locale={locale} />
-      </div>
+          <PackagesSection res={pkgRes} t={t} locale={locale} />
+        </div>
 
-      <div className="space-y-4">
-      <DeliverySection res={delRes} t={t} />
-      <TimelineSection res={tlRes} t={t} />
-      </div>
+        <div className="space-y-4">
+          <DeliverySection res={delRes} t={t} />
+          <TimelineSection res={tlRes} t={t} />
+        </div>
       </div>
     </DetailShell>
   );
@@ -129,7 +142,9 @@ function PackagesSection({
     <section>
       <h2 className="mb-2 text-sm font-semibold text-slate-700">{t('pkg.title')}</h2>
       {res.kind !== 'ok' ? (
-        <p className="rounded-lg bg-slate-50 px-3 py-2 text-sm text-slate-600">{t('pkg.unavailable')}</p>
+        <p className="rounded-lg bg-slate-50 px-3 py-2 text-sm text-slate-600">
+          {t('pkg.unavailable')}
+        </p>
       ) : res.data.length === 0 ? (
         <p className="rounded-lg bg-slate-50 px-3 py-2 text-sm text-slate-600">{t('pkg.empty')}</p>
       ) : (
@@ -144,17 +159,22 @@ function PackagesSection({
               </div>
               <div className="mt-2 grid grid-cols-2 gap-2 text-sm">
                 <div>
-                  <p className="text-[11px] uppercase tracking-wide text-slate-400">{t('pkg.kg')}</p>
+                  <p className="text-[11px] uppercase tracking-wide text-slate-400">
+                    {t('pkg.kg')}
+                  </p>
                   <p className="font-medium tabular-nums text-slate-900">{p.kg}</p>
                 </div>
                 <div>
-                  <p className="text-[11px] uppercase tracking-wide text-slate-400">{t('pkg.cbm')}</p>
+                  <p className="text-[11px] uppercase tracking-wide text-slate-400">
+                    {t('pkg.cbm')}
+                  </p>
                   <p className="font-medium tabular-nums text-slate-900">{p.cbm}</p>
                 </div>
               </div>
               {p.destination && (
                 <p className="mt-1 text-xs text-slate-500">
-                  {t('ship.destination')}: <span className="font-medium text-slate-700">{t(`dest.${p.destination}`)}</span>
+                  {t('ship.destination')}:{' '}
+                  <span className="font-medium text-slate-700">{t(`dest.${p.destination}`)}</span>
                 </p>
               )}
             </li>
@@ -174,12 +194,22 @@ function DeliverySection({ res, t }: { res: ApiResult<DeliveryView>; t: Translat
           {t('delivery.none')}
         </p>
       ) : res.kind !== 'ok' ? (
-        <p className="rounded-lg bg-slate-50 px-3 py-2 text-sm text-slate-600">{t('delivery.unavailable')}</p>
+        <p className="rounded-lg bg-slate-50 px-3 py-2 text-sm text-slate-600">
+          {t('delivery.unavailable')}
+        </p>
       ) : (
         <Card>
           <dl className="divide-y divide-slate-100">
             <Field label={t('delivery.status')}>
-              <Badge tone={res.data.status === 'delivered' ? 'green' : res.data.status === 'failed' ? 'red' : 'blue'}>
+              <Badge
+                tone={
+                  res.data.status === 'delivered'
+                    ? 'green'
+                    : res.data.status === 'failed'
+                      ? 'red'
+                      : 'blue'
+                }
+              >
                 {t(`delivery.status.${res.data.status}`)}
               </Badge>
             </Field>
@@ -199,9 +229,13 @@ function TimelineSection({ res, t }: { res: ApiResult<TrackingEventView[]>; t: T
     <section>
       <h2 className="mb-2 text-sm font-semibold text-slate-700">{t('timeline.title')}</h2>
       {res.kind !== 'ok' ? (
-        <p className="rounded-lg bg-slate-50 px-3 py-2 text-sm text-slate-600">{t('timeline.unavailable')}</p>
+        <p className="rounded-lg bg-slate-50 px-3 py-2 text-sm text-slate-600">
+          {t('timeline.unavailable')}
+        </p>
       ) : res.data.length === 0 ? (
-        <p className="rounded-lg bg-slate-50 px-3 py-2 text-sm text-slate-600">{t('timeline.empty')}</p>
+        <p className="rounded-lg bg-slate-50 px-3 py-2 text-sm text-slate-600">
+          {t('timeline.empty')}
+        </p>
       ) : (
         <ol className="space-y-2">
           {res.data.map((e) => (
@@ -209,7 +243,9 @@ function TimelineSection({ res, t }: { res: ApiResult<TrackingEventView[]>; t: T
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
                   <p className="text-sm font-medium text-slate-900">{e.milestone}</p>
-                  <p className="text-xs text-slate-500">{new Date(e.occurredAt).toLocaleString()}</p>
+                  <p className="text-xs text-slate-500">
+                    {new Date(e.occurredAt).toLocaleString()}
+                  </p>
                 </div>
                 <Provenance
                   confirmed={e.confirmed}

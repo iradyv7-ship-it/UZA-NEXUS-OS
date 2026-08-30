@@ -99,10 +99,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
                 </Link>
               )}
               {showVerifyQueue && (
-                <Link
-                  href="/finance/payments"
-                  className={NAV}
-                >
+                <Link href="/finance/payments" className={NAV}>
                   {t('nav.verifyQueue')}
                 </Link>
               )}
@@ -115,7 +112,8 @@ export default async function AppLayout({ children }: { children: React.ReactNod
             </div>
           </div>
           <p className="mt-1.5 text-xs text-slate-500">
-            {t('nav.signedInAs')} <span className="font-medium text-slate-700">{session.actor.userId}</span>
+            {t('nav.signedInAs')}{' '}
+            <span className="font-medium text-slate-700">{session.actor.userId}</span>
             {' · '}
             <span className="text-slate-500">{roleLabel}</span>
             {' · '}
@@ -123,7 +121,9 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           </p>
         </div>
       </header>
-      <main className={`mx-auto w-full ${SHELL_WIDTH} ${SHELL_PADDING_X} py-4 sm:py-6`}>{children}</main>
+      <main className={`mx-auto w-full ${SHELL_WIDTH} ${SHELL_PADDING_X} py-4 sm:py-6`}>
+        {children}
+      </main>
     </div>
   );
 }

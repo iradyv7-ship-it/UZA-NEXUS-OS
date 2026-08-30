@@ -17,7 +17,11 @@ const vm: Actor = { userId: 'VM-RW-0001', role: 'venture_manager', office: 'KGL'
 
 /** A source where everything is instrumented, so redaction has something to remove. */
 const FULL: LenderDataSource = {
-  training: async () => ({ programme: 'Tunga Taxi', completedAt: '2026-10-17', assessmentPassed: true }),
+  training: async () => ({
+    programme: 'Tunga Taxi',
+    completedAt: '2026-10-17',
+    assessmentPassed: true,
+  }),
   wallet: async () => ({
     allocations: { loan: 780_000, charging: 78_000, maintenance: 78_000, saving: 78_000 },
     windowStart: '2026-09-01',
@@ -26,13 +30,19 @@ const FULL: LenderDataSource = {
     arrearsStatus: 'current' as const,
   }),
   utilisation: async () => ({
-    windowStart: '2026-09-01', windowEnd: '2026-09-30', productiveDays: 24, windowDays: 26,
+    windowStart: '2026-09-01',
+    windowEnd: '2026-09-30',
+    productiveDays: 24,
+    windowDays: 26,
   }),
   inspections: async () => [
     { performedAt: '2026-09-15', outcome: 'pass', batteryStateOfHealthPct: 94 },
   ],
   creditEnhancement: async () => ({
-    facility: 'cash collateral', depositedRwf: 750_000, releasedRwf: 0, callableRwf: 750_000,
+    facility: 'cash collateral',
+    depositedRwf: 750_000,
+    releasedRwf: 0,
+    callableRwf: 750_000,
   }),
 };
 
@@ -58,7 +68,9 @@ async function borrower(lender: string, externalId = 'm-1'): Promise<string> {
 }
 
 beforeEach(reset);
-afterAll(async () => { await prisma.$disconnect(); });
+afterAll(async () => {
+  await prisma.$disconnect();
+});
 
 describe('the cash-collateral wall, end to end', () => {
   it('shows the collateral to Unguka', async () => {

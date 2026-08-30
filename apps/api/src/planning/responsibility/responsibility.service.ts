@@ -57,7 +57,11 @@ export class ResponsibilityService {
         'an approval needs a responseHours — an approval with no agreed response time is not a control, it is a queue',
       );
     }
-    if (input.responseHours !== undefined && input.responseHours !== null && input.responseHours < 1) {
+    if (
+      input.responseHours !== undefined &&
+      input.responseHours !== null &&
+      input.responseHours < 1
+    ) {
       throw new BadRequestException('responseHours must be at least 1');
     }
     if (input.kind !== 'standing') {
@@ -117,14 +121,22 @@ export class ResponsibilityService {
   async list(actor: Actor, filters: { ventureCode?: string; kind?: ResponsibilityKind } = {}) {
     await this.access.assertRole(actor, 'initiative:read', RESOURCE, 'list');
     const rows = await this.prisma.responsibility.findMany({
-      where: { active: true, ...(filters.ventureCode ? { ventureCode: filters.ventureCode } : {}), ...(filters.kind ? { kind: filters.kind } : {}) },
+      where: {
+        active: true,
+        ...(filters.ventureCode ? { ventureCode: filters.ventureCode } : {}),
+        ...(filters.kind ? { kind: filters.kind } : {}),
+      },
       orderBy: [{ ventureCode: 'asc' }, { kind: 'asc' }, { ref: 'asc' }],
     });
     await this.access.allow(actor, RESOURCE, 'list');
     return rows;
   }
 
-  async update(actor: Actor, ref: string, input: Partial<CreateResponsibilityInput> & { active?: boolean }) {
+  async update(
+    actor: Actor,
+    ref: string,
+    input: Partial<CreateResponsibilityInput> & { active?: boolean },
+  ) {
     await this.access.assertRole(actor, 'initiative:write', RESOURCE, 'update', ref);
     const existing = await this.prisma.responsibility.findUnique({ where: { ref } });
     if (!existing) throw new NotFoundException(`responsibility ${ref} not found`);
@@ -133,7 +145,8 @@ export class ResponsibilityService {
       kind: input.kind ?? existing.kind,
       ownerId: input.ownerId ?? existing.ownerId,
       backupId: input.backupId !== undefined ? input.backupId : existing.backupId,
-      responseHours: input.responseHours !== undefined ? input.responseHours : existing.responseHours,
+      responseHours:
+        input.responseHours !== undefined ? input.responseHours : existing.responseHours,
     };
     this.assertRules(merged);
 
@@ -165,7 +178,10 @@ export class ResponsibilityService {
     await this.access.assertRole(actor, 'review', RESOURCE, 'concentration');
     const all = await this.prisma.responsibility.findMany({ where: { active: true } });
 
-    const byOwner = new Map<string, { owns: number; approvals: number; gates: number; noBackup: number }>();
+    const byOwner = new Map<
+      string,
+      { owns: number; approvals: number; gates: number; noBackup: number }
+    >();
     for (const r of all) {
       const e = byOwner.get(r.ownerId) ?? { owns: 0, approvals: 0, gates: 0, noBackup: 0 };
       e.owns += 1;

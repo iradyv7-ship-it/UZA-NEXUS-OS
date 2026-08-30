@@ -29,7 +29,9 @@ export class ReleaseService {
   async qcRelease(actor: Actor, packageRefs: readonly string[]) {
     await this.authz.authorize(actor, 'package', 'update');
 
-    const packages = await this.prisma.package.findMany({ where: { ref: { in: [...packageRefs] } } });
+    const packages = await this.prisma.package.findMany({
+      where: { ref: { in: [...packageRefs] } },
+    });
     if (packages.length !== packageRefs.length) {
       const found = new Set(packages.map((p) => p.ref));
       const missing = packageRefs.filter((r) => !found.has(r));
@@ -57,7 +59,11 @@ export class ReleaseService {
    * stays a physical-staging value (the contract enum has no per-city zones), so a
    * destination is never smuggled into the zone column.
    */
-  async allocateDestination(actor: Actor, packageRefs: readonly string[], destination: Destination) {
+  async allocateDestination(
+    actor: Actor,
+    packageRefs: readonly string[],
+    destination: Destination,
+  ) {
     await this.authz.authorize(actor, 'package', 'update');
     await this.prisma.package.updateMany({
       where: { ref: { in: [...packageRefs] } },

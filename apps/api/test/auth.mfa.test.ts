@@ -24,7 +24,13 @@ async function office() {
 /** A real employee account, logged in without MFA (not yet enrolled). */
 async function freshUser(ref = 'AGT-RW-0001', email = 'mfa-test@uza.rw') {
   const off = await office();
-  await identity.createEmployee(ceo, { ref, email, password: 'sup3rsecret', role: 'finance', officeId: off.id });
+  await identity.createEmployee(ceo, {
+    ref,
+    email,
+    password: 'sup3rsecret',
+    role: 'finance',
+    officeId: off.id,
+  });
   return ref;
 }
 
@@ -85,7 +91,9 @@ describe('MFA — real TOTP', () => {
     expect(first.accessToken).toBe('');
 
     // The stub this replaced accepted any six digits — prove a wrong one is rejected now.
-    await expect(auth.login('mfa-test@uza.rw', 'sup3rsecret', '000000')).rejects.toThrow(/Invalid MFA code/);
+    await expect(auth.login('mfa-test@uza.rw', 'sup3rsecret', '000000')).rejects.toThrow(
+      /Invalid MFA code/,
+    );
 
     // The real code, freshly generated, succeeds.
     const ok = await auth.login('mfa-test@uza.rw', 'sup3rsecret', authenticator.generate(secret));

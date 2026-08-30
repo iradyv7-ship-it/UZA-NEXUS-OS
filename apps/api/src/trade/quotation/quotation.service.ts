@@ -27,7 +27,8 @@ export interface QuotationPricingInput {
 }
 
 const asLadder = (json: Prisma.JsonValue): CostLadder => json as unknown as CostLadder;
-const asJson = (ladder: CostLadder): Prisma.InputJsonValue => ladder as unknown as Prisma.InputJsonValue;
+const asJson = (ladder: CostLadder): Prisma.InputJsonValue =>
+  ladder as unknown as Prisma.InputJsonValue;
 
 /**
  * Quotations. Priced at the sell incoterm on a full CostLadder, with the DAP margin
@@ -53,7 +54,9 @@ export class QuotationService {
     const sellIncoterm = pricing.sellIncoterm ?? 'CIF';
     const priced = priceQuotation({ ...pricing, sellIncoterm });
 
-    const seq = await nextSequence(this.prisma.quotation, (n) => makeRef('quotation', { venture: VENTURE, year: currentYear(), seq: n }));
+    const seq = await nextSequence(this.prisma.quotation, (n) =>
+      makeRef('quotation', { venture: VENTURE, year: currentYear(), seq: n }),
+    );
     const ref = makeRef('quotation', { venture: VENTURE, year: currentYear(), seq });
     return this.prisma.quotation.create({
       data: {
@@ -91,7 +94,9 @@ export class QuotationService {
     const priced = priceQuotation({ ...pricing, sellIncoterm });
 
     return this.prisma.$transaction(async (tx) => {
-      const seq = await nextSequence(tx.quotation, (n) => makeRef('quotation', { venture: VENTURE, year: currentYear(), seq: n }));
+      const seq = await nextSequence(tx.quotation, (n) =>
+        makeRef('quotation', { venture: VENTURE, year: currentYear(), seq: n }),
+      );
       const ref = makeRef('quotation', { venture: VENTURE, year: currentYear(), seq });
       const next = await tx.quotation.create({
         data: {
@@ -149,7 +154,11 @@ export class QuotationService {
    * Authorised as `margin:read`: closing the books on a quotation's true margin is a
    * finance/exec activity, gated on the same permission that governs seeing margin at all.
    */
-  async closeCosts(actor: Actor, quotationRef: string, actualsMinor: Partial<Record<CostRung, Minor>>) {
+  async closeCosts(
+    actor: Actor,
+    quotationRef: string,
+    actualsMinor: Partial<Record<CostRung, Minor>>,
+  ) {
     await this.authz.authorize(actor, 'margin', 'read');
     const q = await this.prisma.quotation.findUnique({ where: { ref: quotationRef } });
     if (!q) throw new NotFoundException(`quotation ${quotationRef} not found`);

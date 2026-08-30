@@ -5,7 +5,11 @@ import { TaskService } from './task/task.service';
 import { GrantService } from './grant/grant.service';
 import { DepartmentService } from './department/department.service';
 import { OverviewService } from './overview/overview.service';
-import { CommandTaskController, CommandGrantController, CommandOrgController } from './command.controllers';
+import {
+  CommandTaskController,
+  CommandGrantController,
+  CommandOrgController,
+} from './command.controllers';
 
 /**
  * Nexas Command Center — the executive-layer management brain (v1): cross-department tasks,
@@ -15,7 +19,14 @@ import { CommandTaskController, CommandGrantController, CommandOrgController } f
  * The CTO wires this into AppModule at integration; tests instantiate the services directly.
  */
 @Module({
-  providers: [AuditService, CommandAccessService, TaskService, GrantService, DepartmentService, OverviewService],
+  providers: [
+    AuditService,
+    CommandAccessService,
+    TaskService,
+    GrantService,
+    DepartmentService,
+    OverviewService,
+  ],
   controllers: [CommandTaskController, CommandGrantController, CommandOrgController],
   exports: [TaskService, GrantService, DepartmentService, OverviewService],
 })

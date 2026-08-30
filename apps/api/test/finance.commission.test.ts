@@ -3,8 +3,15 @@ import { COMMISSION_RATE, type Minor } from '@uza/contracts';
 import { prisma, resetDb } from './db';
 import { resetFinanceDb } from './finance-db';
 import {
-  payments, commissions, finance, agent, customer,
-  invoicedOrder, uploadFor, orderCancelled, STANDARD_TOTAL,
+  payments,
+  commissions,
+  finance,
+  agent,
+  customer,
+  invoicedOrder,
+  uploadFor,
+  orderCancelled,
+  STANDARD_TOTAL,
 } from './finance-fixtures';
 
 beforeEach(async () => {
@@ -33,13 +40,23 @@ describe('CF-010 — commission accrues 2% at confirmation, as a ledger row', ()
 
     const rows = await prisma.commissionEntry.findMany({ where: { orderRef: invoice.orderRef } });
     expect(rows).toHaveLength(1);
-    expect(rows[0]).toMatchObject({ type: 'accrual', agentId: agent.userId, amountMinor: EXPECTED_COMMISSION });
+    expect(rows[0]).toMatchObject({
+      type: 'accrual',
+      agentId: agent.userId,
+      amountMinor: EXPECTED_COMMISSION,
+    });
 
     const balance = await commissions.balanceFor(finance, agent.userId);
     expect(balance.balanceMinor).toBe(EXPECTED_COMMISSION);
 
-    const evt = await prisma.outboxEvent.findFirstOrThrow({ where: { name: 'commission.accrued' } });
-    expect(evt.payload).toMatchObject({ agentId: agent.userId, orderRef: invoice.orderRef, amountMinor: EXPECTED_COMMISSION });
+    const evt = await prisma.outboxEvent.findFirstOrThrow({
+      where: { name: 'commission.accrued' },
+    });
+    expect(evt.payload).toMatchObject({
+      agentId: agent.userId,
+      orderRef: invoice.orderRef,
+      amountMinor: EXPECTED_COMMISSION,
+    });
   });
 
   it('does NOT accrue at order creation — an unpaid order carries no commission', async () => {
@@ -58,7 +75,11 @@ describe('CF-010 — commission accrues 2% at confirmation, as a ledger row', ()
     // therefore cannot double-accrue.
     const dup = await uploadFor(invoice.ref, 'confirmation', CONF, customer);
     await expect(payments.verify(finance, dup.ref)).rejects.toThrow(/no due installment/);
-    expect(await prisma.commissionEntry.count({ where: { orderRef: invoice.orderRef, type: 'accrual' } })).toBe(1);
+    expect(
+      await prisma.commissionEntry.count({
+        where: { orderRef: invoice.orderRef, type: 'accrual' },
+      }),
+    ).toBe(1);
   });
 });
 
@@ -68,12 +89,15 @@ describe('CF-030 — clawback reverses the accrual and keeps both rows', () => {
   it('adds a negative clawback row, nets the balance to zero, notifies agent + finance', async () => {
     const invoice = await confirmOrder();
 
-    const result = await commissions.handleOrderCancelled(orderCancelled(invoice.orderRef, 'buyer defaulted'));
+    const result = await commissions.handleOrderCancelled(
+      orderCancelled(invoice.orderRef, 'buyer defaulted'),
+    );
     expect(result.status).toBe('clawed_back');
 
     // BOTH rows survive — the accrual is not deleted or edited.
     const rows = await prisma.commissionEntry.findMany({
-      where: { orderRef: invoice.orderRef }, orderBy: { createdAt: 'asc' },
+      where: { orderRef: invoice.orderRef },
+      orderBy: { createdAt: 'asc' },
     });
     expect(rows.map((r) => r.type)).toEqual(['accrual', 'clawback']);
     expect(rows[0]!.amountMinor).toBe(EXPECTED_COMMISSION);
@@ -83,9 +107,18 @@ describe('CF-030 — clawback reverses the accrual and keeps both rows', () => {
     expect(balance.balanceMinor).toBe(0);
 
     // commission.clawedBack published, agent + finance notified.
-    const evt = await prisma.outboxEvent.findFirstOrThrow({ where: { name: 'commission.clawedBack' } });
-    expect(evt.payload).toMatchObject({ agentId: agent.userId, orderRef: invoice.orderRef, amountMinor: EXPECTED_COMMISSION, reason: 'buyer defaulted' });
-    const audiences = (await prisma.notification.findMany({ where: { subjectRef: invoice.orderRef } })).map((n) => n.audience);
+    const evt = await prisma.outboxEvent.findFirstOrThrow({
+      where: { name: 'commission.clawedBack' },
+    });
+    expect(evt.payload).toMatchObject({
+      agentId: agent.userId,
+      orderRef: invoice.orderRef,
+      amountMinor: EXPECTED_COMMISSION,
+      reason: 'buyer defaulted',
+    });
+    const audiences = (
+      await prisma.notification.findMany({ where: { subjectRef: invoice.orderRef } })
+    ).map((n) => n.audience);
     expect(audiences).toEqual(expect.arrayContaining(['agent', 'finance']));
   });
 
@@ -96,12 +129,18 @@ describe('CF-030 — clawback reverses the accrual and keeps both rows', () => {
     const second = await commissions.handleOrderCancelled(envelope); // same eventId
     expect(first.status).toBe('clawed_back');
     expect(second.status).toBe('duplicate');
-    expect(await prisma.commissionEntry.count({ where: { orderRef: invoice.orderRef, type: 'clawback' } })).toBe(1);
+    expect(
+      await prisma.commissionEntry.count({
+        where: { orderRef: invoice.orderRef, type: 'clawback' },
+      }),
+    ).toBe(1);
   });
 
   it('cancelling an order that never confirmed is a no-op (nothing to reverse)', async () => {
     const { invoice } = await invoicedOrder({ tier: 'new' }); // never paid → never accrued
-    const result = await commissions.handleOrderCancelled(orderCancelled(invoice.orderRef, 'cold feet'));
+    const result = await commissions.handleOrderCancelled(
+      orderCancelled(invoice.orderRef, 'cold feet'),
+    );
     expect(result.status).toBe('no_accrual');
     expect(await prisma.commissionEntry.count()).toBe(0);
   });

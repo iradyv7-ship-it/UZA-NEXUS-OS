@@ -48,7 +48,9 @@ export class PurchaseOrderService {
     const declaredKg = round(input.qty * input.unitKg, 1);
 
     return this.outbox.emit(actor.userId, async (tx, emit) => {
-      const seq = await nextSequence(tx.purchaseOrder, (n) => makeRef('po', { country: COUNTRY, year: currentYear(), seq: n }));
+      const seq = await nextSequence(tx.purchaseOrder, (n) =>
+        makeRef('po', { country: COUNTRY, year: currentYear(), seq: n }),
+      );
       const ref = makeRef('po', { country: COUNTRY, year: currentYear(), seq });
       const po = await tx.purchaseOrder.create({
         data: {
@@ -64,7 +66,11 @@ export class PurchaseOrderService {
           clientRequestId: input.clientRequestId ?? null,
         },
       });
-      await emit('po.issued', { poRef: ref, supplierRef: input.supplierRef, orderRef: input.orderRef });
+      await emit('po.issued', {
+        poRef: ref,
+        supplierRef: input.supplierRef,
+        orderRef: input.orderRef,
+      });
       return po;
     });
   }

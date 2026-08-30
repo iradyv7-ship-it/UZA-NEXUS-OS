@@ -40,7 +40,9 @@ export class ProjectService {
 
     const customer = await this.prisma.customer.findUnique({ where: { ref: request.customerRef } });
 
-    const seq = await nextSequence(this.prisma.project, (n) => makeRef('project', { venture: VENTURE, year: currentYear(), seq: n }));
+    const seq = await nextSequence(this.prisma.project, (n) =>
+      makeRef('project', { venture: VENTURE, year: currentYear(), seq: n }),
+    );
     const ref = makeRef('project', { venture: VENTURE, year: currentYear(), seq });
     return this.prisma.project.create({
       data: {
@@ -78,11 +80,7 @@ export class ProjectService {
    * scope (a filter can only narrow, never widen, the in-scope set). Stable sort:
    * most-recently-updated first.
    */
-  async list(
-    actor: Actor,
-    filters: { customerRef?: string; stage?: string },
-    page: ListPage,
-  ) {
+  async list(actor: Actor, filters: { customerRef?: string; stage?: string }, page: ListPage) {
     await this.authz.authorize(actor, 'project', 'read');
     const where: Prisma.ProjectWhereInput = {
       AND: [
@@ -111,12 +109,16 @@ export class ProjectService {
   ) {
     await this.authz.authorize(actor, 'task', 'create');
     if (!input.accountable || !input.responsible) {
-      throw new BadRequestException('a task requires both an accountable and a responsible party (RACI)');
+      throw new BadRequestException(
+        'a task requires both an accountable and a responsible party (RACI)',
+      );
     }
     const project = await this.prisma.project.findUnique({ where: { ref: input.projectRef } });
     if (!project) throw new NotFoundException(`project ${input.projectRef} not found`);
 
-    const seq = await nextSequence(this.prisma.task, (n) => makeRef('task', { venture: VENTURE, year: currentYear(), seq: n }));
+    const seq = await nextSequence(this.prisma.task, (n) =>
+      makeRef('task', { venture: VENTURE, year: currentYear(), seq: n }),
+    );
     const ref = makeRef('task', { venture: VENTURE, year: currentYear(), seq });
     return this.prisma.task.create({
       data: {

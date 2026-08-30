@@ -5,7 +5,15 @@ import { Card } from '../../../components/ui';
 
 interface Review {
   weekKey: string;
-  counts: { runs: number; holds: number; parked: number; filed: number; silent: number; openDecisions: number; overdueTasks: number };
+  counts: {
+    runs: number;
+    holds: number;
+    parked: number;
+    filed: number;
+    silent: number;
+    openDecisions: number;
+    overdueTasks: number;
+  };
   bottleneckDays: number;
   silent: { ref: string; name: string; ownerId: string }[];
   decisions: { ref: string; question: string; ageDays: number }[];
@@ -63,7 +71,13 @@ function Metric({
   href?: string;
 }) {
   const color =
-    tone === 'red' ? 'text-red-600' : tone === 'amber' ? 'text-amber-600' : tone === 'blue' ? 'text-sky-600' : 'text-slate-800';
+    tone === 'red'
+      ? 'text-red-600'
+      : tone === 'amber'
+        ? 'text-amber-600'
+        : tone === 'blue'
+          ? 'text-sky-600'
+          : 'text-slate-800';
   const inner = (
     <Card className="h-full">
       <div className={`text-3xl font-bold tabular-nums ${color}`}>{value}</div>
@@ -126,7 +140,8 @@ export default async function NexusPage() {
             {inbox && inbox.unread > 0 ? (
               <>
                 {' '}
-                — and you have <strong>{inbox.unread}</strong> unread {inbox.unread === 1 ? 'memo' : 'memos'}.
+                — and you have <strong>{inbox.unread}</strong> unread{' '}
+                {inbox.unread === 1 ? 'memo' : 'memos'}.
               </>
             ) : (
               '.'
@@ -153,19 +168,34 @@ export default async function NexusPage() {
           </p>
         </div>
         <div className="flex flex-wrap gap-2 text-sm">
-          <Link href="/register" className="rounded-lg border border-slate-300 px-3 py-1.5 text-slate-700 hover:bg-slate-50">
+          <Link
+            href="/register"
+            className="rounded-lg border border-slate-300 px-3 py-1.5 text-slate-700 hover:bg-slate-50"
+          >
             The review
           </Link>
-          <Link href="/projects" className="rounded-lg border border-slate-300 px-3 py-1.5 text-slate-700 hover:bg-slate-50">
+          <Link
+            href="/projects"
+            className="rounded-lg border border-slate-300 px-3 py-1.5 text-slate-700 hover:bg-slate-50"
+          >
             Projects
           </Link>
-          <Link href="/tasks" className="rounded-lg border border-slate-300 px-3 py-1.5 text-slate-700 hover:bg-slate-50">
+          <Link
+            href="/tasks"
+            className="rounded-lg border border-slate-300 px-3 py-1.5 text-slate-700 hover:bg-slate-50"
+          >
             Tasks
           </Link>
-          <Link href="/funding" className="rounded-lg border border-slate-300 px-3 py-1.5 text-slate-700 hover:bg-slate-50">
+          <Link
+            href="/funding"
+            className="rounded-lg border border-slate-300 px-3 py-1.5 text-slate-700 hover:bg-slate-50"
+          >
             Funding
           </Link>
-          <Link href="/memos" className="rounded-lg border border-slate-300 px-3 py-1.5 text-slate-700 hover:bg-slate-50">
+          <Link
+            href="/memos"
+            className="rounded-lg border border-slate-300 px-3 py-1.5 text-slate-700 hover:bg-slate-50"
+          >
             Memos{inbox && inbox.unread > 0 ? ` (${inbox.unread})` : ''}
           </Link>
         </div>
@@ -173,12 +203,20 @@ export default async function NexusPage() {
 
       {/* What is wrong, first. */}
       <section>
-        <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-slate-500">Needs you</h2>
+        <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-slate-500">
+          Needs you
+        </h2>
         <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
           <Metric
             label="days the oldest decision has waited"
             value={r?.bottleneckDays ?? '—'}
-            tone={(r?.bottleneckDays ?? 0) >= 7 ? 'red' : (r?.bottleneckDays ?? 0) >= 3 ? 'amber' : 'slate'}
+            tone={
+              (r?.bottleneckDays ?? 0) >= 7
+                ? 'red'
+                : (r?.bottleneckDays ?? 0) >= 3
+                  ? 'amber'
+                  : 'slate'
+            }
             hint="the bottleneck"
             href="/register"
           />
@@ -204,7 +242,9 @@ export default async function NexusPage() {
       </section>
 
       <section>
-        <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-slate-500">How the work is held</h2>
+        <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-slate-500">
+          How the work is held
+        </h2>
         <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
           <Metric
             label="of approvals sit with one person"
@@ -219,24 +259,44 @@ export default async function NexusPage() {
             tone={(conc?.noBackup.length ?? 0) > 0 ? 'amber' : 'slate'}
             hint={conc ? `${conc.standingNoBackup} standing duties uncovered too` : undefined}
           />
-          <Metric label="duties that start in September" value={conc?.notYetStarted.length ?? '—'} hint="François lands" />
+          <Metric
+            label="duties that start in September"
+            value={conc?.notYetStarted.length ?? '—'}
+            hint="François lands"
+          />
         </div>
       </section>
 
       <section>
-        <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-slate-500">What is being raised</h2>
+        <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-slate-500">
+          What is being raised
+        </h2>
         <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
           <Metric
             label="sought across live tracks"
-            value={fund ? (fund.totalSought >= 1e9 ? `${(fund.totalSought / 1e9).toFixed(1)}bn` : `${Math.round(fund.totalSought / 1e6)}M`) : '—'}
+            value={
+              fund
+                ? fund.totalSought >= 1e9
+                  ? `${(fund.totalSought / 1e9).toFixed(1)}bn`
+                  : `${Math.round(fund.totalSought / 1e6)}M`
+                : '—'
+            }
             hint="RWF"
             href="/funding"
           />
           <Metric label="live funding tracks" value={fund?.liveTracks ?? '—'} href="/funding" />
           <Metric
             label="tracks with no owner"
-            value={fund ? fund.tracks.filter((t) => t.blocker?.toLowerCase().includes('no owner')).length : '—'}
-            tone={fund && fund.tracks.some((t) => t.blocker?.toLowerCase().includes('no owner')) ? 'amber' : 'slate'}
+            value={
+              fund
+                ? fund.tracks.filter((t) => t.blocker?.toLowerCase().includes('no owner')).length
+                : '—'
+            }
+            tone={
+              fund && fund.tracks.some((t) => t.blocker?.toLowerCase().includes('no owner'))
+                ? 'amber'
+                : 'slate'
+            }
             hint="an unowned conversation does not happen"
             href="/funding"
           />
@@ -250,7 +310,9 @@ export default async function NexusPage() {
       </section>
 
       <section>
-        <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-slate-500">What we own</h2>
+        <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-slate-500">
+          What we own
+        </h2>
         <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
           <Metric label="systems, all recorded" value={estate?.total ?? '—'} href="/projects" />
           <Metric
@@ -277,7 +339,9 @@ export default async function NexusPage() {
 
       {byVenture.length > 0 ? (
         <section>
-          <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-slate-500">By venture</h2>
+          <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-slate-500">
+            By venture
+          </h2>
           <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white">
             <table className="w-full text-sm">
               <thead>
@@ -291,8 +355,12 @@ export default async function NexusPage() {
                 {byVenture.map((v) => (
                   <tr key={v.code} className="border-b border-slate-100 last:border-0">
                     <td className="px-4 py-2 font-medium text-slate-800">{v.code}</td>
-                    <td className="px-4 py-2 text-right tabular-nums text-slate-700">{v.running}</td>
-                    <td className="px-4 py-2 text-right tabular-nums text-slate-700">{v.systems}</td>
+                    <td className="px-4 py-2 text-right tabular-nums text-slate-700">
+                      {v.running}
+                    </td>
+                    <td className="px-4 py-2 text-right tabular-nums text-slate-700">
+                      {v.systems}
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -303,7 +371,9 @@ export default async function NexusPage() {
 
       {r && r.escalations.length > 0 ? (
         <section className="space-y-2">
-          <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-500">Asked of you this week</h2>
+          <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-500">
+            Asked of you this week
+          </h2>
           <Card>
             <ul className="divide-y divide-slate-100">
               {r.escalations.map((e) => (

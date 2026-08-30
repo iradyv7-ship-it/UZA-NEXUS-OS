@@ -70,7 +70,9 @@ function ShipmentCard({ s, t, locale }: { s: ShipmentView; t: Translate; locale:
       <Link href={`/partner/shipments/${s.ref}`} className="flex h-full flex-col p-4">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
-            <p className="truncate text-base font-semibold text-slate-900">{t(`dest.${s.destination}`)}</p>
+            <p className="truncate text-base font-semibold text-slate-900">
+              {t(`dest.${s.destination}`)}
+            </p>
             <p className="truncate text-xs text-slate-500">
               {s.carrier} · <span className="font-mono">{s.container}</span>
             </p>

@@ -43,7 +43,6 @@ interface GmailMessage {
  * then passes through the compartmentalisation rules before it is stored.
  */
 @Injectable()
-
 export class GmailSource {
   private readonly logger = new Logger(GmailSource.name);
   private readonly client: OAuth2Client | null;

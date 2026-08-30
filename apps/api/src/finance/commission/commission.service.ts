@@ -38,10 +38,7 @@ export class CommissionService {
    * invoice.commissionAccrued flag the caller checks. Publishing `commission.accrued` is
    * the caller's (it is emitted in the same outbox transaction as payment.verified).
    */
-  async accrue(
-    tx: Tx,
-    input: { agentId: string; orderRef: string; amountMinor: Minor },
-  ) {
+  async accrue(tx: Tx, input: { agentId: string; orderRef: string; amountMinor: Minor }) {
     return tx.commissionEntry.create({
       data: {
         agentId: input.agentId,
@@ -62,7 +59,9 @@ export class CommissionService {
    */
   async handleOrderCancelled(envelope: EventEnvelope<'order.cancelled'>) {
     const already = await this.prisma.processedEvent.findUnique({
-      where: { eventId_consumer: { eventId: envelope.eventId, consumer: ORDER_CANCELLED_CONSUMER } },
+      where: {
+        eventId_consumer: { eventId: envelope.eventId, consumer: ORDER_CANCELLED_CONSUMER },
+      },
     });
     if (already) return { status: 'duplicate' as const, orderRef: envelope.payload.orderRef };
 
@@ -97,7 +96,10 @@ export class CommissionService {
           dedupeKey: `clawback:${orderRef}`,
         },
       });
-      await tx.invoice.update({ where: { ref: invoice.ref }, data: { commissionClawedBack: true } });
+      await tx.invoice.update({
+        where: { ref: invoice.ref },
+        data: { commissionClawedBack: true },
+      });
 
       // Enqueue the clawback event in the SAME transaction as the ledger row, with a
       // deterministic eventId derived from the source so a redelivery cannot double-emit.
@@ -138,7 +140,10 @@ export class CommissionService {
    * FOUNDER DEPENDENCY (flagged, not a code task): the agent agreement must be SIGNED
    * before the first payout. That gate is a business/legal artefact, not enforced here.
    */
-  async recordPayout(actor: Actor, input: { agentId: string; orderRef: string; amountMinor: Minor }) {
+  async recordPayout(
+    actor: Actor,
+    input: { agentId: string; orderRef: string; amountMinor: Minor },
+  ) {
     await this.authz.authorize(actor, 'commission', 'payout');
     return this.prisma.commissionEntry.create({
       data: {

@@ -109,7 +109,9 @@ export class AuthController {
    * enable MFA yet; see POST /auth/mfa/confirm.
    */
   @Post('mfa/setup')
-  @ApiOperation({ summary: 'Start MFA enrollment for the caller\'s own account; returns { otpauthUrl }' })
+  @ApiOperation({
+    summary: "Start MFA enrollment for the caller's own account; returns { otpauthUrl }",
+  })
   startMfa(@CurrentActor() actor: Actor) {
     return this.auth.startMfaEnrollment(actor.userId);
   }
@@ -129,7 +131,9 @@ export class AuthController {
   /** Turn MFA off for YOUR OWN account. Requires a currently-valid code. */
   @Throttle(BRUTE_FORCE_GUARD)
   @Post('mfa/disable')
-  @ApiOperation({ summary: 'Disable MFA on the caller\'s own account; requires a valid current code' })
+  @ApiOperation({
+    summary: "Disable MFA on the caller's own account; requires a valid current code",
+  })
   async disableMfa(@CurrentActor() actor: Actor, @Body() dto: MfaCodeDto) {
     await this.auth.disableMfa(actor.userId, dto.code);
     return { ok: true };

@@ -4,8 +4,18 @@ import { inScope, type EventEnvelope, type Minor } from '@uza/contracts';
 import { prisma, resetDb } from './db';
 import { resetFinanceDb } from './finance-db';
 import {
-  invoices, payments, finance, ceo, vm, agent, customer,
-  invoicedOrder, uploadFor, STANDARD_TOTAL, CUSTOMER_REF, AGENT_ID,
+  invoices,
+  payments,
+  finance,
+  ceo,
+  vm,
+  agent,
+  customer,
+  invoicedOrder,
+  uploadFor,
+  STANDARD_TOTAL,
+  CUSTOMER_REF,
+  AGENT_ID,
 } from './finance-fixtures';
 import { financeScopeWhere } from '../src/finance/list-scope';
 
@@ -83,11 +93,14 @@ describe('invoice-by-order — the payment UI resolves an order to its invoice',
 // ---------------------------------------------------------------------------
 describe('payments list — Finance’s verification queue, scoped + masked', () => {
   it('finance sees payments across ALL customers', async () => {
-    const { invoice } = await invoicedOrder({ tier: 'new' });   // CUSTOMER_REF
+    const { invoice } = await invoicedOrder({ tier: 'new' }); // CUSTOMER_REF
     const pA = await uploadFor(invoice.ref, 'confirmation', CONF, customer);
     const invB = await invoiceFor(CUSTOMER_B, 'ORD-B-0001');
     const pB = await payments.uploadProof(finance, {
-      invoiceRef: invB, targetTrigger: 'confirmation', amountMinor: CONF, proofRef: 'PROOF-B',
+      invoiceRef: invB,
+      targetTrigger: 'confirmation',
+      amountMinor: CONF,
+      proofRef: 'PROOF-B',
     });
 
     const rows = await payments.list(finance, {}, { limit: 20, offset: 0 });
@@ -117,9 +130,13 @@ describe('payments list — Finance’s verification queue, scoped + masked', ()
     const { invoice } = await invoicedOrder({ tier: 'new' });
     const conf = await uploadFor(invoice.ref, 'confirmation', CONF, customer);
     const preload = await uploadFor(invoice.ref, 'pre_loading', CONF, customer);
-    await payments.verify(finance, conf.ref);     // conf → verified, settles confirmation
+    await payments.verify(finance, conf.ref); // conf → verified, settles confirmation
 
-    const pending = await payments.list(finance, { status: 'pending_verification' }, { limit: 20, offset: 0 });
+    const pending = await payments.list(
+      finance,
+      { status: 'pending_verification' },
+      { limit: 20, offset: 0 },
+    );
     expect(pending.map((r) => r.ref)).toEqual([preload.ref]);
 
     const verified = await payments.list(finance, { status: 'verified' }, { limit: 20, offset: 0 });
@@ -131,10 +148,17 @@ describe('payments list — Finance’s verification queue, scoped + masked', ()
     const pA = await uploadFor(invoice.ref, 'confirmation', CONF, customer);
     const invB = await invoiceFor(CUSTOMER_B, 'ORD-B-0001');
     await payments.uploadProof(finance, {
-      invoiceRef: invB, targetTrigger: 'confirmation', amountMinor: CONF, proofRef: 'PROOF-B',
+      invoiceRef: invB,
+      targetTrigger: 'confirmation',
+      amountMinor: CONF,
+      proofRef: 'PROOF-B',
     });
 
-    const rows = await payments.list(finance, { invoiceRef: invoice.ref }, { limit: 20, offset: 0 });
+    const rows = await payments.list(
+      finance,
+      { invoiceRef: invoice.ref },
+      { limit: 20, offset: 0 },
+    );
     expect(rows.map((r) => r.ref)).toEqual([pA.ref]);
   });
 
@@ -170,7 +194,7 @@ describe('payments list — pagination + stable sort (updatedAt desc)', () => {
     const page2 = await payments.list(finance, {}, { limit: 2, offset: 2 });
 
     expect(page1.map((r) => r.ref)).toEqual([c.ref, b.ref]); // newest first
-    expect(page2.map((r) => r.ref)).toEqual([a.ref]);        // no overlap, stable continuation
+    expect(page2.map((r) => r.ref)).toEqual([a.ref]); // no overlap, stable continuation
   });
 });
 
@@ -184,7 +208,10 @@ describe('payments list agrees with inScope', () => {
     await uploadFor(invoice.ref, 'confirmation', CONF, customer);
     await invoiceFor(CUSTOMER_B, 'ORD-B-0001').then((invB) =>
       payments.uploadProof(finance, {
-        invoiceRef: invB, targetTrigger: 'confirmation', amountMinor: CONF, proofRef: 'PROOF-B',
+        invoiceRef: invB,
+        targetTrigger: 'confirmation',
+        amountMinor: CONF,
+        proofRef: 'PROOF-B',
       }),
     );
 
@@ -200,7 +227,10 @@ describe('payments list agrees with inScope', () => {
     const pA = await uploadFor(invA.ref, 'confirmation', CONF, customer);
     const invB = await invoiceFor(CUSTOMER_B, 'ORD-B-0001');
     const pB = await payments.uploadProof(finance, {
-      invoiceRef: invB, targetTrigger: 'confirmation', amountMinor: CONF, proofRef: 'PROOF-B',
+      invoiceRef: invB,
+      targetTrigger: 'confirmation',
+      amountMinor: CONF,
+      proofRef: 'PROOF-B',
     });
 
     // Apply the SAME predicate PaymentService.list uses, for customer A (grant aside).

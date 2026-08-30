@@ -2,7 +2,14 @@ import { beforeEach, afterAll, describe, expect, it } from 'vitest';
 import { MIN_DEPOSIT } from '@uza/contracts';
 import { prisma, resetDb } from './db';
 import { resetTradeDb } from './trade-db';
-import { orders, quotations, vm, approvedChain, SUPPLIER_UNIT, standardEst } from './trade-fixtures';
+import {
+  orders,
+  quotations,
+  vm,
+  approvedChain,
+  SUPPLIER_UNIT,
+  standardEst,
+} from './trade-fixtures';
 
 beforeEach(async () => {
   await resetDb();
@@ -18,7 +25,10 @@ describe('order — installment schedule generated from policy, never hardcoded'
     const order = await orders.create(vm, quotation.ref);
 
     expect(order.tier).toBe('new');
-    const insts = await prisma.installment.findMany({ where: { orderRef: order.ref }, orderBy: { pct: 'asc' } });
+    const insts = await prisma.installment.findMany({
+      where: { orderRef: order.ref },
+      orderBy: { pct: 'asc' },
+    });
     expect(insts.map((i) => i.trigger).sort()).toEqual(['confirmation', 'pre_loading']);
     expect(insts.every((i) => i.pct === 0.5)).toBe(true);
 

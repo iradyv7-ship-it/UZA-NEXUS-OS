@@ -101,7 +101,9 @@ describe('mentions', () => {
   it('does not mistake an email or a price for a mention', () => {
     // The pattern is deliberately conservative: a false mention notifies the wrong person
     // about a record they may not even be able to open.
-    expect(extractMentions('write to yves@uzasolutions.rw about the RWF 22,500,000 units')).toEqual([]);
+    expect(extractMentions('write to yves@uzasolutions.rw about the RWF 22,500,000 units')).toEqual(
+      [],
+    );
     expect(extractMentions('no mentions here at all')).toEqual([]);
   });
 

@@ -2,7 +2,15 @@ import { beforeEach, afterAll, describe, expect, it } from 'vitest';
 import { MASK } from '@uza/contracts';
 import { prisma, resetDb } from './db';
 import { resetLogisticsDb } from './logistics-db';
-import { containers, freight, partnerPortal, loadableLot, vm, partner, M } from './logistics-fixtures';
+import {
+  containers,
+  freight,
+  partnerPortal,
+  loadableLot,
+  vm,
+  partner,
+  M,
+} from './logistics-fixtures';
 
 beforeEach(async () => {
   await resetDb();
@@ -15,7 +23,12 @@ afterAll(async () => {
 const bookShipment = async () => {
   const { refs } = await loadableLot({ destination: 'KIGALI', packages: [{ kg: 3000, cbm: 1.0 }] });
   const { shipment } = await containers.createShipment(vm, {
-    packageRefs: refs, container: 'MSKU-1', carrier: 'Maersk', etd: '2026-08-01', eta: '2026-09-15', partnerId: 'IMARI',
+    packageRefs: refs,
+    container: 'MSKU-1',
+    carrier: 'Maersk',
+    etd: '2026-08-01',
+    eta: '2026-09-15',
+    partnerId: 'IMARI',
   });
   await freight.recordBilledWeight(vm, shipment.ref, 3.0, M(3000));
   return { shipment, refs };
@@ -34,7 +47,10 @@ describe('Imari partner portal — scope in, cost masked', () => {
     expect(s.measuredRevenueTon).toBe(MASK);
     expect(s.container).toBe('MSKU-1'); // logistics detail is visible
 
-    const pkgs = (await partnerPortal.readPackages(imari, shipment.ref)) as Record<string, unknown>[];
+    const pkgs = (await partnerPortal.readPackages(imari, shipment.ref)) as Record<
+      string,
+      unknown
+    >[];
     expect(pkgs).toHaveLength(refs.length);
     expect(pkgs[0]!.kg).toBe(3000); // weight visible
     expect(pkgs[0]!.cbm).toBe(1.0); // CBM visible
@@ -47,7 +63,9 @@ describe('Imari partner portal — scope in, cost masked', () => {
     await expect(partnerPortal.readShipment(outsider, shipment.ref)).rejects.toMatchObject({
       code: 'ACCESS_DENIED_SCOPE',
     });
-    const denials = await prisma.auditLog.findMany({ where: { decision: 'deny', actorRole: 'logistics_partner' } });
+    const denials = await prisma.auditLog.findMany({
+      where: { decision: 'deny', actorRole: 'logistics_partner' },
+    });
     expect(denials.length).toBeGreaterThan(0);
   });
 

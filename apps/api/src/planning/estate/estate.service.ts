@@ -150,7 +150,9 @@ export class EstateService {
     const age = (d: Date | null) => (d ? Math.floor((now - d.getTime()) / 86_400_000) : null);
 
     const byVenture: Record<string, number> = {};
-    for (const s of all) byVenture[s.ventureCode ?? 'unassigned'] = (byVenture[s.ventureCode ?? 'unassigned'] ?? 0) + 1;
+    for (const s of all)
+      byVenture[s.ventureCode ?? 'unassigned'] =
+        (byVenture[s.ventureCode ?? 'unassigned'] ?? 0) + 1;
 
     await this.access.allow(actor, RESOURCE, 'health');
     return {
@@ -169,14 +171,24 @@ export class EstateService {
       /** The same thing in two places. One of them is diverging. */
       duplicates: all
         .filter((s) => s.supersededBy)
-        .map((s) => ({ ref: s.ref, name: s.name, supersededBy: s.supersededBy, repoUrl: s.repoUrl })),
+        .map((s) => ({
+          ref: s.ref,
+          name: s.name,
+          supersededBy: s.supersededBy,
+          repoUrl: s.repoUrl,
+        })),
       /** Nothing pushed in two months, and still not marked dormant or retired. */
       silent: all
         .filter((s) => {
           const d = age(s.lastPushAt);
           return d !== null && d > DORMANT_DAYS && s.status !== 'dormant';
         })
-        .map((s) => ({ ref: s.ref, name: s.name, ownerId: s.ownerId, daysSincePush: age(s.lastPushAt) })),
+        .map((s) => ({
+          ref: s.ref,
+          name: s.name,
+          ownerId: s.ownerId,
+          daysSincePush: age(s.lastPushAt),
+        })),
       /** A system with no venture is a system nobody has decided the purpose of. */
       unassigned: all.filter((s) => !s.ventureCode).map((s) => ({ ref: s.ref, name: s.name })),
     };
@@ -209,7 +221,12 @@ export class EstateService {
     if (testsPassed !== undefined && testsTotal !== undefined && testsPassed > testsTotal) {
       throw new BadRequestException('testsPassed cannot exceed testsTotal');
     }
-    if (tests === 'pass' && testsPassed !== undefined && testsTotal !== undefined && testsPassed < testsTotal) {
+    if (
+      tests === 'pass' &&
+      testsPassed !== undefined &&
+      testsTotal !== undefined &&
+      testsPassed < testsTotal
+    ) {
       throw new BadRequestException('tests cannot be "pass" while some tests did not pass');
     }
     if (!input.verifiedBy?.trim()) {
@@ -296,17 +313,21 @@ export class EstateService {
 
       // Order matters: failing beats stale. A run that failed three weeks ago is still
       // a failure, and calling it "stale" would let it drop off the list quietly.
-      const state = failing ? ('failing' as const)
-        : age > VERIFICATION_STALE_DAYS ? ('stale' as const)
-        : ('green' as const);
+      const state = failing
+        ? ('failing' as const)
+        : age > VERIFICATION_STALE_DAYS
+          ? ('stale' as const)
+          : ('green' as const);
 
       // Trend needs two comparable runs with real counts. Without them it is null
       // rather than a guess.
       const trend =
         previous && latest.testsTotal != null && previous.testsTotal != null
-          ? latest.testsTotal > previous.testsTotal ? 'growing'
-            : latest.testsTotal < previous.testsTotal ? 'shrinking'
-            : 'flat'
+          ? latest.testsTotal > previous.testsTotal
+            ? 'growing'
+            : latest.testsTotal < previous.testsTotal
+              ? 'shrinking'
+              : 'flat'
           : null;
 
       return {

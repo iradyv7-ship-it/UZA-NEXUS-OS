@@ -2,9 +2,20 @@ import { beforeEach, afterAll, describe, expect, it } from 'vitest';
 import { prisma, resetDb } from './db';
 import { resetLogisticsDb } from './logistics-db';
 import {
-  receiving, release, containers, orderPayments,
-  receiveLot, loadableLot, warehouse, vm, agent, paymentVerified,
-  ORDER_REF, ORDER_REF_2, PO_REF, PO_REF_2,
+  receiving,
+  release,
+  containers,
+  orderPayments,
+  receiveLot,
+  loadableLot,
+  warehouse,
+  vm,
+  agent,
+  paymentVerified,
+  ORDER_REF,
+  ORDER_REF_2,
+  PO_REF,
+  PO_REF_2,
 } from './logistics-fixtures';
 
 beforeEach(async () => {
@@ -50,7 +61,9 @@ describe('container booking — three independent gates, in order', () => {
   it('blocks unreleased packages with GATE_QC_NOT_RELEASED before any booking gate', async () => {
     const { packages } = await receiveLot();
     // not QC-released, no destination, no payment — QC precondition must fire FIRST
-    await expect(book(packages.map((p) => p.ref))).rejects.toMatchObject({ code: 'GATE_QC_NOT_RELEASED' });
+    await expect(book(packages.map((p) => p.ref))).rejects.toMatchObject({
+      code: 'GATE_QC_NOT_RELEASED',
+    });
   });
 
   // GATE 1 (CF-016) — volumetric variance resolved. Reads varianceHold, NOT qcReleased.
@@ -60,7 +73,9 @@ describe('container booking — three independent gates, in order', () => {
     const refs = packages.map((p) => p.ref);
     await release.qcRelease(warehouse, refs);
     await release.allocateDestination(warehouse, refs, 'KIGALI');
-    await orderPayments.handlePaymentVerified(paymentVerified({ orderRef: ORDER_REF, trigger: 'pre_loading', paidFraction: 1.0 }));
+    await orderPayments.handlePaymentVerified(
+      paymentVerified({ orderRef: ORDER_REF, trigger: 'pre_loading', paidFraction: 1.0 }),
+    );
     expect(receipt.hardStop).toBe(true);
 
     await expect(book(refs)).rejects.toMatchObject({ code: 'GATE_VARIANCE_UNRESOLVED' });
@@ -77,14 +92,18 @@ describe('container booking — three independent gates, in order', () => {
   it('GATE 3: a mixed-destination load blocks with GATE_MIXED_DESTINATION', async () => {
     const a = await loadableLot({ orderRef: ORDER_REF, poRef: PO_REF, destination: 'KIGALI' });
     const b = await loadableLot({ orderRef: ORDER_REF_2, poRef: PO_REF_2, destination: 'GOMA' });
-    await expect(book([...a.refs, ...b.refs])).rejects.toMatchObject({ code: 'GATE_MIXED_DESTINATION' });
+    await expect(book([...a.refs, ...b.refs])).rejects.toMatchObject({
+      code: 'GATE_MIXED_DESTINATION',
+    });
   });
 
   it('GATE 3: packages with no destination assigned block with GATE_MIXED_DESTINATION', async () => {
     const { packages } = await receiveLot();
     const refs = packages.map((p) => p.ref);
     await release.qcRelease(warehouse, refs);
-    await orderPayments.handlePaymentVerified(paymentVerified({ orderRef: ORDER_REF, trigger: 'pre_loading', paidFraction: 1.0 }));
+    await orderPayments.handlePaymentVerified(
+      paymentVerified({ orderRef: ORDER_REF, trigger: 'pre_loading', paidFraction: 1.0 }),
+    );
     // no allocateDestination → destination null
     await expect(book(refs)).rejects.toMatchObject({ code: 'GATE_MIXED_DESTINATION' });
   });
@@ -100,12 +119,16 @@ describe('container booking — three independent gates, in order', () => {
     await expect(book(refs)).rejects.toMatchObject({ code: 'GATE_VARIANCE_UNRESOLVED' });
 
     // resolve variance → 2) pre-loading fires next
-    const receipt = await prisma.warehouseReceipt.findFirstOrThrow({ where: { orderRef: ORDER_REF } });
+    const receipt = await prisma.warehouseReceipt.findFirstOrThrow({
+      where: { orderRef: ORDER_REF },
+    });
     await receiving.resolveVariance(warehouse, receipt.lotRef, 'uza_absorbs');
     await expect(book(refs)).rejects.toMatchObject({ code: 'GATE_PRELOADING_UNPAID' });
 
     // pay pre-loading → 3) destination fires last
-    await orderPayments.handlePaymentVerified(paymentVerified({ orderRef: ORDER_REF, trigger: 'pre_loading', paidFraction: 1.0 }));
+    await orderPayments.handlePaymentVerified(
+      paymentVerified({ orderRef: ORDER_REF, trigger: 'pre_loading', paidFraction: 1.0 }),
+    );
     await expect(book(refs)).rejects.toMatchObject({ code: 'GATE_MIXED_DESTINATION' });
 
     // assign destination → books
@@ -116,7 +139,13 @@ describe('container booking — three independent gates, in order', () => {
   it('authorises booking at the service layer — a sales agent is denied', async () => {
     const { refs } = await loadableLot();
     await expect(
-      containers.createShipment(agent, { packageRefs: refs, container: 'X', carrier: 'Y', etd: '', eta: '' }),
+      containers.createShipment(agent, {
+        packageRefs: refs,
+        container: 'X',
+        carrier: 'Y',
+        etd: '',
+        eta: '',
+      }),
     ).rejects.toMatchObject({ code: 'ACCESS_DENIED_ROLE' });
   });
 });

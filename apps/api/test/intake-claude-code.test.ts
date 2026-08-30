@@ -51,7 +51,10 @@ const lines = [
     sessionId: 'S1',
     uuid: 'u-compact',
     timestamp: '2026-08-20T10:03:00.000Z',
-    message: { role: 'user', content: `This session is being continued from a previous conversation. ${LONG}` },
+    message: {
+      role: 'user',
+      content: `This session is being continued from a previous conversation. ${LONG}`,
+    },
   },
   // A tool result, delivered as a user turn.
   {
@@ -97,7 +100,10 @@ const lines = [
     sessionId: 'S1',
     uuid: 'u-blocks',
     timestamp: '2026-08-20T10:08:00.000Z',
-    message: { role: 'user', content: [{ type: 'text', text: `the bank wants 10 percent down. ${LONG}` }] },
+    message: {
+      role: 'user',
+      content: [{ type: 'text', text: `the bank wants 10 percent down. ${LONG}` }],
+    },
   },
 ];
 

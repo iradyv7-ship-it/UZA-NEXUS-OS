@@ -62,7 +62,10 @@ const STATE_ORDER: Record<ReadinessState, number> = {
   green: 3,
 };
 
-const STATE_LABEL: Record<ReadinessState, { text: string; tone: 'red' | 'amber' | 'green' | 'slate' }> = {
+const STATE_LABEL: Record<
+  ReadinessState,
+  { text: string; tone: 'red' | 'amber' | 'green' | 'slate' }
+> = {
   failing: { text: 'Failing', tone: 'red' },
   // Amber, not grey. Never measured is a gap somebody owns, not a neutral fact.
   unverified: { text: 'Never verified', tone: 'amber' },
@@ -79,10 +82,13 @@ const CHECK_MARK: Record<CheckOutcome, string> = {
 
 function Check({ label, outcome }: { label: string; outcome: CheckOutcome }) {
   const color =
-    outcome === 'pass' ? 'text-emerald-600'
-    : outcome === 'fail' ? 'text-red-600'
-    : outcome === 'not_run' ? 'text-amber-600'
-    : 'text-slate-400';
+    outcome === 'pass'
+      ? 'text-emerald-600'
+      : outcome === 'fail'
+        ? 'text-red-600'
+        : outcome === 'not_run'
+          ? 'text-amber-600'
+          : 'text-slate-400';
   return (
     <span className="inline-flex items-center gap-1 text-xs text-slate-600">
       <span className={`font-bold ${color}`}>{CHECK_MARK[outcome]}</span>
@@ -92,15 +98,24 @@ function Check({ label, outcome }: { label: string; outcome: CheckOutcome }) {
 }
 
 function Metric({
-  label, value, tone = 'slate', hint,
+  label,
+  value,
+  tone = 'slate',
+  hint,
 }: {
-  label: string; value: string | number; tone?: 'red' | 'amber' | 'green' | 'slate'; hint?: string;
+  label: string;
+  value: string | number;
+  tone?: 'red' | 'amber' | 'green' | 'slate';
+  hint?: string;
 }) {
   const color =
-    tone === 'red' ? 'text-red-600'
-    : tone === 'amber' ? 'text-amber-600'
-    : tone === 'green' ? 'text-emerald-600'
-    : 'text-slate-800';
+    tone === 'red'
+      ? 'text-red-600'
+      : tone === 'amber'
+        ? 'text-amber-600'
+        : tone === 'green'
+          ? 'text-emerald-600'
+          : 'text-slate-800';
   return (
     <Card className="h-full">
       <div className={`text-3xl font-bold tabular-nums ${color}`}>{value}</div>
@@ -132,8 +147,8 @@ export default async function SystemsPage() {
         <h1 className="text-xl font-semibold text-slate-800">Systems</h1>
         <Card className="mt-4">
           <p className="text-sm text-slate-600">
-            The readiness view could not be loaded. Nothing is inferred here — the page
-            shows measurements or it shows nothing.
+            The readiness view could not be loaded. Nothing is inferred here — the page shows
+            measurements or it shows nothing.
           </p>
         </Card>
       </main>
@@ -251,8 +266,8 @@ export default async function SystemsPage() {
       {rows.length === 0 ? (
         <Card>
           <p className="text-sm text-slate-600">
-            No systems are registered yet. Add them in the estate, then record a
-            verification against each.
+            No systems are registered yet. Add them in the estate, then record a verification
+            against each.
           </p>
         </Card>
       ) : null}

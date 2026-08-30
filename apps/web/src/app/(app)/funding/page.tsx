@@ -3,8 +3,15 @@ import { authedCall } from '../../../lib/api';
 import { Card, Badge } from '../../../components/ui';
 
 type Stage =
-  | 'identified' | 'qualifying' | 'preparing' | 'submitted'
-  | 'in_diligence' | 'approved' | 'closed' | 'declined' | 'parked';
+  | 'identified'
+  | 'qualifying'
+  | 'preparing'
+  | 'submitted'
+  | 'in_diligence'
+  | 'approved'
+  | 'closed'
+  | 'declined'
+  | 'parked';
 
 interface Release {
   ref: string;
@@ -71,7 +78,9 @@ export default async function FundingPage() {
   if (res.kind === 'denied')
     return (
       <Card>
-        <p className="text-sm text-slate-600">Funding is visible to the CEO and project managers.</p>
+        <p className="text-sm text-slate-600">
+          Funding is visible to the CEO and project managers.
+        </p>
       </Card>
     );
   if (res.kind !== 'ok')
@@ -90,7 +99,8 @@ export default async function FundingPage() {
       <div>
         <h1 className="text-xl font-bold text-slate-900">Funding</h1>
         <p className="mt-0.5 text-sm text-slate-500">
-          {liveTracks} live tracks · {money(totalSought, 'RWF')} sought · each venture presentable on its own
+          {liveTracks} live tracks · {money(totalSought, 'RWF')} sought · each venture presentable
+          on its own
         </p>
       </div>
 
@@ -121,7 +131,9 @@ export default async function FundingPage() {
               <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-500">
                 {v} — {rows.length} {rows.length === 1 ? 'track' : 'tracks'}
               </h2>
-              <span className="font-mono text-xs tabular-nums text-slate-500">{money(sought, 'RWF')}</span>
+              <span className="font-mono text-xs tabular-nums text-slate-500">
+                {money(sought, 'RWF')}
+              </span>
             </div>
 
             {rows.map((t) => (
@@ -173,8 +185,8 @@ export default async function FundingPage() {
 
                 {t.danglingRefs.length > 0 ? (
                   <p className="mt-2 text-xs text-amber-700">
-                    Names {t.danglingRefs.join(', ')}, which {t.danglingRefs.length === 1 ? 'is' : 'are'} not in the
-                    register.
+                    Names {t.danglingRefs.join(', ')}, which{' '}
+                    {t.danglingRefs.length === 1 ? 'is' : 'are'} not in the register.
                   </p>
                 ) : null}
               </Card>
@@ -187,9 +199,12 @@ export default async function FundingPage() {
         <p className="text-sm text-slate-600">
           {unowned > 0 ? (
             <>
-              <strong>{unowned}</strong> {unowned === 1 ? 'track has' : 'tracks have'} no owner. An unowned funder
-              conversation does not happen — that is a decision for{' '}
-              <Link href="/register" className="font-medium text-brand underline underline-offset-2">
+              <strong>{unowned}</strong> {unowned === 1 ? 'track has' : 'tracks have'} no owner. An
+              unowned funder conversation does not happen — that is a decision for{' '}
+              <Link
+                href="/register"
+                className="font-medium text-brand underline underline-offset-2"
+              >
                 the review
               </Link>
               .

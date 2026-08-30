@@ -91,7 +91,11 @@ export class PaymentService {
       // Finance is told a proof is waiting for a human decision.
       await this.notify.dispatch(
         ref,
-        { audience: 'finance', recipientId: 'finance', body: `Payment proof ${ref} awaiting verification` },
+        {
+          audience: 'finance',
+          recipientId: 'finance',
+          body: `Payment proof ${ref} awaiting verification`,
+        },
         tx,
       );
       return payment;
@@ -184,9 +188,17 @@ export class PaymentService {
       let accruedMinor = 0;
       if (isConfirmation && invoice.agentId && !invoice.commissionAccrued) {
         const amountMinor = CommissionService.accrualFor(invoice.totalMinor as Minor);
-        await this.commission.accrue(tx, { agentId: invoice.agentId, orderRef: invoice.orderRef, amountMinor });
+        await this.commission.accrue(tx, {
+          agentId: invoice.agentId,
+          orderRef: invoice.orderRef,
+          amountMinor,
+        });
         await tx.invoice.update({ where: { ref: invoice.ref }, data: { commissionAccrued: true } });
-        await emit('commission.accrued', { agentId: invoice.agentId, orderRef: invoice.orderRef, amountMinor });
+        await emit('commission.accrued', {
+          agentId: invoice.agentId,
+          orderRef: invoice.orderRef,
+          amountMinor,
+        });
         await this.notify.dispatch(
           invoice.orderRef,
           {

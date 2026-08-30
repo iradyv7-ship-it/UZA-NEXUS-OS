@@ -13,8 +13,8 @@ const config: Config = {
         // pull the eye — not backgrounds or large fills.
         brand: {
           DEFAULT: '#233448', // Dark blue
-          soft: '#3d4f66',    // one step lighter, for hover/active states — not in the book,
-                               // derived to keep the same hue since the book has no tint scale
+          soft: '#3d4f66', // one step lighter, for hover/active states — not in the book,
+          // derived to keep the same hue since the book has no tint scale
         },
         accent: {
           DEFAULT: '#FBAF43', // Cyber (Pantone 142C)

@@ -1,7 +1,16 @@
 import { Body, Controller, Delete, Get, Param, Patch, Post, Query } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import {
-  IsArray, IsBooleanString, IsDateString, IsIn, IsInt, IsOptional, IsString, Max, Min, MinLength,
+  IsArray,
+  IsBooleanString,
+  IsDateString,
+  IsIn,
+  IsInt,
+  IsOptional,
+  IsString,
+  Max,
+  Min,
+  MinLength,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import type { Actor, Minor } from '@uza/contracts';
@@ -13,7 +22,14 @@ import { OverviewService } from './overview/overview.service';
 
 const PRIORITIES = ['low', 'medium', 'high', 'urgent'] as const;
 const TASK_STATUS = ['todo', 'in_progress', 'blocked', 'done', 'cancelled'] as const;
-const GRANT_STATUS = ['identified', 'preparing', 'submitted', 'awarded', 'rejected', 'closed'] as const;
+const GRANT_STATUS = [
+  'identified',
+  'preparing',
+  'submitted',
+  'awarded',
+  'rejected',
+  'closed',
+] as const;
 
 // ---------- DTOs ----------
 class CreateTaskDto {
@@ -41,7 +57,10 @@ class ListTaskQuery {
   @IsOptional() @Type(() => Number) @IsInt() @Min(0) offset?: number;
 }
 
-class RequirementDto { @IsString() item!: string; done!: boolean; }
+class RequirementDto {
+  @IsString() item!: string;
+  done!: boolean;
+}
 class CreateGrantDto {
   @IsString() @MinLength(1) name!: string;
   @IsString() funder!: string;
@@ -64,7 +83,9 @@ class UpdateGrantDto {
   @IsOptional() @IsString() ownerId?: string;
   @IsOptional() @IsArray() requirements?: RequirementDto[];
 }
-class AdvanceGrantDto { @IsIn(GRANT_STATUS) to!: (typeof GRANT_STATUS)[number]; }
+class AdvanceGrantDto {
+  @IsIn(GRANT_STATUS) to!: (typeof GRANT_STATUS)[number];
+}
 class ListGrantQuery {
   @IsOptional() @IsIn(GRANT_STATUS) status?: (typeof GRANT_STATUS)[number];
   @IsOptional() @Type(() => Number) @IsInt() @Min(1) @Max(100) limit?: number;
@@ -84,7 +105,10 @@ class OverviewQuery {
   @IsOptional() @Type(() => Number) @IsInt() @Min(1) @Max(120) horizonDays?: number;
 }
 
-const page = (q: { limit?: number; offset?: number }) => ({ limit: q.limit ?? 20, offset: q.offset ?? 0 });
+const page = (q: { limit?: number; offset?: number }) => ({
+  limit: q.limit ?? 20,
+  offset: q.offset ?? 0,
+});
 
 // ---------- controllers ----------
 @ApiTags('command')
@@ -101,22 +125,38 @@ export class CommandTaskController {
   list(@CurrentActor() actor: Actor, @Query() q: ListTaskQuery) {
     return this.tasks.list(
       actor,
-      { status: q.status, assigneeId: q.assigneeId, departmentCode: q.departmentCode, overdue: q.overdue === 'true' },
+      {
+        status: q.status,
+        assigneeId: q.assigneeId,
+        departmentCode: q.departmentCode,
+        overdue: q.overdue === 'true',
+      },
       page(q),
     );
   }
   @Get(':ref')
-  read(@CurrentActor() actor: Actor, @Param('ref') ref: string) { return this.tasks.read(actor, ref); }
+  read(@CurrentActor() actor: Actor, @Param('ref') ref: string) {
+    return this.tasks.read(actor, ref);
+  }
   @Patch(':ref')
   update(@CurrentActor() actor: Actor, @Param('ref') ref: string, @Body() dto: UpdateTaskDto) {
-    return this.tasks.update(actor, ref, { ...dto, dueAt: dto.dueAt ? new Date(dto.dueAt) : undefined });
+    return this.tasks.update(actor, ref, {
+      ...dto,
+      dueAt: dto.dueAt ? new Date(dto.dueAt) : undefined,
+    });
   }
   @Post(':ref/complete')
-  complete(@CurrentActor() actor: Actor, @Param('ref') ref: string) { return this.tasks.complete(actor, ref); }
+  complete(@CurrentActor() actor: Actor, @Param('ref') ref: string) {
+    return this.tasks.complete(actor, ref);
+  }
   @Post(':ref/cancel')
-  cancel(@CurrentActor() actor: Actor, @Param('ref') ref: string) { return this.tasks.cancel(actor, ref); }
+  cancel(@CurrentActor() actor: Actor, @Param('ref') ref: string) {
+    return this.tasks.cancel(actor, ref);
+  }
   @Delete(':ref')
-  remove(@CurrentActor() actor: Actor, @Param('ref') ref: string) { return this.tasks.delete(actor, ref); }
+  remove(@CurrentActor() actor: Actor, @Param('ref') ref: string) {
+    return this.tasks.delete(actor, ref);
+  }
 }
 
 @ApiTags('command')
@@ -128,7 +168,9 @@ export class CommandGrantController {
   @Post()
   create(@CurrentActor() actor: Actor, @Body() dto: CreateGrantDto) {
     return this.grants.create(actor, {
-      ...dto, amountMinor: dto.amountMinor as Minor, deadlineAt: dto.deadlineAt ? new Date(dto.deadlineAt) : undefined,
+      ...dto,
+      amountMinor: dto.amountMinor as Minor,
+      deadlineAt: dto.deadlineAt ? new Date(dto.deadlineAt) : undefined,
     });
   }
   @Get()
@@ -136,7 +178,9 @@ export class CommandGrantController {
     return this.grants.list(actor, { status: q.status }, page(q));
   }
   @Get(':ref')
-  read(@CurrentActor() actor: Actor, @Param('ref') ref: string) { return this.grants.read(actor, ref); }
+  read(@CurrentActor() actor: Actor, @Param('ref') ref: string) {
+    return this.grants.read(actor, ref);
+  }
   @Patch(':ref')
   update(@CurrentActor() actor: Actor, @Param('ref') ref: string, @Body() dto: UpdateGrantDto) {
     return this.grants.update(actor, ref, {
@@ -165,9 +209,13 @@ export class CommandOrgController {
     return this.departments.create(actor, dto);
   }
   @Get('departments')
-  listDepts(@CurrentActor() actor: Actor) { return this.departments.list(actor); }
+  listDepts(@CurrentActor() actor: Actor) {
+    return this.departments.list(actor);
+  }
   @Get('departments/:ref')
-  readDept(@CurrentActor() actor: Actor, @Param('ref') ref: string) { return this.departments.read(actor, ref); }
+  readDept(@CurrentActor() actor: Actor, @Param('ref') ref: string) {
+    return this.departments.read(actor, ref);
+  }
   @Post('employee-profiles')
   upsertProfile(@CurrentActor() actor: Actor, @Body() dto: EmployeeProfileDto) {
     return this.departments.upsertEmployeeProfile(actor, dto);

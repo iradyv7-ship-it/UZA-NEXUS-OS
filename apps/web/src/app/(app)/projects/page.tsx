@@ -90,7 +90,9 @@ export default async function ProjectsPage() {
                         <Badge tone={STATUS_TONE[s.status]}>{s.status}</Badge>
                         {s.visibility === 'public' ? <Badge tone="red">public source</Badge> : null}
                         {s.supersededBy ? <Badge tone="amber">duplicate</Badge> : null}
-                        {s.daysSincePush !== null && s.daysSincePush > 60 && s.status !== 'dormant' ? (
+                        {s.daysSincePush !== null &&
+                        s.daysSincePush > 60 &&
+                        s.status !== 'dormant' ? (
                           <Badge tone="amber">silent {s.daysSincePush}d</Badge>
                         ) : null}
                       </div>
@@ -100,12 +102,22 @@ export default async function ProjectsPage() {
 
                     <div className="mt-1.5 flex flex-wrap gap-3 text-xs">
                       {s.repoUrl ? (
-                        <a href={s.repoUrl} target="_blank" rel="noreferrer" className="text-brand underline underline-offset-2">
+                        <a
+                          href={s.repoUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="text-brand underline underline-offset-2"
+                        >
                           source
                         </a>
                       ) : null}
                       {s.liveUrl ? (
-                        <a href={s.liveUrl} target="_blank" rel="noreferrer" className="text-brand underline underline-offset-2">
+                        <a
+                          href={s.liveUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="text-brand underline underline-offset-2"
+                        >
                           live
                         </a>
                       ) : null}

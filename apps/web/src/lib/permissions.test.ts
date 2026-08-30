@@ -6,8 +6,15 @@ const as = (role: Role): Actor =>
   ({ userId: `${role}-1`, role, office: 'KGL', scope: {} }) as Actor;
 
 const ROLES: Role[] = [
-  'ceo', 'venture_manager', 'china_sourcing', 'china_warehouse',
-  'front_office', 'finance', 'sales_agent', 'customer', 'logistics_partner',
+  'ceo',
+  'venture_manager',
+  'china_sourcing',
+  'china_warehouse',
+  'front_office',
+  'finance',
+  'sales_agent',
+  'customer',
+  'logistics_partner',
 ];
 
 /**
@@ -49,7 +56,12 @@ describe('who is offered payment actions', () => {
   });
 
   it('denies rather than throws for a role with no payment grants at all', () => {
-    for (const role of ['china_sourcing', 'china_warehouse', 'sales_agent', 'logistics_partner'] as const) {
+    for (const role of [
+      'china_sourcing',
+      'china_warehouse',
+      'sales_agent',
+      'logistics_partner',
+    ] as const) {
       expect(can(as(role), 'payment', 'read')).toBe(false);
     }
   });

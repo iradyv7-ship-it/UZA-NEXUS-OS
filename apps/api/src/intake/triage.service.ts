@@ -37,11 +37,13 @@ const TOOL: Anthropic.Tool = {
       },
       confidence: {
         type: 'number',
-        description: 'Between 0 and 1. Below 0.5 means you are guessing, and saying so is more useful than guessing well.',
+        description:
+          'Between 0 and 1. Below 0.5 means you are guessing, and saying so is more useful than guessing well.',
       },
       noise: {
         type: 'boolean',
-        description: 'True if this carries no decision, no commitment and no new fact — chatter, acknowledgements, output.',
+        description:
+          'True if this carries no decision, no commitment and no new fact — chatter, acknowledgements, output.',
       },
     },
     required: ['summary', 'proposedAction', 'confidence', 'noise'],
@@ -96,7 +98,10 @@ export class TriageService {
       orderBy: { ref: 'asc' },
     });
     const register = initiatives
-      .map((i) => `[${i.ref}] ${i.name} — ${i.ventureCode ?? 'unassigned'}, ${i.attention}${i.nextAction ? `, next: ${i.nextAction}` : ''}`)
+      .map(
+        (i) =>
+          `[${i.ref}] ${i.name} — ${i.ventureCode ?? 'unassigned'}, ${i.attention}${i.nextAction ? `, next: ${i.nextAction}` : ''}`,
+      )
       .join('\n');
     const knownRefs = new Set(initiatives.map((i) => i.ref));
 
@@ -113,7 +118,8 @@ export class TriageService {
         }
         // The model may name an initiative that does not exist. Drop it rather than
         // storing a dangling ref — a proposal pointing at nothing is worse than none.
-        const ref = result.initiativeRef && knownRefs.has(result.initiativeRef) ? result.initiativeRef : null;
+        const ref =
+          result.initiativeRef && knownRefs.has(result.initiativeRef) ? result.initiativeRef : null;
 
         await this.prisma.signal.update({
           where: { ref: signal.ref },
@@ -186,7 +192,8 @@ export class TriageService {
       summary: input.summary,
       initiativeRef: input.initiativeRef?.trim() || null,
       proposedAction: input.proposedAction ?? '',
-      confidence: typeof input.confidence === 'number' ? Math.max(0, Math.min(1, input.confidence)) : 0,
+      confidence:
+        typeof input.confidence === 'number' ? Math.max(0, Math.min(1, input.confidence)) : 0,
       noise: input.noise === true,
     };
   }

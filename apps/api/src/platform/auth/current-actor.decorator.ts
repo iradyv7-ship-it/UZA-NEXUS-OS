@@ -7,9 +7,7 @@ import type { Actor } from '@uza/contracts';
  * On a protected route the guard guarantees this is present; it is only ever undefined on a
  * `@Public()` route, which must not read it.
  */
-export const CurrentActor = createParamDecorator(
-  (_data: unknown, ctx: ExecutionContext): Actor => {
-    const request = ctx.switchToHttp().getRequest<{ actor: Actor }>();
-    return request.actor;
-  },
-);
+export const CurrentActor = createParamDecorator((_data: unknown, ctx: ExecutionContext): Actor => {
+  const request = ctx.switchToHttp().getRequest<{ actor: Actor }>();
+  return request.actor;
+});

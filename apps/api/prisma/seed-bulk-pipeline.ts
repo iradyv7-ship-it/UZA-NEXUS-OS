@@ -92,19 +92,55 @@ const LIVE: Deal[] = [
 
 /** Dormant. Kept on the books, out of the review, awaiting one close-or-restart decision. */
 const DORMANT: { ref: string; name: string; why: string }[] = [
-  { ref: 'INIT-2026-0106', name: 'Airport solar HVAC', why: 'Awaiting UZA decision on whether the project is real.' },
-  { ref: 'INIT-2026-0107', name: 'Cocoa bean processing line', why: 'Quoted; no end-client feedback.' },
-  { ref: 'INIT-2026-0108', name: 'Tomato paste raw materials', why: 'Quoted FOB Tianjin; validity needs reconfirming.' },
-  { ref: 'INIT-2026-0109', name: 'Fireworks and candles', why: 'Dangerous-goods freight alone is about USD 20,000.' },
+  {
+    ref: 'INIT-2026-0106',
+    name: 'Airport solar HVAC',
+    why: 'Awaiting UZA decision on whether the project is real.',
+  },
+  {
+    ref: 'INIT-2026-0107',
+    name: 'Cocoa bean processing line',
+    why: 'Quoted; no end-client feedback.',
+  },
+  {
+    ref: 'INIT-2026-0108',
+    name: 'Tomato paste raw materials',
+    why: 'Quoted FOB Tianjin; validity needs reconfirming.',
+  },
+  {
+    ref: 'INIT-2026-0109',
+    name: 'Fireworks and candles',
+    why: 'Dangerous-goods freight alone is about USD 20,000.',
+  },
   { ref: 'INIT-2026-0110', name: 'Charcoal toothpaste OEM', why: 'No product brief.' },
-  { ref: 'INIT-2026-0111', name: 'AURA branded products', why: 'Scope never narrowed to one or two pilot products.' },
-  { ref: 'INIT-2026-0112', name: 'Ctorch LED bulbs', why: 'Quoted for two containers; noted as highly competitive.' },
-  { ref: 'INIT-2026-0113', name: 'Mining crusher', why: 'Process design done; no client feedback.' },
+  {
+    ref: 'INIT-2026-0111',
+    name: 'AURA branded products',
+    why: 'Scope never narrowed to one or two pilot products.',
+  },
+  {
+    ref: 'INIT-2026-0112',
+    name: 'Ctorch LED bulbs',
+    why: 'Quoted for two containers; noted as highly competitive.',
+  },
+  {
+    ref: 'INIT-2026-0113',
+    name: 'Mining crusher',
+    why: 'Process design done; no client feedback.',
+  },
   { ref: 'INIT-2026-0114', name: 'Roasting factory equipment', why: 'No requirement sheet.' },
-  { ref: 'INIT-2026-0115', name: 'HDPE blow moulding machine', why: 'Quoted; unclear whether demand still exists.' },
+  {
+    ref: 'INIT-2026-0115',
+    name: 'HDPE blow moulding machine',
+    why: 'Quoted; unclear whether demand still exists.',
+  },
   { ref: 'INIT-2026-0116', name: 'Hotel procurement list', why: 'No BOQ.' },
   { ref: 'INIT-2026-0117', name: 'Adjustable scaffolding', why: 'System type never selected.' },
-  { ref: 'INIT-2026-0118', name: 'Custom mobile phones', why: 'Quoted; product direction not chosen.' },
+  {
+    ref: 'INIT-2026-0118',
+    name: 'Custom mobile phones',
+    why: 'Quoted; product direction not chosen.',
+  },
   { ref: 'INIT-2026-0119', name: 'Sliding-door smart locks', why: 'Quoted; order not confirmed.' },
   { ref: 'INIT-2026-0120', name: 'Educational facility equipment', why: 'No equipment list.' },
   { ref: 'INIT-2026-0121', name: 'Electrical products', why: 'No actionable RFQ list.' },
@@ -122,14 +158,16 @@ const DECISIONS = [
   },
   {
     ref: 'DEC-2026-0007',
-    question: 'What are the agreed commercial terms with Cecilia — service fee, commission, and who funds samples?',
+    question:
+      'What are the agreed commercial terms with Cecilia — service fee, commission, and who funds samples?',
     context:
       'Meeting action 7, unresolved since 7 August. The workbook states twice that sample and courier costs must be pre-approved by UZA and not advanced by Cecilia. Until this is written down it is a personal exposure carried by an employee.',
     raisedAt: d('2026-08-07'),
   },
   {
     ref: 'DEC-2026-0008',
-    question: 'What is the LC transaction structure — issuing bank, country, value, deposit, sight or usance, tenor?',
+    question:
+      'What is the LC transaction structure — issuing bank, country, value, deposit, sight or usance, tenor?',
     context:
       'Meeting action 6. China cannot screen for exporters who accept the letter of credit without the full structure; a general assurance that "we can do LC" is not screenable.',
     raisedAt: d('2026-08-07'),
@@ -190,7 +228,11 @@ async function main() {
       status: 'active' as const,
       startedAt: deal.attention === 'runs' ? d('2026-08-07') : null,
     };
-    await prisma.initiative.upsert({ where: { ref: deal.ref }, create: { ref: deal.ref, ...data }, update: data });
+    await prisma.initiative.upsert({
+      where: { ref: deal.ref },
+      create: { ref: deal.ref, ...data },
+      update: data,
+    });
   }
 
   for (const deal of DORMANT) {
@@ -205,7 +247,11 @@ async function main() {
       nextAction: deal.why,
       reviewAt: null,
     };
-    await prisma.initiative.upsert({ where: { ref: deal.ref }, create: { ref: deal.ref, ...data }, update: data });
+    await prisma.initiative.upsert({
+      where: { ref: deal.ref },
+      create: { ref: deal.ref, ...data },
+      update: data,
+    });
   }
 
   const sweep = {
@@ -234,7 +280,11 @@ async function main() {
       raisedAt: dec.raisedAt,
       status: 'open' as const,
     };
-    await prisma.execDecision.upsert({ where: { ref: dec.ref }, create: { ref: dec.ref, ...data }, update: data });
+    await prisma.execDecision.upsert({
+      where: { ref: dec.ref },
+      create: { ref: dec.ref, ...data },
+      update: data,
+    });
   }
 
   for (const t of TASKS) {
@@ -247,7 +297,11 @@ async function main() {
       status: 'todo' as const,
       dueAt: t.dueAt,
     };
-    await prisma.commandTask.upsert({ where: { ref: t.ref }, create: { ref: t.ref, ...data }, update: data });
+    await prisma.commandTask.upsert({
+      where: { ref: t.ref },
+      create: { ref: t.ref, ...data },
+      update: data,
+    });
   }
 
   console.log(`${LIVE.length} live enquiries, ${DORMANT.length} paused, 1 sweep initiative`);

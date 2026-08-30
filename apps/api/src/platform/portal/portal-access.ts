@@ -63,15 +63,9 @@ export interface EntitlementFacts {
   consentWithdrawnAt?: Date | null;
 }
 
-export type RefusalReason =
-  | 'no-such-subject'
-  | 'not-entitled'
-  | 'no-consent'
-  | 'consent-withdrawn';
+export type RefusalReason = 'no-such-subject' | 'not-entitled' | 'no-consent' | 'consent-withdrawn';
 
-export type AccessDecision =
-  | { allowed: true }
-  | { allowed: false; reason: RefusalReason };
+export type AccessDecision = { allowed: true } | { allowed: false; reason: RefusalReason };
 
 /**
  * The single message every portal returns on refusal, whatever the reason.

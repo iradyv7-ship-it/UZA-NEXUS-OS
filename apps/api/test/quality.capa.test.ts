@@ -1,7 +1,15 @@
 import { beforeEach, afterAll, describe, expect, it } from 'vitest';
 import { prisma, resetDb } from './db';
 import { resetSourcingQualityDb } from './sourcing-quality-db';
-import { inspections, capas, visits, francois, cecilia, agent, assignedVisit } from './sourcing-quality-fixtures';
+import {
+  inspections,
+  capas,
+  visits,
+  francois,
+  cecilia,
+  agent,
+  assignedVisit,
+} from './sourcing-quality-fixtures';
 
 beforeEach(async () => {
   await resetDb();
@@ -27,7 +35,13 @@ async function reinspect(poRef: string, result: 'pass' | 'fail') {
 describe('quality — CAPA closes only against a human-approved passing reinspection', () => {
   it('CF-012: a CAPA cannot close on a failed reinspection', async () => {
     const { visit, po } = await assignedVisit();
-    const failed = await inspections.record(francois, { visitRef: visit.ref, stage: 'pre_shipment', critical: 1, major: 0, minor: 0 });
+    const failed = await inspections.record(francois, {
+      visitRef: visit.ref,
+      stage: 'pre_shipment',
+      critical: 1,
+      major: 0,
+      minor: 0,
+    });
     const capa = failed.capa!;
 
     const badReinspection = await reinspect(po.ref, 'fail');
@@ -41,7 +55,13 @@ describe('quality — CAPA closes only against a human-approved passing reinspec
 
   it('CF-012: a CAPA closes against a passing reinspection, stamps the human approver, and publishes capa.closed', async () => {
     const { visit, po, supplier } = await assignedVisit();
-    const failed = await inspections.record(francois, { visitRef: visit.ref, stage: 'pre_shipment', critical: 1, major: 0, minor: 0 });
+    const failed = await inspections.record(francois, {
+      visitRef: visit.ref,
+      stage: 'pre_shipment',
+      critical: 1,
+      major: 0,
+      minor: 0,
+    });
     const capa = failed.capa!;
 
     const goodReinspection = await reinspect(po.ref, 'pass');
@@ -61,25 +81,46 @@ describe('quality — CAPA closes only against a human-approved passing reinspec
 
   it('rejects closing against the very inspection that opened the CAPA', async () => {
     const { visit } = await assignedVisit();
-    const failed = await inspections.record(francois, { visitRef: visit.ref, stage: 'pre_shipment', critical: 1, major: 0, minor: 0 });
+    const failed = await inspections.record(francois, {
+      visitRef: visit.ref,
+      stage: 'pre_shipment',
+      critical: 1,
+      major: 0,
+      minor: 0,
+    });
     const capa = failed.capa!;
-    await expect(capas.close(cecilia, capa.ref, capa.inspectionRef)).rejects.toThrow(/inspection that opened/);
+    await expect(capas.close(cecilia, capa.ref, capa.inspectionRef)).rejects.toThrow(
+      /inspection that opened/,
+    );
   });
 
   it('AI may DRAFT the corrective action but a role lacking capa:approve cannot close (audited)', async () => {
     const { visit, po } = await assignedVisit();
-    const failed = await inspections.record(francois, { visitRef: visit.ref, stage: 'pre_shipment', critical: 1, major: 0, minor: 0 });
+    const failed = await inspections.record(francois, {
+      visitRef: visit.ref,
+      stage: 'pre_shipment',
+      critical: 1,
+      major: 0,
+      minor: 0,
+    });
     const capa = failed.capa!;
 
     // Drafting does not close.
-    const drafted = await capas.draftCorrectiveAction(cecilia, capa.ref, 'Re-tool jig, re-run pre-shipment AQL.', 'ai-drafter');
+    const drafted = await capas.draftCorrectiveAction(
+      cecilia,
+      capa.ref,
+      'Re-tool jig, re-run pre-shipment AQL.',
+      'ai-drafter',
+    );
     expect(drafted.status).toBe('evidence_submitted');
     expect(drafted.correctiveAction).toContain('Re-tool');
 
     // A sales agent (no capa:approve) is denied and audited.
     const good = await reinspect(po.ref, 'pass');
     await expect(capas.close(agent, capa.ref, good.ref)).rejects.toThrow();
-    const deny = await prisma.auditLog.findFirst({ where: { actorId: agent.userId, resource: 'capa', decision: 'deny' } });
+    const deny = await prisma.auditLog.findFirst({
+      where: { actorId: agent.userId, resource: 'capa', decision: 'deny' },
+    });
     expect(deny).not.toBeNull();
   });
 });

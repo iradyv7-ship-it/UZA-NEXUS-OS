@@ -91,7 +91,12 @@ export default async function MemosPage() {
                 </div>
               </div>
               <p className="mt-2 whitespace-pre-line text-sm text-slate-700">{m.body}</p>
-              <MemoActions memoRef={m.ref} needsAck={m.needsAck} read={!!m.readAt} acked={!!m.ackedAt} />
+              <MemoActions
+                memoRef={m.ref}
+                needsAck={m.needsAck}
+                read={!!m.readAt}
+                acked={!!m.ackedAt}
+              />
             </Card>
           ))
         )}
@@ -122,7 +127,11 @@ export default async function MemosPage() {
                     <td className="px-4 py-2 text-right tabular-nums text-slate-700">{m.read}</td>
                     <td className="px-4 py-2 text-right tabular-nums">
                       {m.needsAck ? (
-                        <span className={m.acknowledged < m.sentTo ? 'text-amber-600' : 'text-slate-700'}>
+                        <span
+                          className={
+                            m.acknowledged < m.sentTo ? 'text-amber-600' : 'text-slate-700'
+                          }
+                        >
                           {m.acknowledged}
                         </span>
                       ) : (

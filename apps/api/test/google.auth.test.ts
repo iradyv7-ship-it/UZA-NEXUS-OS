@@ -54,8 +54,11 @@ describe('Google sign-in — alternate credential', () => {
   it('matched active user → same app JWT + Actor, records the Google link, audits allow', async () => {
     const off = await office();
     await identity.createEmployee(ceo, {
-      ref: 'AGT-RW-0001', email: 'kagabo@uza.rw', password: 'sup3rsecret',
-      role: 'finance', officeId: off.id,
+      ref: 'AGT-RW-0001',
+      email: 'kagabo@uza.rw',
+      password: 'sup3rsecret',
+      role: 'finance',
+      officeId: off.id,
     });
 
     // Google returns a different-cased email + verified sub — match must be case-insensitive.
@@ -65,7 +68,7 @@ describe('Google sign-in — alternate credential', () => {
 
     expect(result.accessToken).not.toBe('');
     expect(result.mfaRequired).toBe(false);
-    expect(result.actor.role).toBe('finance');           // role comes from the user record
+    expect(result.actor.role).toBe('finance'); // role comes from the user record
     expect(result.actor.userId).toBe('AGT-RW-0001');
     expect(result.actor.office).toBe('RW');
 
@@ -74,7 +77,9 @@ describe('Google sign-in — alternate credential', () => {
     expect(decoded.role).toBe('finance');
     expect(decoded.ref).toBe('AGT-RW-0001');
 
-    const allow = await prisma.auditLog.findFirst({ where: { action: 'login', decision: 'allow' } });
+    const allow = await prisma.auditLog.findFirst({
+      where: { action: 'login', decision: 'allow' },
+    });
     expect(allow).not.toBeNull();
 
     // First Google success records the verified sub + provider (additive; role unchanged).
@@ -87,14 +92,18 @@ describe('Google sign-in — alternate credential', () => {
   it('matches on alternateEmails when the Google account is a personal address routing to a company account', async () => {
     const off = await office();
     const user = await identity.createEmployee(ceo, {
-      ref: 'CEO-KGL-0001', email: 'yves@uzasolutions.com', password: 'sup3rsecret',
-      role: 'ceo', officeId: off.id,
+      ref: 'CEO-KGL-0001',
+      email: 'yves@uzasolutions.com',
+      password: 'sup3rsecret',
+      role: 'ceo',
+      officeId: off.id,
     });
     // alternateEmails has no create-time input yet (by design — set via seed-users.ts today);
     // set it the same way the disabled/expired tests below set fields identity.service.ts
     // doesn't expose on create.
     await prisma.user.update({
-      where: { id: user.id }, data: { alternateEmails: ['iradyv7@gmail.com'] },
+      where: { id: user.id },
+      data: { alternateEmails: ['iradyv7@gmail.com'] },
     });
 
     // Different case, exactly like the primary-email test above — alternate matching must
@@ -131,8 +140,11 @@ describe('Google sign-in — alternate credential', () => {
   it('disabled account → denied, audits ACCOUNT_DISABLED', async () => {
     const off = await office();
     const user = await identity.createEmployee(ceo, {
-      ref: 'EMP-DIS', email: 'disabled@uza.rw', password: 'password1',
-      role: 'front_office', officeId: off.id,
+      ref: 'EMP-DIS',
+      email: 'disabled@uza.rw',
+      password: 'password1',
+      role: 'front_office',
+      officeId: off.id,
     });
     await prisma.user.update({ where: { id: user.id }, data: { disabledAt: new Date() } });
 
@@ -150,13 +162,20 @@ describe('Google sign-in — alternate credential', () => {
     const off = await office();
     await identity.createPartnerAccount(
       ceo,
-      { ref: 'PRT-EXP', email: 'partner@forwarder.cn', password: 'password1',
-        role: 'logistics_partner', officeId: off.id, scopeShipmentRefs: ['SHP-2026-0001'] },
+      {
+        ref: 'PRT-EXP',
+        email: 'partner@forwarder.cn',
+        password: 'password1',
+        role: 'logistics_partner',
+        officeId: off.id,
+        scopeShipmentRefs: ['SHP-2026-0001'],
+      },
       new Date(Date.now() + 86_400_000),
     );
     // Force the window into the past.
     await prisma.user.update({
-      where: { email: 'partner@forwarder.cn' }, data: { expiresAt: new Date(Date.now() - 1000) },
+      where: { email: 'partner@forwarder.cn' },
+      data: { expiresAt: new Date(Date.now() - 1000) },
     });
 
     stubGoogle({ email: 'partner@forwarder.cn' });
@@ -172,7 +191,11 @@ describe('Google sign-in — alternate credential', () => {
   it('state mismatch → rejected before any code exchange', async () => {
     const off = await office();
     await identity.createEmployee(ceo, {
-      ref: 'AGT-RW-0009', email: 'ok@uza.rw', password: 'password1', role: 'finance', officeId: off.id,
+      ref: 'AGT-RW-0009',
+      email: 'ok@uza.rw',
+      password: 'password1',
+      role: 'finance',
+      officeId: off.id,
     });
     const spy = stubGoogle({ email: 'ok@uza.rw' });
 
@@ -184,14 +207,20 @@ describe('Google sign-in — alternate credential', () => {
   it('unverified Google email → rejected, no user matched', async () => {
     const off = await office();
     await identity.createEmployee(ceo, {
-      ref: 'AGT-RW-0010', email: 'unverified@uza.rw', password: 'password1', role: 'finance', officeId: off.id,
+      ref: 'AGT-RW-0010',
+      email: 'unverified@uza.rw',
+      password: 'password1',
+      role: 'finance',
+      officeId: off.id,
     });
     stubGoogle({ email: 'unverified@uza.rw', emailVerified: false });
     const state = await google.createState();
 
     await expect(google.handleCallback('fake-code', state)).rejects.toThrow();
     // No login was issued for an email Google itself does not vouch for.
-    const allow = await prisma.auditLog.findFirst({ where: { action: 'login', decision: 'allow' } });
+    const allow = await prisma.auditLog.findFirst({
+      where: { action: 'login', decision: 'allow' },
+    });
     expect(allow).toBeNull();
   });
 });
@@ -206,7 +235,11 @@ describe('Google sign-in — alternate credential', () => {
  */
 describe('Google sign-in — controller / env gating', () => {
   it('unconfigured env → 503 { error: google_signin_not_configured } on both endpoints', async () => {
-    const unconfigured = new GoogleAuthService(({ get: () => undefined } as unknown as ConfigService), jwt, auth);
+    const unconfigured = new GoogleAuthService(
+      { get: () => undefined } as unknown as ConfigService,
+      jwt,
+      auth,
+    );
     expect(unconfigured.isConfigured()).toBe(false);
     const controller = new AuthController(auth, unconfigured);
 
@@ -245,7 +278,11 @@ describe('Google sign-in — controller / env gating', () => {
   it('configured callback endpoint → returns { accessToken, actor } for a matched user', async () => {
     const off = await office();
     await identity.createEmployee(ceo, {
-      ref: 'CEO-RW-0002', email: 'owner@gmail.com', password: 'password1', role: 'ceo', officeId: off.id,
+      ref: 'CEO-RW-0002',
+      email: 'owner@gmail.com',
+      password: 'password1',
+      role: 'ceo',
+      officeId: off.id,
     });
     stubGoogle({ email: 'owner@gmail.com', sub: 'owner-sub' });
     const state = await google.createState();

@@ -28,7 +28,7 @@ async function bootstrap(): Promise<void> {
 
   const port = Number(process.env.PORT ?? 3000);
   await app.listen(port);
-   
+
   console.log(`UZA Nexus API listening on :${port} (docs at /docs)`);
 }
 

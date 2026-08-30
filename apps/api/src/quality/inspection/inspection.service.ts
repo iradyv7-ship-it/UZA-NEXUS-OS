@@ -65,7 +65,9 @@ export class InspectionService {
     const result = gradeInspection(input.critical, input.major);
 
     return this.outbox.emit(actor.userId, async (tx, emit) => {
-      const seq = await nextSequence(tx.inspection, (n) => makeRef('inspection', { country: COUNTRY, year: currentYear(), seq: n }));
+      const seq = await nextSequence(tx.inspection, (n) =>
+        makeRef('inspection', { country: COUNTRY, year: currentYear(), seq: n }),
+      );
       const ref = makeRef('inspection', { country: COUNTRY, year: currentYear(), seq });
 
       const inspection = await tx.inspection.create({
@@ -126,7 +128,9 @@ export class InspectionService {
         // A critical defect fails and blocks release with no override. The CAPA opens
         // automatically here; it can only be CLOSED later by a human against a passing
         // reinspection (CapaService.close).
-        const capaSeq = await nextSequence(tx.capa, (n) => makeRef('capa', { country: COUNTRY, year: currentYear(), seq: n }));
+        const capaSeq = await nextSequence(tx.capa, (n) =>
+          makeRef('capa', { country: COUNTRY, year: currentYear(), seq: n }),
+        );
         const capaRef = makeRef('capa', { country: COUNTRY, year: currentYear(), seq: capaSeq });
         capa = await tx.capa.create({
           data: {

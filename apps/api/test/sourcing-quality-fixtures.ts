@@ -30,8 +30,18 @@ export const capas = new CapaService(prisma as never, authz, outbox);
 
 // ---- actors ----------------------------------------------------------------
 export const cecilia: Actor = { userId: 'CEC-1', role: 'china_sourcing', office: 'CN', scope: {} };
-export const francois: Actor = { userId: 'FRA-1', role: 'china_warehouse', office: 'CN', scope: {} };
-export const agent: Actor = { userId: 'AGT-GOM-0021', role: 'sales_agent', office: 'GOM', scope: { customerIds: [] } };
+export const francois: Actor = {
+  userId: 'FRA-1',
+  role: 'china_warehouse',
+  office: 'CN',
+  scope: {},
+};
+export const agent: Actor = {
+  userId: 'AGT-GOM-0021',
+  role: 'sales_agent',
+  office: 'GOM',
+  scope: { customerIds: [] },
+};
 export const ceo: Actor = { userId: 'CEO', role: 'ceo', office: 'RW', scope: {} };
 
 export const UNIT_COST: Minor = minor(41.0);
@@ -42,7 +52,10 @@ export const PROJECT_REF = 'PRJ-BULK-2026-0001';
 export async function suppliedPo(
   opts: { basis?: 'EXW' | 'FOB'; qty?: number; unitCbm?: number; unitKg?: number } = {},
 ) {
-  const supplier = await suppliers.register(cecilia, { nameEn: 'Ningbo Solar Co', nameZh: '宁波太阳能有限公司' });
+  const supplier = await suppliers.register(cecilia, {
+    nameEn: 'Ningbo Solar Co',
+    nameZh: '宁波太阳能有限公司',
+  });
   const rfq = await rfqs.createRfq(cecilia, { projectRef: PROJECT_REF });
   const unitCbm = opts.unitCbm ?? 0.05;
   const unitKg = opts.unitKg ?? 12;
@@ -79,7 +92,13 @@ export async function assignedVisit(opts: Parameters<typeof suppliedPo>[0] = {})
 /** Build a synthetic warehouse.receiptRecorded envelope (warehouse is Sprint 3). */
 export function receiptEnvelope(
   poRef: string,
-  opts: { variance: number; discrepancy: boolean; hardStop?: boolean; eventId?: string; orderRef?: string },
+  opts: {
+    variance: number;
+    discrepancy: boolean;
+    hardStop?: boolean;
+    eventId?: string;
+    orderRef?: string;
+  },
 ) {
   return {
     eventId: opts.eventId ?? randomUUID(),

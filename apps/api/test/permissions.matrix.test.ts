@@ -78,7 +78,6 @@ describe('authorisation matrix: every role against every resource', () => {
     const allowRows = await prisma.auditLog.count({ where: { decision: 'allow' } });
     expect(allowRows).toBe(allowed);
 
-     
     console.log(
       `matrix: ${checked} checks — ${allowed} allowed, ${denied} denied; audit rows written: ${rows}`,
     );

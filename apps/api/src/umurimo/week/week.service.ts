@@ -114,7 +114,10 @@ export class WeekService {
               where: { ref: existing.ref },
               // Objectives the person already edited are NOT overwritten by a re-post; the
               // meeting does not get to undo somebody's own correction.
-              data: existing.status === 'draft' ? { objectives: objectives as unknown as object[] } : {},
+              data:
+                existing.status === 'draft'
+                  ? { objectives: objectives as unknown as object[] }
+                  : {},
             })
           : await tx.plan.create({
               data: {
@@ -202,7 +205,9 @@ export class WeekService {
     const period = weekKey(weekOf);
 
     const plan = await this.prisma.plan.findUnique({
-      where: { ownerId_level_periodKey: { ownerId: actor.userId, level: 'week', periodKey: period } },
+      where: {
+        ownerId_level_periodKey: { ownerId: actor.userId, level: 'week', periodKey: period },
+      },
       include: { weeklyReport: true },
     });
 
@@ -213,7 +218,11 @@ export class WeekService {
       }),
       // Raised by me and still nobody's — the list I should be chasing, not waiting on.
       this.prisma.blocker.findMany({
-        where: { raisedBy: actor.userId, clearedAt: null, OR: [{ ownerId: null }, { dueAt: null }] },
+        where: {
+          raisedBy: actor.userId,
+          clearedAt: null,
+          OR: [{ ownerId: null }, { dueAt: null }],
+        },
         orderBy: { createdAt: 'asc' },
       }),
       this.prisma.comment.findMany({
@@ -228,7 +237,11 @@ export class WeekService {
       weekOf,
       periodKey: period,
       plan: plan
-        ? { ref: plan.ref, status: plan.status, objectives: (plan.objectives ?? []) as unknown as Objective[] }
+        ? {
+            ref: plan.ref,
+            status: plan.status,
+            objectives: (plan.objectives ?? []) as unknown as Objective[],
+          }
         : null,
       /** Draft means the minutes proposed it and I have not agreed to it yet. */
       needsMyConfirmation: plan?.status === 'draft',
@@ -265,7 +278,9 @@ export class WeekService {
     }
 
     const existing = await this.prisma.plan.findUnique({
-      where: { ownerId_level_periodKey: { ownerId: actor.userId, level: 'week', periodKey: period } },
+      where: {
+        ownerId_level_periodKey: { ownerId: actor.userId, level: 'week', periodKey: period },
+      },
     });
 
     const plan = existing
@@ -306,7 +321,10 @@ export class WeekService {
 
     const [plans, reports, staff, overdue] = await Promise.all([
       this.prisma.plan.findMany({ where: { level: 'week', periodKey: period } }),
-      this.prisma.weeklyReport.findMany({ where: { periodKey: period }, select: { ownerId: true } }),
+      this.prisma.weeklyReport.findMany({
+        where: { periodKey: period },
+        select: { ownerId: true },
+      }),
       this.prisma.user.findMany({
         where: { kind: 'employee', disabledAt: null },
         select: { ref: true },
@@ -374,7 +392,9 @@ export class WeekService {
     const now = new Date();
 
     const plan = await this.prisma.plan.findUnique({
-      where: { ownerId_level_periodKey: { ownerId: actor.userId, level: 'week', periodKey: period } },
+      where: {
+        ownerId_level_periodKey: { ownerId: actor.userId, level: 'week', periodKey: period },
+      },
       include: { weeklyReport: true },
     });
     const objectives = ((plan?.objectives ?? []) as unknown as Objective[]).filter(
@@ -455,7 +475,9 @@ export class WeekService {
 
     const period = weekKey(mondayOf(forWeek ?? new Date()));
     const plan = await this.prisma.plan.findUnique({
-      where: { ownerId_level_periodKey: { ownerId: actor.userId, level: 'week', periodKey: period } },
+      where: {
+        ownerId_level_periodKey: { ownerId: actor.userId, level: 'week', periodKey: period },
+      },
     });
     if (!plan) throw new NotFoundException(`no week plan for ${period} — confirm your plan first`);
 

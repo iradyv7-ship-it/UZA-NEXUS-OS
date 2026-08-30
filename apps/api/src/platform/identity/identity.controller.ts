@@ -7,8 +7,15 @@ import { IdentityService } from './identity.service';
 import type { RoleName } from '@prisma/client';
 
 const ROLES = [
-  'ceo', 'venture_manager', 'china_sourcing', 'china_warehouse',
-  'front_office', 'finance', 'sales_agent', 'customer', 'logistics_partner',
+  'ceo',
+  'venture_manager',
+  'china_sourcing',
+  'china_warehouse',
+  'front_office',
+  'finance',
+  'sales_agent',
+  'customer',
+  'logistics_partner',
 ] as const;
 
 class CreateOrgDto {

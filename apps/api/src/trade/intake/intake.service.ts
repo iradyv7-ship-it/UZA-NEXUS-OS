@@ -25,14 +25,19 @@ export class IntakeService {
   ) {}
 
   /** Capture an informal enquiry (e.g. a WhatsApp message) as raw text. */
-  async createLead(actor: Actor, input: { customerRef: string; rawText: string; agentId?: string }) {
+  async createLead(
+    actor: Actor,
+    input: { customerRef: string; rawText: string; agentId?: string },
+  ) {
     await this.authz.authorize(actor, 'lead', 'create');
     const customer = await this.prisma.customer.findUnique({ where: { ref: input.customerRef } });
     if (!customer) throw new NotFoundException(`customer ${input.customerRef} not found`);
     const agentId = input.agentId ?? actor.userId;
 
     return this.outbox.emit(actor.userId, async (tx, emit) => {
-      const seq = await nextSequence(tx.lead, (n) => makeRef('lead', { year: currentYear(), seq: n }));
+      const seq = await nextSequence(tx.lead, (n) =>
+        makeRef('lead', { year: currentYear(), seq: n }),
+      );
       const ref = makeRef('lead', { year: currentYear(), seq });
       const lead = await tx.lead.create({
         data: { ref, customerRef: input.customerRef, agentId, rawText: input.rawText },
@@ -53,7 +58,9 @@ export class IntakeService {
     if (lead.clarified) throw new BadRequestException(`lead ${input.leadRef} is already clarified`);
 
     return this.outbox.emit(actor.userId, async (tx, emit) => {
-      const seq = await nextSequence(tx.request, (n) => makeRef('request', { venture: VENTURE, year: currentYear(), seq: n }));
+      const seq = await nextSequence(tx.request, (n) =>
+        makeRef('request', { venture: VENTURE, year: currentYear(), seq: n }),
+      );
       const ref = makeRef('request', { venture: VENTURE, year: currentYear(), seq });
       const request = await tx.request.create({
         data: {

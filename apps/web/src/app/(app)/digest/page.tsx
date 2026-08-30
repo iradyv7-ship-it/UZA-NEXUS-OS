@@ -107,8 +107,8 @@ export default async function DigestPage() {
       {nothingOutstanding && (
         <Card>
           <p className="text-sm text-slate-700">
-            Nothing outstanding, and everyone has filed. That is either a very good week or a
-            sign nobody is writing anything down — worth knowing which before believing it.
+            Nothing outstanding, and everyone has filed. That is either a very good week or a sign
+            nobody is writing anything down — worth knowing which before believing it.
           </p>
         </Card>
       )}
@@ -116,9 +116,7 @@ export default async function DigestPage() {
       {/* --------------------------------------------- must be empty by the end */}
       {d.unownedBlockers.length > 0 && (
         <Card>
-          <h2 className="text-sm font-semibold text-slate-900">
-            Raised, and nobody has taken it
-          </h2>
+          <h2 className="text-sm font-semibold text-slate-900">Raised, and nobody has taken it</h2>
           <p className="mb-3 mt-0.5 text-xs text-slate-600">
             This list should be empty before the meeting ends. A team that watches problems get
             discussed and dropped stops raising them within a month.
@@ -132,11 +130,7 @@ export default async function DigestPage() {
                 <span className="text-sm text-slate-800">{b.summary}</span>
                 <span className="whitespace-nowrap text-xs text-slate-500">
                   {b.raisedBy} · {ageDays(b.createdAt)}d ·{' '}
-                  {!b.ownerId && !b.dueAt
-                    ? 'no name, no date'
-                    : !b.ownerId
-                      ? 'no name'
-                      : 'no date'}
+                  {!b.ownerId && !b.dueAt ? 'no name, no date' : !b.ownerId ? 'no name' : 'no date'}
                 </span>
               </li>
             ))}
@@ -149,8 +143,8 @@ export default async function DigestPage() {
         <Card>
           <h2 className="text-sm font-semibold text-slate-900">Taken, dated, and past the date</h2>
           <p className="mb-3 mt-0.5 text-xs text-slate-600">
-            A different failure from the list above: that one is a team that did not assign, this
-            is a person who did not deliver. Reporting them together hides both.
+            A different failure from the list above: that one is a team that did not assign, this is
+            a person who did not deliver. Reporting them together hides both.
           </p>
           <ul className="space-y-2">
             {d.overdueBlockers.map((b) => (
@@ -250,8 +244,8 @@ export default async function DigestPage() {
         <Card>
           <h2 className="text-sm font-semibold text-slate-900">Filed nothing this week</h2>
           <p className="mb-2 mt-0.5 text-xs text-slate-600">
-            Not an accusation — most of the time it means the week got away from someone. But it
-            is the list that matters most, and it is the easiest one to leave off a dashboard.
+            Not an accusation — most of the time it means the week got away from someone. But it is
+            the list that matters most, and it is the easiest one to leave off a dashboard.
           </p>
           <p className="text-sm text-slate-800">{d.silent.join(' · ')}</p>
         </Card>

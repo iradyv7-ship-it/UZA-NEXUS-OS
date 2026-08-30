@@ -47,14 +47,24 @@ export class ContainerService {
     await this.authz.authorize(actor, 'shipment', 'create');
 
     if (input.packageRefs.length === 0) {
-      throw new UzaError({ code: 'GATE_MIXED_DESTINATION', message: 'A container needs at least one package.', responsibleRole: actor.role });
+      throw new UzaError({
+        code: 'GATE_MIXED_DESTINATION',
+        message: 'A container needs at least one package.',
+        responsibleRole: actor.role,
+      });
     }
 
-    const packages = await this.prisma.package.findMany({ where: { ref: { in: [...input.packageRefs] } } });
+    const packages = await this.prisma.package.findMany({
+      where: { ref: { in: [...input.packageRefs] } },
+    });
     if (packages.length !== input.packageRefs.length) {
       const found = new Set(packages.map((p) => p.ref));
       const missing = input.packageRefs.filter((r) => !found.has(r));
-      throw new UzaError({ code: 'GATE_QC_NOT_RELEASED', message: `Unknown package(s): ${missing.join(', ')}`, responsibleRole: actor.role });
+      throw new UzaError({
+        code: 'GATE_QC_NOT_RELEASED',
+        message: `Unknown package(s): ${missing.join(', ')}`,
+        responsibleRole: actor.role,
+      });
     }
 
     // Precondition (QC gate, distinct from the commercial gate 1): unreleased goods can't load.
@@ -75,7 +85,8 @@ export class ContainerService {
       throw new UzaError({
         code: 'GATE_VARIANCE_UNRESOLVED',
         responsibleRole: 'venture_manager',
-        nextAction: 'A decision is needed on who carries the extra freight (client_pays / uza_absorbs / reduce_qty).',
+        nextAction:
+          'A decision is needed on who carries the extra freight (client_pays / uza_absorbs / reduce_qty).',
         context: { packages: held.map((p) => p.ref).join(', ') },
       });
     }
@@ -95,7 +106,9 @@ export class ContainerService {
     }
 
     // GATE 3 — single destination. Containers are destination-pure (CF-018).
-    const destinations = [...new Set(packages.map((p) => p.destination).filter((d): d is Destination => d !== null))];
+    const destinations = [
+      ...new Set(packages.map((p) => p.destination).filter((d): d is Destination => d !== null)),
+    ];
     const unassigned = packages.filter((p) => p.destination === null);
     if (unassigned.length > 0) {
       throw new UzaError({
@@ -117,9 +130,16 @@ export class ContainerService {
 
     // daysWaitingForConsolidation: from the earliest lot receipt among the packages to now.
     const lotRefs = [...new Set(packages.map((p) => p.lotRef))];
-    const receipts = await this.prisma.warehouseReceipt.findMany({ where: { lotRef: { in: lotRefs } } });
-    const earliest = receipts.reduce<Date | null>((min, r) => (min === null || r.createdAt < min ? r.createdAt : min), null);
-    const daysWaiting = earliest ? Math.max(0, Math.floor((Date.now() - earliest.getTime()) / DAY_MS)) : 0;
+    const receipts = await this.prisma.warehouseReceipt.findMany({
+      where: { lotRef: { in: lotRefs } },
+    });
+    const earliest = receipts.reduce<Date | null>(
+      (min, r) => (min === null || r.createdAt < min ? r.createdAt : min),
+      null,
+    );
+    const daysWaiting = earliest
+      ? Math.max(0, Math.floor((Date.now() - earliest.getTime()) / DAY_MS))
+      : 0;
 
     return this.outbox.emit(actor.userId, async (tx, emit) => {
       const seq = await nextSequence(tx.shipment, (n) => makeShipmentRef(n));
@@ -137,7 +157,10 @@ export class ContainerService {
           daysWaitingForConsolidation: daysWaiting,
         },
       });
-      await tx.package.updateMany({ where: { ref: { in: [...input.packageRefs] } }, data: { shipmentRef: ref } });
+      await tx.package.updateMany({
+        where: { ref: { in: [...input.packageRefs] } },
+        data: { shipmentRef: ref },
+      });
 
       await emit('container.assigned', {
         shipmentRef: ref,

@@ -36,17 +36,27 @@ export type CommandCapability =
   | 'overview';
 
 const FULL: readonly CommandCapability[] = [
-  'org:read', 'org:write',
-  'task:create', 'task:read', 'task:write', 'task:all',
-  'grant:create', 'grant:read', 'grant:write', 'grant:all',
+  'org:read',
+  'org:write',
+  'task:create',
+  'task:read',
+  'task:write',
+  'task:all',
+  'grant:create',
+  'grant:read',
+  'grant:write',
+  'grant:all',
   'overview',
 ];
 
 /** Internal individual contributors + managers: scoped task access + owner-scoped grants. */
 const INTERNAL: readonly CommandCapability[] = [
   'org:read',
-  'task:create', 'task:read', 'task:write',
-  'grant:read', 'grant:write',
+  'task:create',
+  'task:read',
+  'task:write',
+  'grant:read',
+  'grant:write',
 ];
 
 /** No Command Center access — external / commercial roles. */

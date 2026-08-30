@@ -59,7 +59,8 @@ export default async function QuotationPage({
         <p className="text-[11px] uppercase tracking-wide text-brand/70">{t('dash.col.next')}</p>
         <p className="text-base font-semibold text-slate-900">{t(promise.nextKey)}</p>
         <p className="mt-0.5 text-sm text-slate-600">
-          {t('dash.col.owner')}: <span className="font-medium">{t(`owner.${promise.ownerRole}`)}</span>
+          {t('dash.col.owner')}:{' '}
+          <span className="font-medium">{t(`owner.${promise.ownerRole}`)}</span>
         </p>
       </div>
 
@@ -68,46 +69,50 @@ export default async function QuotationPage({
 
       {/* On wider screens the two cards sit side by side; they stack on a phone. */}
       <div className="grid gap-4 lg:grid-cols-2 lg:items-start">
-      <Card>
-        <dl className="divide-y divide-slate-100">
-          <Field label={t('record.project')}>
-            <span className="font-mono text-xs">{q.projectRef}</span>
-          </Field>
-          <Field label={t('record.customer')}>
-            <span className="font-mono text-xs">{q.customerRef}</span>
-          </Field>
-          <Field label={t('quo.qty')}>{q.qty}</Field>
-          <Field label={t('quo.incoterm')}>{q.sellIncoterm}</Field>
-          <Field label={t('quo.version')}>v{q.version}</Field>
-          <Field label={t('quo.unitPrice')}>{money(q.customerUnitPriceMinor, locale)}</Field>
-        </dl>
-      </Card>
+        <Card>
+          <dl className="divide-y divide-slate-100">
+            <Field label={t('record.project')}>
+              <span className="font-mono text-xs">{q.projectRef}</span>
+            </Field>
+            <Field label={t('record.customer')}>
+              <span className="font-mono text-xs">{q.customerRef}</span>
+            </Field>
+            <Field label={t('quo.qty')}>{q.qty}</Field>
+            <Field label={t('quo.incoterm')}>{q.sellIncoterm}</Field>
+            <Field label={t('quo.version')}>v{q.version}</Field>
+            <Field label={t('quo.unitPrice')}>{money(q.customerUnitPriceMinor, locale)}</Field>
+          </dl>
+        </Card>
 
-      {/* Confidential block: supplier cost / target / walkaway + BOTH margins. */}
-      <Card>
-        <h2 className="mb-2 text-sm font-semibold text-slate-700">Margins &amp; cost</h2>
-        <dl className="divide-y divide-slate-100">
-          <Field label={t('quo.supplierCost')}>
-            {isMasked(q.supplierUnitCost) ? <Masked /> : maskedMoney(q.supplierUnitCost, locale)}
-          </Field>
-          <Field label={t('quo.targetPrice')}>
-            {isMasked(q.targetPrice) ? <Masked /> : maskedMoney(q.targetPrice, locale)}
-          </Field>
-          <Field label={t('quo.walkaway')}>
-            {isMasked(q.walkawayPrice) ? <Masked /> : maskedMoney(q.walkawayPrice, locale)}
-          </Field>
-          <Field label={`${t('quo.marginQuoted')} (${t('quo.marginQuoted.at', { incoterm: q.sellIncoterm })})`}>
-            {isMasked(q.marginPct) ? <Masked /> : maskedPercent(q.marginPct, locale)}
-          </Field>
-          <Field label={t('quo.marginDap')}>
-            {isMasked(q.dapMargin) ? <Masked /> : maskedPercent(q.dapMargin, locale)}
-          </Field>
-          <Field label={t('quo.marginRealized')}>
-            {isMasked(q.realizedMargin) ? <Masked /> : maskedPercent(q.realizedMargin, locale)}
-          </Field>
-        </dl>
-        <p className="mt-2 text-xs text-slate-400">{anyMasked ? t('quo.masked.note') : t('quo.marginHint')}</p>
-      </Card>
+        {/* Confidential block: supplier cost / target / walkaway + BOTH margins. */}
+        <Card>
+          <h2 className="mb-2 text-sm font-semibold text-slate-700">Margins &amp; cost</h2>
+          <dl className="divide-y divide-slate-100">
+            <Field label={t('quo.supplierCost')}>
+              {isMasked(q.supplierUnitCost) ? <Masked /> : maskedMoney(q.supplierUnitCost, locale)}
+            </Field>
+            <Field label={t('quo.targetPrice')}>
+              {isMasked(q.targetPrice) ? <Masked /> : maskedMoney(q.targetPrice, locale)}
+            </Field>
+            <Field label={t('quo.walkaway')}>
+              {isMasked(q.walkawayPrice) ? <Masked /> : maskedMoney(q.walkawayPrice, locale)}
+            </Field>
+            <Field
+              label={`${t('quo.marginQuoted')} (${t('quo.marginQuoted.at', { incoterm: q.sellIncoterm })})`}
+            >
+              {isMasked(q.marginPct) ? <Masked /> : maskedPercent(q.marginPct, locale)}
+            </Field>
+            <Field label={t('quo.marginDap')}>
+              {isMasked(q.dapMargin) ? <Masked /> : maskedPercent(q.dapMargin, locale)}
+            </Field>
+            <Field label={t('quo.marginRealized')}>
+              {isMasked(q.realizedMargin) ? <Masked /> : maskedPercent(q.realizedMargin, locale)}
+            </Field>
+          </dl>
+          <p className="mt-2 text-xs text-slate-400">
+            {anyMasked ? t('quo.masked.note') : t('quo.marginHint')}
+          </p>
+        </Card>
       </div>
 
       {/* End-to-end flow controls, gated by lifecycle. Full-width on a phone; a comfortable

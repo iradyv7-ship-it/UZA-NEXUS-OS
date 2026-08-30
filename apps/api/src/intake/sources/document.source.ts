@@ -30,7 +30,13 @@ export class DocumentSource {
    * assistant's notes about the register is a loop, not a signal.
    */
   private static readonly SKIP = new Set([
-    '.git', '.claude', 'node_modules', '_private', '_inbox', 'dist', '.next',
+    '.git',
+    '.claude',
+    'node_modules',
+    '_private',
+    '_inbox',
+    'dist',
+    '.next',
   ]);
   private static readonly MAX_BODY = 12_000;
 
@@ -82,7 +88,10 @@ export class DocumentSource {
         // being touched keeps the same id and is absorbed by the unique constraint.
         externalId: `${rel}@${info.mtime.toISOString()}`,
         title: this.titleOf(raw, entry.name),
-        body: raw.length > DocumentSource.MAX_BODY ? `${raw.slice(0, DocumentSource.MAX_BODY)}\n[truncated]` : raw,
+        body:
+          raw.length > DocumentSource.MAX_BODY
+            ? `${raw.slice(0, DocumentSource.MAX_BODY)}\n[truncated]`
+            : raw,
         occurredAt: info.mtime,
       });
     }

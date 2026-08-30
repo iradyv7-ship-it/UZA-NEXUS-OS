@@ -72,7 +72,8 @@ const REGISTER: Row[] = [
     ventureCode: 'GROUP',
     ownerId: YVES,
     attention: 'runs',
-    nextAction: 'Send the ten questions to counsel. The e-money bright line blocks the wallet design until answered.',
+    nextAction:
+      'Send the ten questions to counsel. The e-money bright line blocks the wallet design until answered.',
     artifactUrl: 'https://claude.ai/code/artifact/e87bcda5-b971-4bed-bb62-c3695c2d652c',
   },
   {
@@ -82,7 +83,8 @@ const REGISTER: Row[] = [
     ventureCode: 'GROUP',
     ownerId: ABIJURU,
     attention: 'runs',
-    nextAction: 'Choose the hero line so the homepage can be finished. Five changes from the blueprint are already documented.',
+    nextAction:
+      'Choose the hero line so the homepage can be finished. Five changes from the blueprint are already documented.',
     artifactUrl: 'https://claude.ai/code/artifact/4a6f42dc-b799-4db3-892d-2e9375884c5f',
   },
   {
@@ -115,7 +117,8 @@ const REGISTER: Row[] = [
     ventureCode: 'BULK',
     ownerId: BADIANE,
     attention: 'runs',
-    nextAction: 'Give Badiane one weekly number and hold him to it. The go-to-market document is not written yet.',
+    nextAction:
+      'Give Badiane one weekly number and hold him to it. The go-to-market document is not written yet.',
   },
   {
     ref: 'INIT-2026-0007',
@@ -137,7 +140,8 @@ const REGISTER: Row[] = [
     ownerId: BADIANE,
     attention: 'holds',
     reviewAt: d('2026-10-01'),
-    nextAction: 'Quote panels, inverters and mounting through the same corridor as the chargers. Same suppliers, same terms.',
+    nextAction:
+      'Quote panels, inverters and mounting through the same corridor as the chargers. Same suppliers, same terms.',
   },
 
   {
@@ -228,7 +232,8 @@ const REGISTER: Row[] = [
     ventureCode: 'MOBILITY',
     ownerId: TRESOR,
     attention: 'runs',
-    nextAction: 'Buy the nine safety items before the first high-voltage job. No HV work until they are on the wall.',
+    nextAction:
+      'Buy the nine safety items before the first high-voltage job. No HV work until they are on the wall.',
     artifactUrl: 'https://claude.ai/code/artifact/aa60e04c-b14b-431d-80d2-14393a9be193',
   },
   {
@@ -238,7 +243,8 @@ const REGISTER: Row[] = [
     ventureCode: 'MOBILITY',
     ownerId: GAD,
     attention: 'runs',
-    nextAction: 'Apply migration 01 (UZA ID), then 06 immediately after. Everything downstream waits on the shared identity.',
+    nextAction:
+      'Apply migration 01 (UZA ID), then 06 immediately after. Everything downstream waits on the shared identity.',
   },
 
   // ── UZA EMPOWER ──────────────────────────────────────────────────────────
@@ -250,7 +256,8 @@ const REGISTER: Row[] = [
     ownerId: UNASSIGNED,
     attention: 'holds',
     reviewAt: d('2026-09-08'),
-    nextAction: 'Name a delivery lead. Agree the repayment comparison group with Unguka before cohort 2 starts.',
+    nextAction:
+      'Name a delivery lead. Agree the repayment comparison group with Unguka before cohort 2 starts.',
     artifactUrl: 'https://claude.ai/code/artifact/ded404ac-5815-45ae-8c70-a40604135eb8',
   },
   {
@@ -261,7 +268,8 @@ const REGISTER: Row[] = [
     ownerId: UNASSIGNED,
     attention: 'holds',
     reviewAt: d('2026-09-08'),
-    nextAction: 'Blocked behind UZA ID. Until one person has one identifier across five systems, no impact claim survives diligence.',
+    nextAction:
+      'Blocked behind UZA ID. Until one person has one identifier across five systems, no impact claim survives diligence.',
   },
   {
     ref: 'INIT-2026-0018',
@@ -285,7 +293,8 @@ const REGISTER: Row[] = [
     ownerId: UNASSIGNED,
     attention: 'holds',
     reviewAt: d('2026-09-22'),
-    nextAction: 'This is a signature, not a build. Get the reseller agreement executed, then staff it.',
+    nextAction:
+      'This is a signature, not a build. Get the reseller agreement executed, then staff it.',
   },
   {
     ref: 'INIT-2026-0020',
@@ -294,7 +303,8 @@ const REGISTER: Row[] = [
     ventureCode: 'NEXUS',
     ownerId: GAD,
     attention: 'runs',
-    nextAction: 'Push the repository — it still has no git remote. Then seed the register and run the first Monday review against it.',
+    nextAction:
+      'Push the repository — it still has no git remote. Then seed the register and run the first Monday review against it.',
     artifactUrl: 'https://claude.ai/code/artifact/55b9f1e2-c2bd-4870-840f-4205c6abf7a4',
   },
   {
@@ -304,7 +314,8 @@ const REGISTER: Row[] = [
     ventureCode: 'CLOUD',
     ownerId: SADDOCK,
     attention: 'runs',
-    nextAction: 'Move uza-charge and Battery-life into the UZA-SOLUTIONS org, then retire the duplicated Lovable projects.',
+    nextAction:
+      'Move uza-charge and Battery-life into the UZA-SOLUTIONS org, then retire the duplicated Lovable projects.',
     artifactUrl: 'https://claude.ai/code/artifact/55b9f1e2-c2bd-4870-840f-4205c6abf7a4',
   },
   {
@@ -314,7 +325,8 @@ const REGISTER: Row[] = [
     ventureCode: 'CLOUD',
     ownerId: YVES,
     attention: 'parked',
-    nextAction: 'Parked until the Alibaba meeting happens. Held personally and deliberately unentangled from the group.',
+    nextAction:
+      'Parked until the Alibaba meeting happens. Held personally and deliberately unentangled from the group.',
   },
 ];
 
@@ -361,7 +373,8 @@ const DECISIONS = [
   },
   {
     ref: 'DEC-2026-0003',
-    question: 'Does Bulk charge UZA Charge a real wholesale margin on internal charging-pile sales?',
+    question:
+      'Does Bulk charge UZA Charge a real wholesale margin on internal charging-pile sales?',
     context:
       'At the third-party price, the wholesale line learns whether it is competitive before external sales are bet on. At a discount, it never finds out.',
     initiativeRef: 'INIT-2026-0007',
@@ -377,7 +390,8 @@ const DECISIONS = [
   },
   {
     ref: 'DEC-2026-0011',
-    question: 'Do we delegate sample and courier approval below a threshold, and if so what is the threshold?',
+    question:
+      'Do we delegate sample and courier approval below a threshold, and if so what is the threshold?',
     context:
       'Every approval in the company currently routes through the CEO — measured concentration is 1.00. This one and the close-or-continue decision are the two that fire most often, so delegating them is what actually changes the response time. A ceiling of about USD 300 with Cecilia deciding inside it would remove the majority of the waiting without giving away anything that matters.',
     initiativeRef: 'INIT-2026-0004',
@@ -433,7 +447,8 @@ const DECISIONS = [
   },
   {
     ref: 'DEC-2026-0013',
-    question: 'Do listings and website prices display in RWF only, and do we drop the exchange-rate API?',
+    question:
+      'Do listings and website prices display in RWF only, and do we drop the exchange-rate API?',
     context:
       'Raised by Gad on the team platform and unanswered since. His own words: we have not concluded what to do with this. It is a small decision holding a shipped feature, which is the cheapest kind to answer and the most annoying kind to leave.',
     initiativeRef: 'INIT-2026-0003',
@@ -447,7 +462,9 @@ async function main() {
   // must therefore run AFTER that one. Checked explicitly, because the alternative is a
   // raw Prisma foreign-key error that says nothing about ordering — which is exactly what
   // it produced the first time this was run against a fresh container.
-  const referenced = [...new Set(DECISIONS.map((d) => d.initiativeRef).filter(Boolean) as string[])];
+  const referenced = [
+    ...new Set(DECISIONS.map((d) => d.initiativeRef).filter(Boolean) as string[]),
+  ];
   const present = await prisma.initiative.findMany({
     where: { ref: { in: referenced } },
     select: { ref: true },
@@ -458,15 +475,15 @@ async function main() {
   if (notOurs.length) {
     throw new Error(
       `these initiatives are referenced by decisions here but created elsewhere: ${notOurs.join(', ')}.
-` +
-        'Run the seeds in order:  seed-org  ->  seed-bulk-pipeline  ->  seed-register',
+` + 'Run the seeds in order:  seed-org  ->  seed-bulk-pipeline  ->  seed-register',
     );
   }
 
   // The invariants the service enforces, checked here too — a seed that writes a
   // register the API would have rejected is worse than a seed that fails.
   for (const r of REGISTER) {
-    if (r.attention === 'runs' && !r.nextAction) throw new Error(`${r.ref}: runs with no nextAction`);
+    if (r.attention === 'runs' && !r.nextAction)
+      throw new Error(`${r.ref}: runs with no nextAction`);
     if (r.attention === 'holds' && !r.reviewAt) throw new Error(`${r.ref}: holds with no reviewAt`);
   }
 
@@ -485,7 +502,11 @@ async function main() {
       status: 'active' as const,
       startedAt: r.attention === 'runs' ? d('2026-08-21') : null,
     };
-    await prisma.initiative.upsert({ where: { ref: r.ref }, create: { ref: r.ref, ...data }, update: data });
+    await prisma.initiative.upsert({
+      where: { ref: r.ref },
+      create: { ref: r.ref, ...data },
+      update: data,
+    });
   }
 
   for (const dec of ANSWERED) {
@@ -500,7 +521,11 @@ async function main() {
       answeredById: YVES,
       answeredAt: dec.answeredAt,
     };
-    await prisma.execDecision.upsert({ where: { ref: dec.ref }, create: { ref: dec.ref, ...data }, update: data });
+    await prisma.execDecision.upsert({
+      where: { ref: dec.ref },
+      create: { ref: dec.ref, ...data },
+      update: data,
+    });
   }
 
   for (const dec of DECISIONS) {
@@ -524,9 +549,13 @@ async function main() {
   const parked = REGISTER.filter((r) => r.attention === 'parked').length;
   const orphans = REGISTER.filter((r) => r.ownerId === UNASSIGNED).length;
 
-  console.log(`register seeded: ${REGISTER.length} initiatives — ${runs} running, ${holds} held, ${parked} parked`);
+  console.log(
+    `register seeded: ${REGISTER.length} initiatives — ${runs} running, ${holds} held, ${parked} parked`,
+  );
   console.log(`${orphans} have no named owner. That is the finding, not a gap in the data.`);
-  console.log(`${DECISIONS.length} decisions open and waiting on the CEO, ${ANSWERED.length} answered.`);
+  console.log(
+    `${DECISIONS.length} decisions open and waiting on the CEO, ${ANSWERED.length} answered.`,
+  );
 }
 
 main()

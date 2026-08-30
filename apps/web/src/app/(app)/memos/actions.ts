@@ -28,7 +28,9 @@ export async function sendMemoAction(formData: FormData): Promise<void> {
     body: String(formData.get('body') ?? '').trim(),
     audience,
     needsAck: formData.get('needsAck') === 'on',
-    ...(audience === 'department' ? { departmentCode: String(formData.get('departmentCode') ?? '') } : {}),
+    ...(audience === 'department'
+      ? { departmentCode: String(formData.get('departmentCode') ?? '') }
+      : {}),
     ...(audience === 'person' ? { toId: String(formData.get('toId') ?? '') } : {}),
     ...(formData.get('linkedRef') ? { linkedRef: String(formData.get('linkedRef')) } : {}),
   };

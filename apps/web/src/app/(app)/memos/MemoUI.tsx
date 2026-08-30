@@ -63,7 +63,10 @@ export function SendMemo() {
   }
 
   return (
-    <form action={sendMemoAction} className="space-y-3 rounded-xl border border-slate-200 bg-white p-4">
+    <form
+      action={sendMemoAction}
+      className="space-y-3 rounded-xl border border-slate-200 bg-white p-4"
+    >
       <label className="block">
         <span className="text-xs font-medium text-slate-600">Subject</span>
         <input
@@ -102,7 +105,10 @@ export function SendMemo() {
         {audience === 'department' ? (
           <label className="block">
             <span className="text-xs font-medium text-slate-600">Department</span>
-            <select name="departmentCode" className="mt-1 rounded-lg border border-slate-300 px-3 py-2 text-sm">
+            <select
+              name="departmentCode"
+              className="mt-1 rounded-lg border border-slate-300 px-3 py-2 text-sm"
+            >
               {DEPARTMENTS.map((d) => (
                 <option key={d} value={d}>
                   {d}
@@ -136,13 +142,16 @@ export function SendMemo() {
       <label className="flex items-start gap-2">
         <input type="checkbox" name="needsAck" className="mt-0.5" />
         <span className="text-xs text-slate-600">
-          <strong>Require acknowledgement.</strong> Use this when the memo changes how someone works — a
-          new rule, a threshold, a deadline. Reading it will not be enough; they have to say they will act.
+          <strong>Require acknowledgement.</strong> Use this when the memo changes how someone works
+          — a new rule, a threshold, a deadline. Reading it will not be enough; they have to say
+          they will act.
         </span>
       </label>
 
       <div className="flex gap-2 pt-1">
-        <button className="rounded-lg bg-brand px-4 py-2 text-sm font-semibold text-white">Send</button>
+        <button className="rounded-lg bg-brand px-4 py-2 text-sm font-semibold text-white">
+          Send
+        </button>
         <button
           type="button"
           onClick={() => setOpen(false)}

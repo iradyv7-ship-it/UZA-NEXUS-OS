@@ -1,4 +1,9 @@
-import { Injectable, NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ConflictException,
+  BadRequestException,
+} from '@nestjs/common';
 import { Prisma, type GrantStatus } from '@prisma/client';
 import type { Actor, Minor } from '@uza/contracts';
 import { PrismaService } from '../../prisma/prisma.service';
@@ -92,7 +97,11 @@ export class GrantService {
   }
 
   /** Grants in scope, optionally narrowed by status. Owner-scoped for non-admins. */
-  async list(actor: Actor, filters: { status?: GrantStatus }, page: { limit: number; offset: number }) {
+  async list(
+    actor: Actor,
+    filters: { status?: GrantStatus },
+    page: { limit: number; offset: number },
+  ) {
     await this.access.assertRole(actor, 'grant:read', RESOURCE, 'read');
     const and: Prisma.GrantWhereInput[] = [grantScopeWhere(actor)];
     if (filters.status) and.push({ status: filters.status });

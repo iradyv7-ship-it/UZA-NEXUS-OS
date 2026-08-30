@@ -18,8 +18,17 @@ import { RfqService } from './quote/rfq.service';
 import { PurchaseOrderService } from './po/purchase-order.service';
 
 const SUPPLIER_LIFECYCLES: readonly SupplierLifecycle[] = [
-  'Discovered', 'Contacted', 'PreScreened', 'SampleRequested', 'SampleApproved',
-  'TrialOrder', 'Verified', 'Preferred', 'StrategicPartner', 'Suspended', 'Blocked',
+  'Discovered',
+  'Contacted',
+  'PreScreened',
+  'SampleRequested',
+  'SampleApproved',
+  'TrialOrder',
+  'Verified',
+  'Preferred',
+  'StrategicPartner',
+  'Suspended',
+  'Blocked',
 ];
 const QUOTE_BASES = ['EXW', 'FOB'] as const;
 
@@ -32,7 +41,9 @@ class RegisterSupplierDto {
 }
 
 class SetLifecycleDto {
-  @ApiProperty({ enum: SUPPLIER_LIFECYCLES }) @IsIn(SUPPLIER_LIFECYCLES) lifecycle!: SupplierLifecycle;
+  @ApiProperty({ enum: SUPPLIER_LIFECYCLES })
+  @IsIn(SUPPLIER_LIFECYCLES)
+  lifecycle!: SupplierLifecycle;
 }
 
 class AddCertificationDto {
@@ -45,7 +56,10 @@ class AddCertificationDto {
 
 class CreateRfqDto {
   @ApiProperty() @IsString() projectRef!: string;
-  @ApiProperty({ required: false, type: Object }) @IsOptional() @IsObject() detail?: Record<string, unknown>;
+  @ApiProperty({ required: false, type: Object }) @IsOptional() @IsObject() detail?: Record<
+    string,
+    unknown
+  >;
   @ApiProperty({ required: false }) @IsOptional() @IsString() clientRequestId?: string;
 }
 
@@ -58,7 +72,8 @@ class AddQuoteDto {
   @ApiProperty() @IsInt() leadTimeDays!: number;
   @ApiProperty() @IsNumber() unitCbm!: number;
   @ApiProperty() @IsNumber() unitKg!: number;
-  @ApiProperty({ required: false, enum: QUOTE_BASES }) @IsOptional() @IsIn(QUOTE_BASES) basis?: 'EXW' | 'FOB';
+  @ApiProperty({ required: false, enum: QUOTE_BASES }) @IsOptional() @IsIn(QUOTE_BASES) basis?:
+    'EXW' | 'FOB';
   @ApiProperty({ required: false }) @IsOptional() @IsString() clientRequestId?: string;
 }
 
@@ -87,13 +102,21 @@ export class SupplierController {
 
   @Patch(':ref/lifecycle')
   @ApiOperation({ summary: 'Advance/suspend a supplier lifecycle (supplier:update)' })
-  setLifecycle(@CurrentActor() actor: Actor, @Param('ref') ref: string, @Body() dto: SetLifecycleDto) {
+  setLifecycle(
+    @CurrentActor() actor: Actor,
+    @Param('ref') ref: string,
+    @Body() dto: SetLifecycleDto,
+  ) {
     return this.suppliers.setLifecycle(actor, ref, dto.lifecycle);
   }
 
   @Post(':ref/certifications')
   @ApiOperation({ summary: 'Add a certification (supplier:update)' })
-  addCertification(@CurrentActor() actor: Actor, @Param('ref') ref: string, @Body() dto: AddCertificationDto) {
+  addCertification(
+    @CurrentActor() actor: Actor,
+    @Param('ref') ref: string,
+    @Body() dto: AddCertificationDto,
+  ) {
     return this.suppliers.addCertification(actor, ref, {
       name: dto.name,
       ...(dto.issuer ? { issuer: dto.issuer } : {}),
@@ -127,7 +150,9 @@ export class RfqController {
   }
 
   @Post('supplier-quotes')
-  @ApiOperation({ summary: 'Record a supplier quote; FOB forces inlandSeparable=false (supplierQuote:create)' })
+  @ApiOperation({
+    summary: 'Record a supplier quote; FOB forces inlandSeparable=false (supplierQuote:create)',
+  })
   addQuote(@CurrentActor() actor: Actor, @Body() dto: AddQuoteDto) {
     return this.rfqs.addQuote(actor, { ...dto, unitCostMinor: dto.unitCostMinor as Minor });
   }

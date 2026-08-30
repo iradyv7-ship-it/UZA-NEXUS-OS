@@ -15,8 +15,15 @@ export const ACTOR_COOKIE = 'uza_actor';
 export const LOCALE_COOKIE = 'uza_locale';
 
 export type Role =
-  | 'ceo' | 'venture_manager' | 'china_sourcing' | 'china_warehouse'
-  | 'front_office' | 'finance' | 'sales_agent' | 'customer' | 'logistics_partner';
+  | 'ceo'
+  | 'venture_manager'
+  | 'china_sourcing'
+  | 'china_warehouse'
+  | 'front_office'
+  | 'finance'
+  | 'sales_agent'
+  | 'customer'
+  | 'logistics_partner';
 
 export interface Actor {
   userId: string;

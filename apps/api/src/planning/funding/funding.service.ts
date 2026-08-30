@@ -8,7 +8,14 @@ import { PlanningAccessService } from '../planning-authz.service';
 const RESOURCE = 'fundingTrack';
 
 /** Stages where the money is still genuinely in play. */
-const LIVE: FundingStage[] = ['identified', 'qualifying', 'preparing', 'submitted', 'in_diligence', 'approved'];
+const LIVE: FundingStage[] = [
+  'identified',
+  'qualifying',
+  'preparing',
+  'submitted',
+  'in_diligence',
+  'approved',
+];
 
 export interface CreateFundingInput {
   readonly name: string;
@@ -52,8 +59,10 @@ export class FundingService {
   async create(actor: Actor, input: CreateFundingInput) {
     await this.access.assertRole(actor, 'initiative:create', RESOURCE, 'create');
     if (!input.name.trim()) throw new BadRequestException('a funding track needs a name');
-    if (!input.funder.trim()) throw new BadRequestException('name the counterparty — "investors" is not a funder');
-    if (!(input.amountSought > 0)) throw new BadRequestException('amountSought must be greater than zero');
+    if (!input.funder.trim())
+      throw new BadRequestException('name the counterparty — "investors" is not a funder');
+    if (!(input.amountSought > 0))
+      throw new BadRequestException('amountSought must be greater than zero');
 
     const seq = await nextSequence(this.prisma.fundingTrack, refPrefix('FUND'));
     const ref = `FUND-${new Date().getFullYear()}-${String(seq).padStart(4, '0')}`;
@@ -92,11 +101,16 @@ export class FundingService {
     return rows;
   }
 
-  async update(actor: Actor, ref: string, input: Partial<CreateFundingInput> & { closedAt?: Date }) {
+  async update(
+    actor: Actor,
+    ref: string,
+    input: Partial<CreateFundingInput> & { closedAt?: Date },
+  ) {
     await this.access.assertRole(actor, 'initiative:write', RESOURCE, 'update', ref);
     const existing = await this.prisma.fundingTrack.findUnique({ where: { ref } });
     if (!existing) throw new NotFoundException(`funding track ${ref} not found`);
-    if (input.stage === 'closed' && !existing.closedAt && !input.closedAt) input = { ...input, closedAt: new Date() };
+    if (input.stage === 'closed' && !existing.closedAt && !input.closedAt)
+      input = { ...input, closedAt: new Date() };
 
     const updated = await this.prisma.fundingTrack.update({
       where: { ref },
@@ -127,7 +141,10 @@ export class FundingService {
   async byVenture(actor: Actor, ventureCode: string) {
     await this.access.assertRole(actor, 'initiative:read', RESOURCE, 'venture', ventureCode);
     const [tracks, initiatives, systems] = await Promise.all([
-      this.prisma.fundingTrack.findMany({ where: { ventureCode }, orderBy: { amountSought: 'desc' } }),
+      this.prisma.fundingTrack.findMany({
+        where: { ventureCode },
+        orderBy: { amountSought: 'desc' },
+      }),
       this.prisma.initiative.findMany({
         where: { ventureCode, status: 'active' },
         orderBy: [{ attention: 'asc' }, { ref: 'asc' }],
@@ -193,7 +210,9 @@ export class FundingService {
       totalSought: tracks.reduce((a, t) => a + t.amountSought, 0),
       liveTracks: tracks.length,
       /** Tracks that release nothing currently held — the dependency was never written down. */
-      unlocksNothing: rows.filter((r) => r.heldReleases === 0).map((r) => ({ ref: r.ref, name: r.name })),
+      unlocksNothing: rows
+        .filter((r) => r.heldReleases === 0)
+        .map((r) => ({ ref: r.ref, name: r.name })),
       tracks: rows,
     };
   }

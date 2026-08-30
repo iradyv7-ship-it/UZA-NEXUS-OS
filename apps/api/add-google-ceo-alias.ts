@@ -42,7 +42,9 @@ async function main() {
     role: 'ceo',
     officeId: office.id,
   });
-  console.log(`created  ${email} (ceo, ref=CEO-KGL-0002) — Google sign-in only, no usable password`);
+  console.log(
+    `created  ${email} (ceo, ref=CEO-KGL-0002) — Google sign-in only, no usable password`,
+  );
 }
 
 main()

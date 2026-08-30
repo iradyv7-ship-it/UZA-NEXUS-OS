@@ -16,7 +16,9 @@ export interface Objective {
 type Row = Objective & { id: string };
 
 const newRowId = (): string =>
-  typeof crypto !== 'undefined' && 'randomUUID' in crypto ? crypto.randomUUID() : `row-${Math.random().toString(36).slice(2)}`;
+  typeof crypto !== 'undefined' && 'randomUUID' in crypto
+    ? crypto.randomUUID()
+    : `row-${Math.random().toString(36).slice(2)}`;
 
 const withId = (o: Objective): Row => ({ ...o, id: newRowId() });
 
@@ -31,15 +33,12 @@ const withId = (o: Objective): Row => ({ ...o, id: newRowId() });
  * A row emptied is a row dropped — the server filters blanks. That is deliberate: deleting a
  * commitment you did not agree to should be as easy as disagreeing out loud.
  */
-export function ObjectivesForm({
-  initial,
-  isDraft,
-}: {
-  initial: Objective[];
-  isDraft: boolean;
-}) {
+export function ObjectivesForm({ initial, isDraft }: { initial: Objective[]; isDraft: boolean }) {
   const [rows, setRows] = useState<Row[]>(
-    (initial.length ? initial : [{ text: '', status: 'todo' as const, source: 'self' as const }]).map(withId),
+    (initial.length
+      ? initial
+      : [{ text: '', status: 'todo' as const, source: 'self' as const }]
+    ).map(withId),
   );
 
   const update = (i: number, patch: Partial<Objective>) =>
@@ -90,7 +89,9 @@ export function ObjectivesForm({
       <div className="flex flex-wrap items-center gap-2">
         <button
           type="button"
-          onClick={() => setRows((r) => [...r, withId({ text: '', status: 'todo', source: 'self' })])}
+          onClick={() =>
+            setRows((r) => [...r, withId({ text: '', status: 'todo', source: 'self' })])
+          }
           className="rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50"
         >
           Add something of my own

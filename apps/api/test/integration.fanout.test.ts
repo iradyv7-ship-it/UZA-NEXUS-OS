@@ -10,13 +10,24 @@ import { resetSourcingQualityDb } from './sourcing-quality-db';
 import { resetLogisticsDb } from './logistics-db';
 import { drainOutbox, type OutboxHandler } from '../src/platform/outbox/outbox-processor';
 import { EVENT_JOB_OPTS } from '../src/platform/outbox/event-bus.constants';
-import { buildDispatchMap, dispatchEnvelope, EventDispatchError } from '../src/integration/dispatch-map';
+import {
+  buildDispatchMap,
+  dispatchEnvelope,
+  EventDispatchError,
+} from '../src/integration/dispatch-map';
 
 // Real consumer + publisher service instances (same PrismaClient as ./db), exactly as the
 // other suites wire them. The dispatch map is built from THESE instances, so the test
 // drives the same registry the running app builds — not a synthetic stand-in.
 import { orders, approvedChain, vm } from './trade-fixtures';
-import { invoices, commissions, claims, payments, customer as payer, finance } from './finance-fixtures';
+import {
+  invoices,
+  commissions,
+  claims,
+  payments,
+  customer as payer,
+  finance,
+} from './finance-fixtures';
 import { scores, suppliedPo } from './sourcing-quality-fixtures';
 import { orderPayments, qualityGate, receiving, warehouse } from './logistics-fixtures';
 
@@ -71,8 +82,12 @@ beforeEach(async () => {
     },
     { connection: wConn as unknown as ConnectionOptions },
   );
-  worker.on('completed', () => { completed += 1; });
-  worker.on('failed', () => { failed += 1; });
+  worker.on('completed', () => {
+    completed += 1;
+  });
+  worker.on('failed', () => {
+    failed += 1;
+  });
   await worker.waitUntilReady();
 });
 
@@ -123,7 +138,9 @@ describe('worker fan-out — events reach consumer modules through the real bus'
 
     // --- STEP 1: publish order.created; assert a finance Invoice appears via fan-out -----
     await publishPending();
-    await waitFor(async () => (await prisma.invoice.count({ where: { orderRef: order.ref } })) === 1);
+    await waitFor(
+      async () => (await prisma.invoice.count({ where: { orderRef: order.ref } })) === 1,
+    );
 
     const invoice = await prisma.invoice.findUniqueOrThrow({ where: { orderRef: order.ref } });
     expect(invoice.agentId).toBe(order.agentId); // agent carried through the event, not read from trade
@@ -142,7 +159,9 @@ describe('worker fan-out — events reach consumer modules through the real bus'
     const verify = await payments.verify(finance, proof.ref);
     expect(verify.trigger).toBe('confirmation');
     // The accrual is a PUBLISH-side effect of verify(), committed with the event.
-    expect(await prisma.commissionEntry.count({ where: { orderRef: order.ref, type: 'accrual' } })).toBe(1);
+    expect(
+      await prisma.commissionEntry.count({ where: { orderRef: order.ref, type: 'accrual' } }),
+    ).toBe(1);
 
     await publishPending();
 
@@ -159,7 +178,9 @@ describe('worker fan-out — events reach consumer modules through the real bus'
 
     const finalOrder = await prisma.order.findUniqueOrThrow({ where: { ref: order.ref } });
     expect(finalOrder.status).toBe('procurement_active');
-    const projection = await prisma.orderPaymentState.findUniqueOrThrow({ where: { orderRef: order.ref } });
+    const projection = await prisma.orderPaymentState.findUniqueOrThrow({
+      where: { orderRef: order.ref },
+    });
     expect(projection.paidTriggers).toContain('confirmation');
     // Both fan-out consumers recorded their own idempotency rows under their own keys.
     expect(
@@ -172,7 +193,8 @@ describe('worker fan-out — events reach consumer modules through the real bus'
   it('warehouse.receiptRecorded → sourcing supplier score moves, and a redelivery does NOT move it twice', async () => {
     // --- arrange: a real sourced PO, then a warehouse receipt with a real variance -------
     const { supplier, po } = await suppliedPo();
-    const before = (await prisma.supplier.findUniqueOrThrow({ where: { ref: supplier.ref } })).score;
+    const before = (await prisma.supplier.findUniqueOrThrow({ where: { ref: supplier.ref } }))
+      .score;
 
     // variance 0.08 (> CBM_TOLERANCE 0.05, < CBM_HARD_STOP 0.10) → a scored discrepancy.
     await receiving.receivePackages(warehouse, {
@@ -181,16 +203,24 @@ describe('worker fan-out — events reach consumer modules through the real bus'
       poRef: po.ref,
       declaredCbm: 5.0,
       declaredKg: 1200,
-      packages: [{ kg: 600, cbm: 2.7 }, { kg: 600, cbm: 2.7 }], // measured 5.4 → +8% variance
+      packages: [
+        { kg: 600, cbm: 2.7 },
+        { kg: 600, cbm: 2.7 },
+      ], // measured 5.4 → +8% variance
     });
 
     // --- STEP 3: publish; assert the supplier score dropped via fan-out -----------------
     await publishPending();
-    await waitFor(async () => (await prisma.supplier.findUniqueOrThrow({ where: { ref: supplier.ref } })).score < before);
+    await waitFor(
+      async () =>
+        (await prisma.supplier.findUniqueOrThrow({ where: { ref: supplier.ref } })).score < before,
+    );
 
     const after = (await prisma.supplier.findUniqueOrThrow({ where: { ref: supplier.ref } })).score;
     expect(after).toBeLessThan(before);
-    const scoreEventsAfterFirst = await prisma.supplierScoreEvent.count({ where: { supplierRef: supplier.ref } });
+    const scoreEventsAfterFirst = await prisma.supplierScoreEvent.count({
+      where: { supplierRef: supplier.ref },
+    });
     expect(scoreEventsAfterFirst).toBe(1);
 
     // --- STEP 4: re-publish the SAME event (same eventId); assert it does NOT apply twice.
@@ -199,7 +229,9 @@ describe('worker fan-out — events reach consumer modules through the real bus'
     await queue.add(receipt.name, receipt, { ...EVENT_JOB_OPTS, jobId: receipt.eventId });
     await waitFor(async () => completed > completedBefore); // the redelivered job ran to completion
 
-    const afterRedelivery = (await prisma.supplier.findUniqueOrThrow({ where: { ref: supplier.ref } })).score;
+    const afterRedelivery = (
+      await prisma.supplier.findUniqueOrThrow({ where: { ref: supplier.ref } })
+    ).score;
     expect(afterRedelivery).toBe(after); // score unchanged — the handler self-guarded
     expect(await prisma.supplierScoreEvent.count({ where: { supplierRef: supplier.ref } })).toBe(1);
     expect(failed).toBe(0);
@@ -214,13 +246,22 @@ describe('worker fan-out — events reach consumer modules through the real bus'
       name: 'payment.verified',
       actorId: 'FIN-1',
       occurredAt: new Date().toISOString(),
-      payload: { paymentRef: 'PAY-X', orderRef: 'ORD-DOES-NOT-EXIST', trigger: 'confirmation', paidFraction: 0.5 },
+      payload: {
+        paymentRef: 'PAY-X',
+        orderRef: 'ORD-DOES-NOT-EXIST',
+        trigger: 'confirmation',
+        paidFraction: 0.5,
+      },
     };
 
-    await expect(dispatchEnvelope(dispatchMap, envelope)).rejects.toBeInstanceOf(EventDispatchError);
+    await expect(dispatchEnvelope(dispatchMap, envelope)).rejects.toBeInstanceOf(
+      EventDispatchError,
+    );
 
     // The logistics sibling still recorded its projection (independent, idempotent).
-    const projection = await prisma.orderPaymentState.findUnique({ where: { orderRef: 'ORD-DOES-NOT-EXIST' } });
+    const projection = await prisma.orderPaymentState.findUnique({
+      where: { orderRef: 'ORD-DOES-NOT-EXIST' },
+    });
     expect(projection?.paidTriggers).toContain('confirmation');
     // Trade recorded no processed-event row (its transaction rolled back on the throw), so a
     // retry will re-run only the trade handler.

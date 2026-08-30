@@ -90,7 +90,9 @@ export class DecisionService {
     const existing = await this.prisma.execDecision.findUnique({ where: { ref } });
     if (!existing) throw new NotFoundException(`decision ${ref} not found`);
     if (existing.status === 'answered') {
-      throw new BadRequestException(`decision ${ref} was already answered — raise a new one instead`);
+      throw new BadRequestException(
+        `decision ${ref} was already answered — raise a new one instead`,
+      );
     }
 
     const updated = await this.prisma.execDecision.update({
@@ -146,7 +148,9 @@ export class DecisionService {
     return {
       openCount: open.length,
       oldestDays: ages.length ? Math.floor(Math.max(...ages)) : 0,
-      meanAgeDays: ages.length ? Math.round((ages.reduce((a, b) => a + b, 0) / ages.length) * 10) / 10 : 0,
+      meanAgeDays: ages.length
+        ? Math.round((ages.reduce((a, b) => a + b, 0) / ages.length) * 10) / 10
+        : 0,
       deferredNowDue: deferredDue,
       oldest: open.slice(0, 5),
     };

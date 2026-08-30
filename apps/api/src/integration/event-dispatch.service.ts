@@ -29,7 +29,15 @@ export class EventDispatchService {
     orderPayment: OrderPaymentService,
     qualityGate: QualityGateService,
   ) {
-    this.map = buildDispatchMap({ order, invoice, commission, claim, supplierScore, orderPayment, qualityGate });
+    this.map = buildDispatchMap({
+      order,
+      invoice,
+      commission,
+      claim,
+      supplierScore,
+      orderPayment,
+      qualityGate,
+    });
   }
 
   async dispatch(envelope: EventEnvelope): Promise<void> {

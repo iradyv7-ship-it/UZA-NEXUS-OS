@@ -3,7 +3,14 @@ import { type Minor } from '@uza/contracts';
 import { prisma, resetDb } from './db';
 import { resetFinanceDb } from './finance-db';
 import {
-  invoices, payments, finance, customer, invoicedOrder, uploadFor, orderCreated, STANDARD_TOTAL,
+  invoices,
+  payments,
+  finance,
+  customer,
+  invoicedOrder,
+  uploadFor,
+  orderCreated,
+  STANDARD_TOTAL,
 } from './finance-fixtures';
 
 beforeEach(async () => {
@@ -22,7 +29,9 @@ describe('invoice — created from order.created, schedule derived from policy',
     expect(invoice.totalMinor).toBe(STANDARD_TOTAL);
     expect(invoice.status).toBe('issued');
 
-    const byTrigger = Object.fromEntries(invoice.installments.map((i) => [i.trigger, i.amountMinor]));
+    const byTrigger = Object.fromEntries(
+      invoice.installments.map((i) => [i.trigger, i.amountMinor]),
+    );
     expect(byTrigger).toEqual({ confirmation: 308150, pre_loading: 308150 });
     // Parts sum EXACTLY to the total — no cents lost to rounding.
     expect(invoice.installments.reduce((a, i) => a + i.amountMinor, 0)).toBe(STANDARD_TOTAL);
@@ -30,7 +39,9 @@ describe('invoice — created from order.created, schedule derived from policy',
 
   it('an established order gets a 30/40/30 schedule', async () => {
     const { invoice } = await invoicedOrder({ tier: 'established' });
-    const byTrigger = Object.fromEntries(invoice.installments.map((i) => [i.trigger, i.amountMinor]));
+    const byTrigger = Object.fromEntries(
+      invoice.installments.map((i) => [i.trigger, i.amountMinor]),
+    );
     expect(byTrigger).toEqual({ confirmation: 184890, pre_loading: 246520, pre_release: 184890 });
     expect(invoice.installments.reduce((a, i) => a + i.amountMinor, 0)).toBe(STANDARD_TOTAL);
   });
@@ -86,7 +97,14 @@ describe('invoice read — masking + scope', () => {
     const seen = await invoices.read(customer, invoice.ref);
     expect(seen.ref).toBe(invoice.ref);
 
-    const stranger = { userId: 'CUS-9', role: 'customer' as const, office: 'GOM', scope: { customerId: 'CUS-CD-999999' } };
-    await expect(invoices.read(stranger, invoice.ref)).rejects.toThrow(/ACCESS_DENIED_SCOPE|outside/);
+    const stranger = {
+      userId: 'CUS-9',
+      role: 'customer' as const,
+      office: 'GOM',
+      scope: { customerId: 'CUS-CD-999999' },
+    };
+    await expect(invoices.read(stranger, invoice.ref)).rejects.toThrow(
+      /ACCESS_DENIED_SCOPE|outside/,
+    );
   });
 });

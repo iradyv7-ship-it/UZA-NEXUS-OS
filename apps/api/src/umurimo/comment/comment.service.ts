@@ -122,7 +122,9 @@ export class CommentService {
     const comment = await this.prisma.comment.findUnique({ where: { ref } });
     if (!comment) throw new NotFoundException(`comment ${ref} not found`);
     if (comment.kind !== 'request') {
-      throw new BadRequestException(`comment ${ref} is not a request — only a request can be resolved`);
+      throw new BadRequestException(
+        `comment ${ref} is not a request — only a request can be resolved`,
+      );
     }
     if (comment.resolvedAt) return comment; // idempotent; re-resolving is not an error
 

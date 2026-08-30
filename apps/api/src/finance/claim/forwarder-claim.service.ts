@@ -46,8 +46,12 @@ export class ForwarderClaimService {
     });
     if (already) return { status: 'duplicate' as const, shipmentRef: envelope.payload.shipmentRef };
 
-    const { shipmentRef, measuredRevenueTon, billedRevenueTon, freightPaidMinor } = envelope.payload;
-    const { warranted, overRevenueTon } = ForwarderClaimService.assess(measuredRevenueTon, billedRevenueTon);
+    const { shipmentRef, measuredRevenueTon, billedRevenueTon, freightPaidMinor } =
+      envelope.payload;
+    const { warranted, overRevenueTon } = ForwarderClaimService.assess(
+      measuredRevenueTon,
+      billedRevenueTon,
+    );
 
     return this.prisma.$transaction(async (tx) => {
       await tx.processedEvent.create({

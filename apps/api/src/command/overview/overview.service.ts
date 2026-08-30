@@ -48,7 +48,10 @@ export class OverviewService {
           take: 50,
         }),
         this.prisma.grant.findMany({
-          where: { status: { notIn: ['awarded', 'rejected', 'closed'] }, deadlineAt: { gte: now, lte: horizon } },
+          where: {
+            status: { notIn: ['awarded', 'rejected', 'closed'] },
+            deadlineAt: { gte: now, lte: horizon },
+          },
           orderBy: { deadlineAt: 'asc' },
           take: 50,
         }),

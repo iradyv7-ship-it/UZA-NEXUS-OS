@@ -3,8 +3,18 @@ import { MASK, minor, FREIGHT_CONTINGENCY, type CostLadder } from '@uza/contract
 import { prisma, resetDb } from './db';
 import { resetTradeDb } from './trade-db';
 import {
-  quotations, projects, intake, customers,
-  vm, agent, finance, ceo, AGENT_ID, SUPPLIER_UNIT, standardEst, approvedChain,
+  quotations,
+  projects,
+  intake,
+  customers,
+  vm,
+  agent,
+  finance,
+  ceo,
+  AGENT_ID,
+  SUPPLIER_UNIT,
+  standardEst,
+  approvedChain,
 } from './trade-fixtures';
 
 beforeEach(async () => {
@@ -22,7 +32,7 @@ describe('quotation — cost ladder, both margins, contingency, actuals', () => 
     const ladder = row.ladder as unknown as CostLadder;
 
     // ocean 6.50 and inlandDest 3.40 uplifted by 9%; exportDocs untouched.
-    expect(ladder.ocean.estMinor).toBe(Math.round(minor(6.5) * (1 + FREIGHT_CONTINGENCY)));   // 709
+    expect(ladder.ocean.estMinor).toBe(Math.round(minor(6.5) * (1 + FREIGHT_CONTINGENCY))); // 709
     expect(ladder.inlandDest.estMinor).toBe(Math.round(minor(3.4) * (1 + FREIGHT_CONTINGENCY))); // 371
     expect(ladder.exportDocs.estMinor).toBe(minor(0.35)); // 35, no uplift
     expect(ladder.exw.estMinor).toBe(SUPPLIER_UNIT);
@@ -50,8 +60,8 @@ describe('quotation — cost ladder, both margins, contingency, actuals', () => 
     await quotations.closeCosts(finance, quotation.ref, { dutyVat: minor(6.0) });
 
     const row = await prisma.quotation.findUniqueOrThrow({ where: { ref: quotation.ref } });
-    expect(row.marginPct).toBe(quotedMargin);          // quoted is untouched
-    expect(row.realizedMargin).not.toBeNull();          // realized is populated
+    expect(row.marginPct).toBe(quotedMargin); // quoted is untouched
+    expect(row.realizedMargin).not.toBeNull(); // realized is populated
     expect(row.realizedMargin!).toBeLessThan(dapBefore); // higher actual cost => lower realized margin
   });
 });
@@ -84,16 +94,33 @@ describe('quotation — masking on read', () => {
 
 describe('quotation — versioned, never edited in place', () => {
   it('a revision supersedes its predecessor and bumps the version', async () => {
-    const customer = await customers.create(agent, { name: 'X', country: 'CD', phone: '+2439', agentId: AGENT_ID });
-    const lead = await intake.createLead(agent, { customerRef: customer.ref, rawText: 'need widgets' });
-    const request = await intake.clarifyLead(agent, { leadRef: lead.ref, spec: { item: 'widget' } });
+    const customer = await customers.create(agent, {
+      name: 'X',
+      country: 'CD',
+      phone: '+2439',
+      agentId: AGENT_ID,
+    });
+    const lead = await intake.createLead(agent, {
+      customerRef: customer.ref,
+      rawText: 'need widgets',
+    });
+    const request = await intake.clarifyLead(agent, {
+      leadRef: lead.ref,
+      spec: { item: 'widget' },
+    });
     const project = await projects.create(vm, { requestRef: request.ref, name: 'W', owner: 'a' });
 
     const v1 = await quotations.build(vm, project.ref, {
-      supplierUnitCostMinor: SUPPLIER_UNIT, estCostsMinor: standardEst(), qty: 100, requiredMargin: 0.18,
+      supplierUnitCostMinor: SUPPLIER_UNIT,
+      estCostsMinor: standardEst(),
+      qty: 100,
+      requiredMargin: 0.18,
     });
     const v2 = await quotations.revise(vm, v1.ref, {
-      supplierUnitCostMinor: SUPPLIER_UNIT, estCostsMinor: standardEst(), qty: 120, requiredMargin: 0.2,
+      supplierUnitCostMinor: SUPPLIER_UNIT,
+      estCostsMinor: standardEst(),
+      qty: 120,
+      requiredMargin: 0.2,
     });
 
     const oldRow = await prisma.quotation.findUniqueOrThrow({ where: { ref: v1.ref } });
@@ -110,10 +137,16 @@ describe('quotation — versioned, never edited in place', () => {
   it('a superseded quotation cannot be revised or approved again', async () => {
     const { project } = await approvedChain();
     const v1 = await quotations.build(vm, project.ref, {
-      supplierUnitCostMinor: SUPPLIER_UNIT, estCostsMinor: standardEst(), qty: 10, requiredMargin: 0.18,
+      supplierUnitCostMinor: SUPPLIER_UNIT,
+      estCostsMinor: standardEst(),
+      qty: 10,
+      requiredMargin: 0.18,
     });
     await quotations.revise(vm, v1.ref, {
-      supplierUnitCostMinor: SUPPLIER_UNIT, estCostsMinor: standardEst(), qty: 10, requiredMargin: 0.18,
+      supplierUnitCostMinor: SUPPLIER_UNIT,
+      estCostsMinor: standardEst(),
+      qty: 10,
+      requiredMargin: 0.18,
     });
     await expect(quotations.approve(vm, v1.ref)).rejects.toThrow(/superseded/);
   });

@@ -37,7 +37,9 @@ async function main() {
   console.log('');
   for (const r of rows) {
     const wall = r.wallTags.length ? ` {${r.wallTags.join(',')}}` : '';
-    console.log(`${r.ref} ${r.source.padEnd(11)} ${r.lane.padEnd(7)}${wall} ${r.title.slice(0, 70)}`);
+    console.log(
+      `${r.ref} ${r.source.padEnd(11)} ${r.lane.padEnd(7)}${wall} ${r.title.slice(0, 70)}`,
+    );
   }
 
   const byLane = await prisma.signal.groupBy({ by: ['lane'], _count: { _all: true } });

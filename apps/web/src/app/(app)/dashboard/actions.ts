@@ -21,8 +21,12 @@ import { getSession } from '@/lib/session';
 const SEED_AGENT_EMAIL = process.env.UZA_SEED_AGENT_EMAIL ?? '';
 const SEED_AGENT_PASSWORD = process.env.UZA_SEED_AGENT_PASSWORD ?? '';
 
-interface LoginResp { accessToken: string }
-interface RefResp { ref: string }
+interface LoginResp {
+  accessToken: string;
+}
+interface RefResp {
+  ref: string;
+}
 
 export async function seedDealAction(): Promise<void> {
   const session = await getSession();
@@ -97,7 +101,9 @@ export async function seedDealAction(): Promise<void> {
  * to the detail screen (which enforces its own auth/masking) — it no longer tracks anything.
  */
 export async function trackRefAction(formData: FormData): Promise<void> {
-  const ref = String(formData.get('ref') ?? '').trim().toUpperCase();
+  const ref = String(formData.get('ref') ?? '')
+    .trim()
+    .toUpperCase();
   if (/^QUO-/.test(ref)) redirect(`/quotations/${ref}`);
   if (/^ORD-/.test(ref)) redirect(`/orders/${ref}`);
   redirect('/dashboard?err=track');

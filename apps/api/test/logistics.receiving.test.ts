@@ -17,7 +17,10 @@ describe('warehouse receiving — three-way volumetrics', () => {
     const { receipt, packages } = await receiveLot({
       declaredCbm: 4.0,
       declaredKg: 1000,
-      packages: [{ kg: 500, cbm: 2.0 }, { kg: 500, cbm: 2.0 }],
+      packages: [
+        { kg: 500, cbm: 2.0 },
+        { kg: 500, cbm: 2.0 },
+      ],
     });
     // Declared (factory) preserved; measured (François) computed independently.
     expect(receipt.declaredCbm).toBe(4.0);
@@ -27,7 +30,9 @@ describe('warehouse receiving — three-way volumetrics', () => {
     expect(receipt.measuredRevenueTon).toBe(4.0);
     expect(packages).toHaveLength(2);
 
-    const events = await prisma.outboxEvent.findMany({ where: { name: 'warehouse.receiptRecorded' } });
+    const events = await prisma.outboxEvent.findMany({
+      where: { name: 'warehouse.receiptRecorded' },
+    });
     expect(events).toHaveLength(1);
     const payload = events[0]!.payload as Record<string, unknown>;
     expect(payload.orderRef).toBe(ORDER_REF);
@@ -41,7 +46,10 @@ describe('warehouse receiving — three-way volumetrics', () => {
   it('CF-013: variance beyond the hard stop freezes every package (varianceHold=true)', async () => {
     const { receipt, packages } = await receiveLot({
       declaredCbm: 3.0, // measured 4.0 → variance 0.333 > 0.10
-      packages: [{ kg: 500, cbm: 2.0 }, { kg: 500, cbm: 2.0 }],
+      packages: [
+        { kg: 500, cbm: 2.0 },
+        { kg: 500, cbm: 2.0 },
+      ],
     });
     expect(receipt.hardStop).toBe(true);
     expect(receipt.discrepancy).toBe(true);
@@ -49,15 +57,19 @@ describe('warehouse receiving — three-way volumetrics', () => {
     // The QC state is untouched by the commercial freeze (CF-014 separation).
     expect(packages.every((p) => p.qcReleased === false)).toBe(true);
 
-    const payload = (await prisma.outboxEvent.findFirstOrThrow({ where: { name: 'warehouse.receiptRecorded' } }))
-      .payload as Record<string, unknown>;
+    const payload = (
+      await prisma.outboxEvent.findFirstOrThrow({ where: { name: 'warehouse.receiptRecorded' } })
+    ).payload as Record<string, unknown>;
     expect(payload.hardStop).toBe(true);
   });
 
   it('flags a discrepancy inside the hard stop without freezing (supplier-score signal only)', async () => {
     const { receipt, packages } = await receiveLot({
       declaredCbm: 3.7, // measured 4.0 → variance 0.081: >0.05 discrepancy, <0.10 no freeze
-      packages: [{ kg: 500, cbm: 2.0 }, { kg: 500, cbm: 2.0 }],
+      packages: [
+        { kg: 500, cbm: 2.0 },
+        { kg: 500, cbm: 2.0 },
+      ],
     });
     expect(receipt.discrepancy).toBe(true);
     expect(receipt.hardStop).toBe(false);
@@ -68,17 +80,26 @@ describe('warehouse receiving — three-way volumetrics', () => {
     const { receipt } = await receiveLot({ declaredCbm: 3.0 });
     expect(receipt.hardStop).toBe(true);
 
-    const out = await receiving.resolveVariance(warehouse, receipt.lotRef, 'client_pays', 'client agreed to extra freight');
+    const out = await receiving.resolveVariance(
+      warehouse,
+      receipt.lotRef,
+      'client_pays',
+      'client agreed to extra freight',
+    );
     expect(out.decision).toBe('client_pays');
 
     const pkgs = await prisma.package.findMany({ where: { lotRef: receipt.lotRef } });
     expect(pkgs.every((p) => p.varianceHold === false)).toBe(true);
 
-    const resolved = await prisma.warehouseReceipt.findUniqueOrThrow({ where: { lotRef: receipt.lotRef } });
+    const resolved = await prisma.warehouseReceipt.findUniqueOrThrow({
+      where: { lotRef: receipt.lotRef },
+    });
     expect(resolved.decision).toBe('client_pays');
     expect(resolved.decidedBy).toBe(warehouse.userId);
 
-    const events = await prisma.outboxEvent.findMany({ where: { name: 'warehouse.varianceResolved' } });
+    const events = await prisma.outboxEvent.findMany({
+      where: { name: 'warehouse.varianceResolved' },
+    });
     expect(events).toHaveLength(1);
     expect((events[0]!.payload as Record<string, unknown>).decision).toBe('client_pays');
   });
@@ -98,7 +119,10 @@ describe('warehouse receiving — three-way volumetrics', () => {
       poRef: 'PO-CN-2026-0001',
       declaredCbm: 4.0,
       declaredKg: 1000,
-      packages: [{ kg: 500, cbm: 2.0 }, { kg: 500, cbm: 2.0 }],
+      packages: [
+        { kg: 500, cbm: 2.0 },
+        { kg: 500, cbm: 2.0 },
+      ],
       clientRequestId: 'device-abc-123',
     };
     const first = await receiving.receivePackages(warehouse, input);
@@ -106,7 +130,9 @@ describe('warehouse receiving — three-way volumetrics', () => {
     expect(first.replayed).toBe(false);
     expect(second.replayed).toBe(true);
     expect(await prisma.warehouseReceipt.count()).toBe(1);
-    expect(await prisma.outboxEvent.count({ where: { name: 'warehouse.receiptRecorded' } })).toBe(1);
+    expect(await prisma.outboxEvent.count({ where: { name: 'warehouse.receiptRecorded' } })).toBe(
+      1,
+    );
   });
 
   it('authorises receiving at the service layer — a sales agent is denied (audited)', async () => {

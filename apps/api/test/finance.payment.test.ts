@@ -3,8 +3,15 @@ import { type Minor } from '@uza/contracts';
 import { prisma, resetDb } from './db';
 import { resetFinanceDb } from './finance-db';
 import {
-  payments, finance, ceo, vm, frontOffice, agent, customer,
-  invoicedOrder, uploadFor,
+  payments,
+  finance,
+  ceo,
+  vm,
+  frontOffice,
+  agent,
+  customer,
+  invoicedOrder,
+  uploadFor,
 } from './finance-fixtures';
 
 beforeEach(async () => {
@@ -24,8 +31,14 @@ describe('payment proof capture — pending until a human verifies', () => {
     expect(payment.status).toBe('pending_verification');
     expect(payment.verifiedBy).toBeNull();
 
-    const evt = await prisma.outboxEvent.findFirstOrThrow({ where: { name: 'payment.proofUploaded' } });
-    expect(evt.payload).toMatchObject({ paymentRef: payment.ref, invoiceRef: invoice.ref, amountMinor: CONF });
+    const evt = await prisma.outboxEvent.findFirstOrThrow({
+      where: { name: 'payment.proofUploaded' },
+    });
+    expect(evt.payload).toMatchObject({
+      paymentRef: payment.ref,
+      invoiceRef: invoice.ref,
+      amountMinor: CONF,
+    });
   });
 });
 
@@ -41,7 +54,9 @@ describe('CF-008 — only Finance may verify a payment', () => {
     const { invoice } = await invoicedOrder({ tier: 'new' });
     const payment = await uploadFor(invoice.ref, 'confirmation', CONF, customer);
 
-    await expect(payments.verify(who(), payment.ref)).rejects.toThrow(/ACCESS_DENIED_ROLE|does not permit/);
+    await expect(payments.verify(who(), payment.ref)).rejects.toThrow(
+      /ACCESS_DENIED_ROLE|does not permit/,
+    );
 
     // The payment never left pending, and a deny row was written before the throw.
     const row = await prisma.payment.findUniqueOrThrow({ where: { ref: payment.ref } });
@@ -123,7 +138,9 @@ describe('CF-009 — verifying the confirmation payment publishes payment.verifi
 
     expect(result.trigger).toBe('pre_loading');
     expect(result.paidFraction).toBeCloseTo(1.0, 4);
-    const preloadEvents = await prisma.outboxEvent.findMany({ where: { name: 'payment.verified' } });
+    const preloadEvents = await prisma.outboxEvent.findMany({
+      where: { name: 'payment.verified' },
+    });
     expect(preloadEvents).toHaveLength(2);
   });
 

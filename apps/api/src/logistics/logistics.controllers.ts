@@ -1,5 +1,11 @@
 import { Body, Controller, Get, Param, Post, Query } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiProperty, ApiPropertyOptional, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiOperation,
+  ApiProperty,
+  ApiPropertyOptional,
+  ApiTags,
+} from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import {
   ArrayNotEmpty,
@@ -15,13 +21,7 @@ import {
   MinLength,
   ValidateNested,
 } from 'class-validator';
-import type {
-  Actor,
-  Destination,
-  Minor,
-  TrackingSource,
-  VarianceDecision,
-} from '@uza/contracts';
+import type { Actor, Destination, Minor, TrackingSource, VarianceDecision } from '@uza/contracts';
 import { CurrentActor } from '../platform/auth/current-actor.decorator';
 import { ReceivingService } from './warehouse/receiving.service';
 import { ReleaseService } from './warehouse/release.service';
@@ -33,7 +33,11 @@ import { PartnerPortalService } from './logistics/partner-portal.service';
 
 const DESTINATIONS: readonly Destination[] = ['KIGALI', 'GOMA', 'BUKAVU', 'UZA_STOCK', 'OTHER'];
 const TRACKING_SOURCES: readonly TrackingSource[] = ['carrier', 'partner', 'uza', 'estimated'];
-const VARIANCE_DECISIONS: readonly VarianceDecision[] = ['client_pays', 'uza_absorbs', 'reduce_qty'];
+const VARIANCE_DECISIONS: readonly VarianceDecision[] = [
+  'client_pays',
+  'uza_absorbs',
+  'reduce_qty',
+];
 
 class PackageSpecDto {
   @ApiProperty() @IsNumber() kg!: number;
@@ -62,16 +66,28 @@ class ResolveVarianceDto {
 }
 
 class QcReleaseDto {
-  @ApiProperty({ type: [String] }) @IsArray() @ArrayNotEmpty() @IsString({ each: true }) packageRefs!: string[];
+  @ApiProperty({ type: [String] })
+  @IsArray()
+  @ArrayNotEmpty()
+  @IsString({ each: true })
+  packageRefs!: string[];
 }
 
 class AllocateDestinationDto {
-  @ApiProperty({ type: [String] }) @IsArray() @ArrayNotEmpty() @IsString({ each: true }) packageRefs!: string[];
+  @ApiProperty({ type: [String] })
+  @IsArray()
+  @ArrayNotEmpty()
+  @IsString({ each: true })
+  packageRefs!: string[];
   @ApiProperty({ enum: DESTINATIONS }) @IsIn(DESTINATIONS) destination!: Destination;
 }
 
 class CreateShipmentDto {
-  @ApiProperty({ type: [String] }) @IsArray() @ArrayNotEmpty() @IsString({ each: true }) packageRefs!: string[];
+  @ApiProperty({ type: [String] })
+  @IsArray()
+  @ArrayNotEmpty()
+  @IsString({ each: true })
+  packageRefs!: string[];
   @ApiProperty() @IsString() container!: string;
   @ApiProperty() @IsString() carrier!: string;
   @ApiProperty() @IsString() etd!: string;
@@ -101,17 +117,28 @@ class DelayDto {
 
 class PartnerShipmentsQueryDto {
   @ApiPropertyOptional({ minimum: 1, maximum: 100, default: 20 })
-  @IsOptional() @Type(() => Number) @IsInt() @Min(1) @Max(100)
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @Max(100)
   limit = 20;
 
   @ApiPropertyOptional({ minimum: 0, default: 0 })
-  @IsOptional() @Type(() => Number) @IsInt() @Min(0)
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(0)
   offset = 0;
 }
 
 class DeliverDto {
   @ApiProperty() @IsString() shipmentRef!: string;
-  @ApiProperty({ type: [String] }) @IsArray() @ArrayNotEmpty() @IsString({ each: true }) packageRefs!: string[];
+  @ApiProperty({ type: [String] })
+  @IsArray()
+  @ArrayNotEmpty()
+  @IsString({ each: true })
+  packageRefs!: string[];
   @ApiProperty() @IsString() podRef!: string;
   @ApiProperty({ required: false }) @IsOptional() @IsString() office?: string;
 }
@@ -123,7 +150,9 @@ export class ReceivingController {
   constructor(private readonly receiving: ReceivingService) {}
 
   @Post()
-  @ApiOperation({ summary: 'Receive a lot; reconcile measured-vs-declared, freeze on hard stop (package:create)' })
+  @ApiOperation({
+    summary: 'Receive a lot; reconcile measured-vs-declared, freeze on hard stop (package:create)',
+  })
   receive(@CurrentActor() actor: Actor, @Body() dto: ReceiveDto) {
     return this.receiving.receivePackages(actor, dto);
   }
@@ -180,7 +209,12 @@ export class FreightController {
     @Param('shipmentRef') shipmentRef: string,
     @Body() dto: RecordBilledWeightDto,
   ) {
-    return this.freight.recordBilledWeight(actor, shipmentRef, dto.billedRevenueTon, dto.freightPaidMinor as Minor);
+    return this.freight.recordBilledWeight(
+      actor,
+      shipmentRef,
+      dto.billedRevenueTon,
+      dto.freightPaidMinor as Minor,
+    );
   }
 
   @Post(':shipmentRef/allocate')
@@ -198,7 +232,11 @@ export class TrackingController {
 
   @Post(':shipmentRef/events')
   @ApiOperation({ summary: 'Add a tracking event; confirmed vs estimated derived (shipment:read)' })
-  track(@CurrentActor() actor: Actor, @Param('shipmentRef') shipmentRef: string, @Body() dto: TrackDto) {
+  track(
+    @CurrentActor() actor: Actor,
+    @Param('shipmentRef') shipmentRef: string,
+    @Body() dto: TrackDto,
+  ) {
     return this.tracking.track(
       actor,
       shipmentRef,
@@ -210,14 +248,20 @@ export class TrackingController {
   }
 
   @Get(':shipmentRef/timeline')
-  @ApiOperation({ summary: 'Shipment timeline, each event tagged confirmed vs estimated (shipment:read)' })
+  @ApiOperation({
+    summary: 'Shipment timeline, each event tagged confirmed vs estimated (shipment:read)',
+  })
   timeline(@CurrentActor() actor: Actor, @Param('shipmentRef') shipmentRef: string) {
     return this.tracking.timeline(actor, shipmentRef);
   }
 
   @Post(':shipmentRef/delay')
   @ApiOperation({ summary: 'Delay a shipment; fans out to five parties (shipment:create)' })
-  delay(@CurrentActor() actor: Actor, @Param('shipmentRef') shipmentRef: string, @Body() dto: DelayDto) {
+  delay(
+    @CurrentActor() actor: Actor,
+    @Param('shipmentRef') shipmentRef: string,
+    @Body() dto: DelayDto,
+  ) {
     return this.tracking.delayShipment(actor, shipmentRef, dto.newEta, dto.reason, {
       ...(dto.agentId ? { agentId: dto.agentId } : {}),
       ...(dto.ownerId ? { ownerId: dto.ownerId } : {}),
@@ -233,7 +277,9 @@ export class DeliveryController {
   constructor(private readonly delivery: DeliveryService) {}
 
   @Post()
-  @ApiOperation({ summary: 'Deliver with POD; gated on full payment (delivery:create, shipment-scoped)' })
+  @ApiOperation({
+    summary: 'Deliver with POD; gated on full payment (delivery:create, shipment-scoped)',
+  })
   deliver(@CurrentActor() actor: Actor, @Body() dto: DeliverDto) {
     return this.delivery.deliver(actor, dto);
   }
@@ -246,13 +292,17 @@ export class PartnerPortalController {
   constructor(private readonly portal: PartnerPortalService) {}
 
   @Get('shipments')
-  @ApiOperation({ summary: 'List the caller’s assigned shipments (shipment:read, scoped; freight cost masked)' })
+  @ApiOperation({
+    summary: 'List the caller’s assigned shipments (shipment:read, scoped; freight cost masked)',
+  })
   listShipments(@CurrentActor() actor: Actor, @Query() q: PartnerShipmentsQueryDto) {
     return this.portal.listShipments(actor, { limit: q.limit, offset: q.offset });
   }
 
   @Get('shipments/:ref')
-  @ApiOperation({ summary: 'Read an assigned shipment (shipment:read, scoped; freight cost masked)' })
+  @ApiOperation({
+    summary: 'Read an assigned shipment (shipment:read, scoped; freight cost masked)',
+  })
   readShipment(@CurrentActor() actor: Actor, @Param('ref') ref: string) {
     return this.portal.readShipment(actor, ref);
   }

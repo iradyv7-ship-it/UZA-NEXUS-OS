@@ -57,19 +57,31 @@ export class PartnerPortalService {
   async readShipment(actor: Actor, shipmentRef: string) {
     const shipment = await this.prisma.shipment.findUnique({ where: { ref: shipmentRef } });
     if (!shipment) throw new NotFoundException(`shipment ${shipmentRef} not found`);
-    await this.authz.authorize(actor, 'shipment', 'read', { shipmentRef, kind: 'shipment', ref: shipmentRef });
+    await this.authz.authorize(actor, 'shipment', 'read', {
+      shipmentRef,
+      kind: 'shipment',
+      ref: shipmentRef,
+    });
     return this.maskForPartner(actor, shipment);
   }
 
   async readPackages(actor: Actor, shipmentRef: string) {
     // Scope on the shipment the packages belong to.
-    await this.authz.authorize(actor, 'package', 'read', { shipmentRef, kind: 'shipment', ref: shipmentRef });
+    await this.authz.authorize(actor, 'package', 'read', {
+      shipmentRef,
+      kind: 'shipment',
+      ref: shipmentRef,
+    });
     const packages = await this.prisma.package.findMany({ where: { shipmentRef } });
     return packages.map((p) => this.maskForPartner(actor, p));
   }
 
   async readDelivery(actor: Actor, shipmentRef: string) {
-    await this.authz.authorize(actor, 'delivery', 'read', { shipmentRef, kind: 'shipment', ref: shipmentRef });
+    await this.authz.authorize(actor, 'delivery', 'read', {
+      shipmentRef,
+      kind: 'shipment',
+      ref: shipmentRef,
+    });
     const delivery = await this.prisma.delivery.findFirst({ where: { shipmentRef } });
     if (!delivery) throw new NotFoundException(`no delivery for shipment ${shipmentRef}`);
     return this.maskForPartner(actor, delivery);

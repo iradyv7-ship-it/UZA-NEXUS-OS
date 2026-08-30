@@ -8,25 +8,26 @@
  */
 export const UZA_ERRORS = {
   // authorisation
-  ACCESS_DENIED_ROLE:        'Your role does not permit this action.',
-  ACCESS_DENIED_SCOPE:       'This record is outside your access.',
+  ACCESS_DENIED_ROLE: 'Your role does not permit this action.',
+  ACCESS_DENIED_SCOPE: 'This record is outside your access.',
 
   // finance gates
-  PAYMENT_SHORT:             'Payment does not settle the next installment.',
-  PAYMENT_NOT_VERIFIED:      'Payment is awaiting verification by Finance.',
-  DEPOSIT_BELOW_MINIMUM:     'Deposit is below the minimum policy percentage.',
+  PAYMENT_SHORT: 'Payment does not settle the next installment.',
+  PAYMENT_NOT_VERIFIED: 'Payment is awaiting verification by Finance.',
+  DEPOSIT_BELOW_MINIMUM: 'Deposit is below the minimum policy percentage.',
 
   // booking gates, in the order they are checked
-  GATE_VARIANCE_UNRESOLVED:  'Volumetric variance is unresolved. A decision is needed on who carries the extra freight.',
-  GATE_PRELOADING_UNPAID:    'The pre-loading installment is unpaid.',
-  GATE_MIXED_DESTINATION:    'Containers carry one destination only.',
+  GATE_VARIANCE_UNRESOLVED:
+    'Volumetric variance is unresolved. A decision is needed on who carries the extra freight.',
+  GATE_PRELOADING_UNPAID: 'The pre-loading installment is unpaid.',
+  GATE_MIXED_DESTINATION: 'Containers carry one destination only.',
 
   // quality gates
-  GATE_QC_NOT_RELEASED:      'Packages have not passed quality release.',
-  CAPA_REINSPECTION_FAILED:  'A corrective action cannot close against a failed reinspection.',
+  GATE_QC_NOT_RELEASED: 'Packages have not passed quality release.',
+  CAPA_REINSPECTION_FAILED: 'A corrective action cannot close against a failed reinspection.',
 
   // release gate
-  GATE_BALANCE_OUTSTANDING:  'Goods stay in the warehouse until the balance is settled.',
+  GATE_BALANCE_OUTSTANDING: 'Goods stay in the warehouse until the balance is settled.',
 } as const;
 
 export type UzaErrorCode = keyof typeof UZA_ERRORS;

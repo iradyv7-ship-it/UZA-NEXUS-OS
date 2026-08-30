@@ -42,35 +42,33 @@ export class DigestService {
 
     const [reports, unownedBlockers, overdueBlockers, openRequests, employees, profiles] =
       await Promise.all([
-      this.prisma.weeklyReport.findMany({ where: { periodKey: period } }),
-      this.prisma.blocker.findMany({
-        where: { clearedAt: null, OR: [{ ownerId: null }, { dueAt: null }] },
-        orderBy: { createdAt: 'asc' },
-      }),
-      this.prisma.blocker.findMany({
-        where: { clearedAt: null, ownerId: { not: null }, dueAt: { not: null, lt: now } },
-        orderBy: { dueAt: 'asc' },
-      }),
-      this.prisma.comment.findMany({
-        where: { kind: 'request', resolvedAt: null },
-        orderBy: { createdAt: 'asc' },
-      }),
-      this.prisma.user.findMany({
-        where: { kind: 'employee', disabledAt: null },
-        select: { ref: true },
-      }),
-      // Departments exist now, so the digest can be read by arm rather than as a
-      // flat list of ten names. A founder scanning this on a Monday is asking
-      // "which part of the company is stuck", not "who is stuck".
-      this.prisma.employeeProfile.findMany({
-        select: { userId: true, department: { select: { code: true, name: true } } },
-      }),
-    ]);
+        this.prisma.weeklyReport.findMany({ where: { periodKey: period } }),
+        this.prisma.blocker.findMany({
+          where: { clearedAt: null, OR: [{ ownerId: null }, { dueAt: null }] },
+          orderBy: { createdAt: 'asc' },
+        }),
+        this.prisma.blocker.findMany({
+          where: { clearedAt: null, ownerId: { not: null }, dueAt: { not: null, lt: now } },
+          orderBy: { dueAt: 'asc' },
+        }),
+        this.prisma.comment.findMany({
+          where: { kind: 'request', resolvedAt: null },
+          orderBy: { createdAt: 'asc' },
+        }),
+        this.prisma.user.findMany({
+          where: { kind: 'employee', disabledAt: null },
+          select: { ref: true },
+        }),
+        // Departments exist now, so the digest can be read by arm rather than as a
+        // flat list of ten names. A founder scanning this on a Monday is asking
+        // "which part of the company is stuck", not "who is stuck".
+        this.prisma.employeeProfile.findMany({
+          select: { userId: true, department: { select: { code: true, name: true } } },
+        }),
+      ]);
 
     const filed = new Set(reports.map((r) => r.ownerId));
-    const deptOf = new Map(
-      profiles.map((p) => [p.userId, p.department?.code ?? 'UNASSIGNED']),
-    );
+    const deptOf = new Map(profiles.map((p) => [p.userId, p.department?.code ?? 'UNASSIGNED']));
     const deptName = new Map<string, string>([['UNASSIGNED', 'No department']]);
     for (const p of profiles) {
       if (p.department) deptName.set(p.department.code, p.department.name);

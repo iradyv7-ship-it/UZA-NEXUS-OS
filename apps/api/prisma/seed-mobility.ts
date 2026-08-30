@@ -247,7 +247,8 @@ const DECISIONS = [
   },
   {
     ref: 'DEC-2026-0032',
-    question: 'Will BK refinance an existing vehicle loan from another lender, and does Unguka charge for early settlement?',
+    question:
+      'Will BK refinance an existing vehicle loan from another lender, and does Unguka charge for early settlement?',
     context:
       'Two phone calls, and the entire drive-and-refinance path depends on both. Twelve months of clean Unguka repayment IS the trading history BK requires, so refinancing at month 12 recovers about 61% of the rate gap without anyone repricing anything. Refinancing later is worse, not better — at month 18 it captures only 45%. If either answer is unfavourable the path collapses and only the twelve-month pool route survives.',
     initiativeRef: 'INIT-2026-0220',
@@ -255,7 +256,8 @@ const DECISIONS = [
   },
   {
     ref: 'DEC-2026-0033',
-    question: 'Is the Drivers Pool described as the qualification route rather than the consolation?',
+    question:
+      'Is the Drivers Pool described as the qualification route rather than the consolation?',
     context:
       "Four of BK's five requirements are administration — a registration, an app account, a bank settlement instruction and a tracker. Only twelve months of trading history cannot be manufactured, and the Drivers Pool produces exactly that while the driver earns. It was designed to generate a verified earnings record for the readiness score; nobody has said out loud that it also manufactures the single irreducible barrier to cheap money. Same mechanism, second buyer.",
     initiativeRef: 'INIT-2026-0222',
@@ -335,7 +337,8 @@ const DECISIONS = [
   },
   {
     ref: 'DEC-2026-0022',
-    question: 'Which of uza-build and uzabuild is real, and what happens to uza-blueprint and uza-serve?',
+    question:
+      'Which of uza-build and uzabuild is real, and what happens to uza-blueprint and uza-serve?',
     context:
       'The same name with a hyphen removed, plus two prototypes with no venture assigned and no push in weeks. Four repositories nobody can currently explain. Recommendation: keep one, archive three.',
     initiativeRef: 'INIT-2026-0021',
@@ -356,7 +359,8 @@ async function main() {
   const refs = new Set(known.map((k) => k.ref));
 
   for (const s of STEPS) {
-    if (s.attention === 'runs' && !s.nextAction) throw new Error(`${s.ref}: runs with no nextAction`);
+    if (s.attention === 'runs' && !s.nextAction)
+      throw new Error(`${s.ref}: runs with no nextAction`);
     if (s.attention === 'holds' && !s.reviewAt) throw new Error(`${s.ref}: holds with no reviewAt`);
     const data = {
       name: s.name,
@@ -371,7 +375,11 @@ async function main() {
       status: 'active' as const,
       startedAt: s.attention === 'runs' ? d('2026-08-22') : null,
     };
-    await prisma.initiative.upsert({ where: { ref: s.ref }, create: { ref: s.ref, ...data }, update: data });
+    await prisma.initiative.upsert({
+      where: { ref: s.ref },
+      create: { ref: s.ref, ...data },
+      update: data,
+    });
     refs.add(s.ref);
   }
 
@@ -390,23 +398,45 @@ async function main() {
       raisedAt: dec.raisedAt,
       status: 'open' as const,
     };
-    await prisma.execDecision.upsert({ where: { ref: dec.ref }, create: { ref: dec.ref, ...data }, update: data });
+    await prisma.execDecision.upsert({
+      where: { ref: dec.ref },
+      create: { ref: dec.ref, ...data },
+      update: data,
+    });
   }
 
   // The verdicts from the architecture review, recorded against the systems themselves so
   // the projects page shows the judgement rather than only the inventory.
   const verdicts: [string, string][] = [
-    ['SYS-2026-0009', 'STANDALONE. Licensed, sellable to third-party site owners, realtime. Move to the UZA-SOLUTIONS org. Joined to Mobility by UZA ID, not by database.'],
-    ['SYS-2026-0010', 'MERGE into Mobility. Battery health is an attribute of a vehicle — a column and a chart, not a codebase.'],
-    ['SYS-2026-0011', 'MERGE into Mobility as the fleet module. Same vehicles, same drivers; standalone means a second copy of both.'],
-    ['SYS-2026-0013', 'MERGE. Becomes the bank surface of the platform. Today it is one HTML file with hard-coded figures — a demo, not a system of record.'],
+    [
+      'SYS-2026-0009',
+      'STANDALONE. Licensed, sellable to third-party site owners, realtime. Move to the UZA-SOLUTIONS org. Joined to Mobility by UZA ID, not by database.',
+    ],
+    [
+      'SYS-2026-0010',
+      'MERGE into Mobility. Battery health is an attribute of a vehicle — a column and a chart, not a codebase.',
+    ],
+    [
+      'SYS-2026-0011',
+      'MERGE into Mobility as the fleet module. Same vehicles, same drivers; standalone means a second copy of both.',
+    ],
+    [
+      'SYS-2026-0013',
+      'MERGE. Becomes the bank surface of the platform. Today it is one HTML file with hard-coded figures — a demo, not a system of record.',
+    ],
     ['SYS-2026-0019', 'RETIRE. No venture, no push in weeks, nobody can say what it is for.'],
-    ['SYS-2026-0020', 'PICK ONE with uzabuild, archive the other. The same name with a hyphen removed.'],
+    [
+      'SYS-2026-0020',
+      'PICK ONE with uzabuild, archive the other. The same name with a hyphen removed.',
+    ],
     ['SYS-2026-0021', 'PICK ONE with uza-build, archive the other.'],
     ['SYS-2026-0022', 'RETIRE. No venture assigned.'],
   ];
   for (const [ref, note] of verdicts) {
-    const exists = await prisma.systemRecord.findUnique({ where: { ref }, select: { notes: true } });
+    const exists = await prisma.systemRecord.findUnique({
+      where: { ref },
+      select: { notes: true },
+    });
     if (!exists) continue;
     await prisma.systemRecord.update({
       where: { ref },
@@ -448,7 +478,9 @@ async function main() {
   });
 
   const runs = STEPS.filter((s) => s.attention === 'runs');
-  console.log(`${STEPS.length} go-live steps seeded — ${runs.length} running, ${STEPS.length - runs.length} held behind them`);
+  console.log(
+    `${STEPS.length} go-live steps seeded — ${runs.length} running, ${STEPS.length - runs.length} held behind them`,
+  );
   console.log('running now:');
   for (const s of runs) console.log(`  ${s.ref}  ${s.name}  (${s.owner})`);
   console.log(`${DECISIONS.length} decisions raised, ${verdicts.length} systems given a verdict`);

@@ -34,7 +34,14 @@ export class QualityGateService {
       // The latest inspection is authoritative: a pass clears a prior block, a fail sets it.
       await tx.inspectionOutcome.upsert({
         where: { poRef },
-        create: { poRef, lastResult: result, releaseBlocked: result === 'fail', critical, major, minor },
+        create: {
+          poRef,
+          lastResult: result,
+          releaseBlocked: result === 'fail',
+          critical,
+          major,
+          minor,
+        },
         update: { lastResult: result, releaseBlocked: result === 'fail', critical, major, minor },
       });
       return { status: 'recorded' as const, poRef, result };
@@ -74,7 +81,8 @@ export class QualityGateService {
       throw new UzaError({
         code: 'GATE_QC_NOT_RELEASED',
         responsibleRole: 'china_warehouse',
-        nextAction: 'Resolve the failed inspection / close the CAPA before releasing these packages.',
+        nextAction:
+          'Resolve the failed inspection / close the CAPA before releasing these packages.',
         context: { blockedPos: blocked.map((b) => b.poRef).join(', ') },
       });
     }

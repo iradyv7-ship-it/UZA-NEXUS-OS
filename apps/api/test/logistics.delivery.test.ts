@@ -2,7 +2,14 @@ import { beforeEach, afterAll, describe, expect, it } from 'vitest';
 import { prisma, resetDb } from './db';
 import { resetLogisticsDb } from './logistics-db';
 import {
-  containers, deliveries, orderPayments, loadableLot, vm, ceo, paymentVerified, ORDER_REF,
+  containers,
+  deliveries,
+  orderPayments,
+  loadableLot,
+  vm,
+  ceo,
+  paymentVerified,
+  ORDER_REF,
 } from './logistics-fixtures';
 
 beforeEach(async () => {
@@ -16,7 +23,12 @@ afterAll(async () => {
 const bookShipment = async () => {
   const { refs } = await loadableLot({ orderRef: ORDER_REF, destination: 'KIGALI' });
   const { shipment } = await containers.createShipment(vm, {
-    packageRefs: refs, container: 'MSKU-1', carrier: 'Maersk', etd: '2026-08-01', eta: '2026-09-15', partnerId: 'IMARI',
+    packageRefs: refs,
+    container: 'MSKU-1',
+    carrier: 'Maersk',
+    etd: '2026-08-01',
+    eta: '2026-09-15',
+    partnerId: 'IMARI',
   });
   return { shipment, refs };
 };
@@ -41,7 +53,12 @@ describe('CF-028 — delivery is gated on full payment', () => {
   it('delivers with proof once fully paid, marks packages delivered, emits delivery.completed', async () => {
     const { shipment, refs } = await bookShipment();
     // Full payment reached (fraction 1.0 from loadableLot). Deliver.
-    const delivery = await deliveries.deliver(ceo, { shipmentRef: shipment.ref, packageRefs: refs, podRef: 'POD-1', office: 'GOM' });
+    const delivery = await deliveries.deliver(ceo, {
+      shipmentRef: shipment.ref,
+      packageRefs: refs,
+      podRef: 'POD-1',
+      office: 'GOM',
+    });
     expect(delivery.status).toBe('delivered');
     expect(delivery.podRef).toBe('POD-1');
 
@@ -61,13 +78,18 @@ describe('CF-028 — delivery is gated on full payment', () => {
   it('an established-tier order needs all three installments before release', async () => {
     const { shipment, refs } = await bookShipment();
     // Regress then pay only up to pre_loading (0.7 of a 30/40/30 schedule): still short.
-    await prisma.orderPaymentState.update({ where: { orderRef: ORDER_REF }, data: { paidFraction: 0.7 } });
+    await prisma.orderPaymentState.update({
+      where: { orderRef: ORDER_REF },
+      data: { paidFraction: 0.7 },
+    });
     await expect(
       deliveries.deliver(ceo, { shipmentRef: shipment.ref, packageRefs: refs, podRef: 'POD-1' }),
     ).rejects.toMatchObject({ code: 'GATE_BALANCE_OUTSTANDING' });
 
     // pre_release settles the balance to 1.0 → release proceeds
-    await orderPayments.handlePaymentVerified(paymentVerified({ orderRef: ORDER_REF, trigger: 'pre_release', paidFraction: 1.0 }));
+    await orderPayments.handlePaymentVerified(
+      paymentVerified({ orderRef: ORDER_REF, trigger: 'pre_release', paidFraction: 1.0 }),
+    );
     await expect(
       deliveries.deliver(ceo, { shipmentRef: shipment.ref, packageRefs: refs, podRef: 'POD-2' }),
     ).resolves.toBeDefined();

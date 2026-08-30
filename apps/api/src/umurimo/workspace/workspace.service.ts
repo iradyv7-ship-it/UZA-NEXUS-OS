@@ -153,8 +153,13 @@ export class WorkspaceService {
 
     const [total, newest, unmapped, byStatus] = await Promise.all([
       this.prisma.workspaceTask.count(),
-      this.prisma.workspaceTask.findFirst({ orderBy: { syncedAt: 'desc' }, select: { syncedAt: true } }),
-      this.prisma.workspaceTask.count({ where: { assigneeEmail: { not: null }, assigneeRef: null } }),
+      this.prisma.workspaceTask.findFirst({
+        orderBy: { syncedAt: 'desc' },
+        select: { syncedAt: true },
+      }),
+      this.prisma.workspaceTask.count({
+        where: { assigneeEmail: { not: null }, assigneeRef: null },
+      }),
       this.prisma.workspaceTask.groupBy({ by: ['status'], _count: true }),
     ]);
 

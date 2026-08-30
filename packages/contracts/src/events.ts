@@ -15,7 +15,7 @@ export interface EventEnvelope<T extends UzaEventName = UzaEventName> {
   readonly eventId: string;
   readonly name: T;
   readonly actorId: string;
-  readonly occurredAt: string;   // ISO-8601
+  readonly occurredAt: string; // ISO-8601
   readonly payload: UzaEvents[T];
 }
 
@@ -26,15 +26,19 @@ export interface UzaEvents {
   'quotation.approved': { quotationRef: string; projectRef: string };
 
   'order.created': {
-    orderRef: string; customerRef: string; agentId: string;
-    totalMinor: Minor; tier: 'new' | 'established';
+    orderRef: string;
+    customerRef: string;
+    agentId: string;
+    totalMinor: Minor;
+    tier: 'new' | 'established';
   };
   'order.cancelled': { orderRef: string; reason: string };
 
   'payment.proofUploaded': { paymentRef: string; invoiceRef: string; amountMinor: Minor };
   /** Emitted ONLY after Finance verifies. Never by AI, never by an agent. */
   'payment.verified': {
-    paymentRef: string; orderRef: string;
+    paymentRef: string;
+    orderRef: string;
     trigger: 'confirmation' | 'pre_loading' | 'pre_release';
     paidFraction: number;
   };
@@ -42,50 +46,88 @@ export interface UzaEvents {
   'po.issued': { poRef: string; supplierRef: string; orderRef: string };
 
   'inspection.recorded': {
-    inspectionRef: string; poRef: string;
+    inspectionRef: string;
+    poRef: string;
     result: 'pass' | 'conditional' | 'fail';
-    critical: number; major: number; minor: number;
+    critical: number;
+    major: number;
+    minor: number;
   };
   'quality.failed': { inspectionRef: string; poRef: string; supplierRef: string };
   'capa.closed': { capaRef: string; supplierRef: string };
 
   'warehouse.receiptRecorded': {
-    lotRef: string; orderRef: string; poRef: string;
-    declaredCbm: number; measuredCbm: number; measuredKg: number;
-    measuredRevenueTon: number; variance: number;
-    discrepancy: boolean; hardStop: boolean;
+    lotRef: string;
+    orderRef: string;
+    poRef: string;
+    declaredCbm: number;
+    measuredCbm: number;
+    measuredKg: number;
+    measuredRevenueTon: number;
+    variance: number;
+    discrepancy: boolean;
+    hardStop: boolean;
   };
   'warehouse.varianceResolved': {
-    orderRef: string; decision: VarianceDecision; approverId: string; note: string;
+    orderRef: string;
+    decision: VarianceDecision;
+    approverId: string;
+    note: string;
   };
 
   'container.assigned': {
-    shipmentRef: string; container: string; destination: string; packageCount: number;
+    shipmentRef: string;
+    container: string;
+    destination: string;
+    packageCount: number;
   };
   'shipment.billedWeightRecorded': {
-    shipmentRef: string; measuredRevenueTon: number; billedRevenueTon: number;
-    freightPaidMinor: Minor; claimRaised: boolean;
+    shipmentRef: string;
+    measuredRevenueTon: number;
+    billedRevenueTon: number;
+    freightPaidMinor: Minor;
+    claimRaised: boolean;
   };
   'shipment.delayed': {
-    shipmentRef: string; oldEta: string; newEta: string; reason: string;
+    shipmentRef: string;
+    oldEta: string;
+    newEta: string;
+    reason: string;
   };
 
   'delivery.completed': { deliveryRef: string; orderRef: string; shipmentRef: string };
 
   'commission.accrued': { agentId: string; orderRef: string; amountMinor: Minor };
-  'commission.clawedBack': { agentId: string; orderRef: string; amountMinor: Minor; reason: string };
+  'commission.clawedBack': {
+    agentId: string;
+    orderRef: string;
+    amountMinor: Minor;
+    reason: string;
+  };
 }
 
 export type UzaEventName = keyof UzaEvents;
 
 export const EVENT_NAMES = [
-  'lead.created', 'request.created', 'quotation.approved',
-  'order.created', 'order.cancelled',
-  'payment.proofUploaded', 'payment.verified', 'po.issued',
-  'inspection.recorded', 'quality.failed', 'capa.closed',
-  'warehouse.receiptRecorded', 'warehouse.varianceResolved',
-  'container.assigned', 'shipment.billedWeightRecorded', 'shipment.delayed',
-  'delivery.completed', 'commission.accrued', 'commission.clawedBack',
+  'lead.created',
+  'request.created',
+  'quotation.approved',
+  'order.created',
+  'order.cancelled',
+  'payment.proofUploaded',
+  'payment.verified',
+  'po.issued',
+  'inspection.recorded',
+  'quality.failed',
+  'capa.closed',
+  'warehouse.receiptRecorded',
+  'warehouse.varianceResolved',
+  'container.assigned',
+  'shipment.billedWeightRecorded',
+  'shipment.delayed',
+  'delivery.completed',
+  'commission.accrued',
+  'commission.clawedBack',
 ] as const satisfies readonly UzaEventName[];
 
 /**
