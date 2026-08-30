@@ -17,8 +17,16 @@ import { PrismaClient, type CheckOutcome } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
-/** The date the runs below were performed, not the date this file is executed. */
-const VERIFIED_AT = new Date('2026-08-30T12:00:00.000Z');
+/**
+ * The date the runs below were performed, not the date this file is executed.
+ *
+ * 09:00 UTC, which is when the first of them ran. It was 12:00 here originally, which
+ * is LATER THAN the moment the seed executed — so the readiness page rendered
+ * "verified -1 days ago". `recordVerification()` refuses a future timestamp for exactly
+ * this reason; writing through Prisma directly skipped that guard, which is the argument
+ * for not doing it. Kept as a direct write only because seeds run before an actor exists.
+ */
+const VERIFIED_AT = new Date('2026-08-30T09:00:00.000Z');
 const BY = 'Claude Code (local run)';
 
 interface Verification {

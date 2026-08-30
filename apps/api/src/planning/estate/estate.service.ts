@@ -266,7 +266,10 @@ export class EstateService {
     });
 
     const now = Date.now();
-    const daysSince = (d: Date) => Math.floor((now - d.getTime()) / 86_400_000);
+    // Floored at zero. A row timestamped slightly ahead of the clock — a seed, an
+    // importer, a machine whose time drifted — must read as "today", never as
+    // "-1 days ago", which is how it rendered before this line existed.
+    const daysSince = (d: Date) => Math.max(0, Math.floor((now - d.getTime()) / 86_400_000));
 
     const rows = systems.map((s) => {
       const [latest, previous] = s.verifications;

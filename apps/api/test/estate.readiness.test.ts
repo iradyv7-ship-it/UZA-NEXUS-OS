@@ -45,7 +45,10 @@ async function addSystem(name: string, ventureCode = 'MOBILITY') {
   });
 }
 
-const rowFor = (readiness: { systems: Array<{ ref: string }> }, ref: string) =>
+type Readiness = Awaited<ReturnType<EstateService['readiness']>>;
+
+/** The row for one system. Typed from the service so the test tracks its real shape. */
+const rowFor = (readiness: Readiness, ref: string) =>
   readiness.systems.find((s) => s.ref === ref)!;
 
 beforeEach(reset);
@@ -66,6 +69,24 @@ describe('a system nobody has measured', () => {
       expect(r.summary.green).toBe(0);
       expect(r.summary.failing).toBe(0);
     })();
+  });
+
+  it('never reports a negative age, even for a row dated ahead of the clock', async () => {
+    // A seed, an importer or a machine whose clock drifted can write a timestamp
+    // slightly in the future. It rendered "verified -1 days ago" on the founder's
+    // screen, which reads as a broken dashboard rather than a data problem — and a
+    // dashboard nobody trusts is one nobody reads.
+    const s = await addSystem('uza-nexus');
+    await prisma.systemVerification.create({
+      data: {
+        ref: 'VER-9999-0001',
+        systemRef: s.ref,
+        verifiedAt: new Date(Date.now() + 3 * 60 * 60 * 1000),
+        typecheck: 'pass', tests: 'pass', imageBuilds: 'pass',
+        verifiedBy: 'a clock that is ahead',
+      },
+    });
+    expect(rowFor(await estate.readiness(vm), s.ref).daysSinceVerified).toBe(0);
   });
 
   it('reports no checks rather than empty ones', async () => {

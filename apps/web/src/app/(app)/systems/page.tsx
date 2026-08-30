@@ -111,10 +111,14 @@ function Metric({
 }
 
 function whenVerified(row: SystemRow): string {
-  if (row.daysSinceVerified === null) return 'never';
-  if (row.daysSinceVerified === 0) return 'today';
-  if (row.daysSinceVerified === 1) return 'yesterday';
-  return `${row.daysSinceVerified} days ago`;
+  const days = row.daysSinceVerified;
+  if (days === null) return 'never';
+  // Clamped, not trusted. A row timestamped ahead of the clock rendered "-1 days ago",
+  // which reads as a bug in the dashboard rather than in the data — and a founder who
+  // stops trusting this page stops reading it.
+  if (days <= 0) return 'today';
+  if (days === 1) return 'yesterday';
+  return `${days} days ago`;
 }
 
 export default async function SystemsPage() {
