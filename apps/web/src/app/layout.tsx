@@ -12,7 +12,7 @@ import { getLocale } from '@/lib/session';
 const brandFont = Manrope({ subsets: ['latin'], variable: '--font-brand', display: 'swap' });
 
 export const metadata: Metadata = {
-  title: 'UZA Nexus',
+  title: 'UZA Nexus OS',
   description: 'China → Kigali/Goma trade corridor operations console',
   manifest: '/manifest.webmanifest',
 };

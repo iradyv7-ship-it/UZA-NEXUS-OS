@@ -116,7 +116,7 @@ export default async function NexusPage() {
   if (!isExec) {
     return (
       <div className="space-y-4">
-        <h1 className="text-xl font-bold text-slate-900">UZA Nexus</h1>
+        <h1 className="text-xl font-bold text-slate-900">UZA Nexus OS</h1>
         <Card>
           <p className="text-sm text-slate-600">
             The group view is for the CEO and project managers. Everything that is yours is on{' '}
@@ -147,7 +147,7 @@ export default async function NexusPage() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <div>
-          <h1 className="text-xl font-bold text-slate-900">UZA Nexus</h1>
+          <h1 className="text-xl font-bold text-slate-900">UZA Nexus OS</h1>
           <p className="mt-0.5 text-sm text-slate-500">
             Everything, {r ? `week of ${r.weekKey}` : 'now'}
           </p>
