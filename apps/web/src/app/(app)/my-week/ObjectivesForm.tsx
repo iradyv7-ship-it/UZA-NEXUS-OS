@@ -9,6 +9,17 @@ export interface Objective {
   source: 'minutes' | 'self';
 }
 
+/** Local-only identity for React's key — never sent to the server (confirmWeekAction reads
+ *  objectiveText/objectiveDone/objectiveSource by DOM position, not by this id). Without a
+ *  stable key, removing row N left every row after it reusing the DOM node — and therefore
+ *  the checked state — of the row that used to sit at that index. */
+type Row = Objective & { id: string };
+
+const newRowId = (): string =>
+  typeof crypto !== 'undefined' && 'randomUUID' in crypto ? crypto.randomUUID() : `row-${Math.random().toString(36).slice(2)}`;
+
+const withId = (o: Objective): Row => ({ ...o, id: newRowId() });
+
 /**
  * The objectives the meeting proposed, editable before they become yours.
  *
@@ -27,8 +38,8 @@ export function ObjectivesForm({
   initial: Objective[];
   isDraft: boolean;
 }) {
-  const [rows, setRows] = useState<Objective[]>(
-    initial.length ? initial : [{ text: '', status: 'todo', source: 'self' }],
+  const [rows, setRows] = useState<Row[]>(
+    (initial.length ? initial : [{ text: '', status: 'todo' as const, source: 'self' as const }]).map(withId),
   );
 
   const update = (i: number, patch: Partial<Objective>) =>
@@ -38,12 +49,13 @@ export function ObjectivesForm({
     <form action={confirmWeekAction} className="space-y-3">
       <ul className="space-y-2">
         {rows.map((row, i) => (
-          <li key={i} className="flex items-start gap-2">
+          <li key={row.id} className="flex items-start gap-2">
             <input
               type="checkbox"
               name="objectiveDone"
               value={String(i)}
-              defaultChecked={row.status === 'done'}
+              checked={row.status === 'done'}
+              onChange={(e) => update(i, { status: e.target.checked ? 'done' : 'todo' })}
               aria-label="Done"
               className="mt-2.5 h-4 w-4 shrink-0 rounded border-slate-300"
             />
@@ -78,7 +90,7 @@ export function ObjectivesForm({
       <div className="flex flex-wrap items-center gap-2">
         <button
           type="button"
-          onClick={() => setRows((r) => [...r, { text: '', status: 'todo', source: 'self' }])}
+          onClick={() => setRows((r) => [...r, withId({ text: '', status: 'todo', source: 'self' })])}
           className="rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50"
         >
           Add something of my own
