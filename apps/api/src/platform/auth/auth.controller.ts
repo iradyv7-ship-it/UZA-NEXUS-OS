@@ -9,12 +9,21 @@ import {
   ServiceUnavailableException,
 } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
+import { Throttle } from '@nestjs/throttler';
 import { IsEmail, IsOptional, IsString, MinLength } from 'class-validator';
 import type { Actor } from '@uza/contracts';
 import { AuthService } from './auth.service';
 import { GoogleAuthService } from './google.service';
 import { Public } from './public.decorator';
 import { CurrentActor } from './current-actor.decorator';
+
+/**
+ * 5 attempts/minute/IP — tight enough to blunt a credential/code-guessing script, loose
+ * enough that a real person mistyping a password or a TOTP code twice never notices. Applied
+ * to every endpoint that checks a password or MFA code against a stored secret: the actual
+ * brute-force surface, not the whole auth controller.
+ */
+const BRUTE_FORCE_GUARD = { default: { limit: 5, ttl: 60_000 } };
 
 class MfaCodeDto {
   @IsString()
@@ -53,6 +62,7 @@ export class AuthController {
   ) {}
 
   @Public()
+  @Throttle(BRUTE_FORCE_GUARD)
   @Post('login')
   @ApiOperation({ summary: 'Authenticate; returns { accessToken, actor, mfaRequired }' })
   login(@Body() dto: LoginDto) {
@@ -108,6 +118,7 @@ export class AuthController {
    * Step 2: prove the secret from mfa/setup actually works. Only after this succeeds does
    * the account start requiring a code at login.
    */
+  @Throttle(BRUTE_FORCE_GUARD)
   @Post('mfa/confirm')
   @ApiOperation({ summary: 'Confirm MFA enrollment with a real code; enables MFA on success' })
   async confirmMfa(@CurrentActor() actor: Actor, @Body() dto: MfaCodeDto) {
@@ -116,6 +127,7 @@ export class AuthController {
   }
 
   /** Turn MFA off for YOUR OWN account. Requires a currently-valid code. */
+  @Throttle(BRUTE_FORCE_GUARD)
   @Post('mfa/disable')
   @ApiOperation({ summary: 'Disable MFA on the caller\'s own account; requires a valid current code' })
   async disableMfa(@CurrentActor() actor: Actor, @Body() dto: MfaCodeDto) {

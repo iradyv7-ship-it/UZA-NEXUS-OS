@@ -2,11 +2,16 @@ import 'reflect-metadata';
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import helmet from 'helmet';
 import { AppModule } from './app.module';
 import { UzaExceptionFilter } from './platform/http/uza-exception.filter';
 
 async function bootstrap(): Promise<void> {
   const app = await NestFactory.create(AppModule);
+  // Standard secure-header set (CSP, HSTS, X-Frame-Options, etc.). Safe as a blanket default
+  // here: this API serves JSON only (no server-rendered HTML views), so Helmet's defaults
+  // need no per-route tuning.
+  app.use(helmet());
   app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
   // Translate the @uza/contracts error taxonomy → HTTP status (403 / 409 / …).
   app.useGlobalFilters(new UzaExceptionFilter());
