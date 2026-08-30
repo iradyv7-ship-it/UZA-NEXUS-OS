@@ -38,7 +38,7 @@ const config: Config = {
         // Fonts, and can't be embedded without the actual license/font files. Inter is a
         // placeholder until real Mont files are available (see chat) — same idea (Helvetica
         // Neue, the book's own documented fallback, isn't freely embeddable either).
-        sans: ['var(--font-inter)', 'system-ui', 'sans-serif'],
+        sans: ['var(--font-brand)', 'system-ui', 'sans-serif'],
       },
     },
   },
