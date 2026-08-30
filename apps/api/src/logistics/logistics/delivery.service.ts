@@ -1,3 +1,4 @@
+import { nextSequence } from '../../platform/ids/next-sequence';
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { UzaError, type Actor } from '@uza/contracts';
 import { PrismaService } from '../../prisma/prisma.service';
@@ -69,7 +70,7 @@ export class DeliveryService {
     const office = input.office ?? actor.office ?? 'GOM';
 
     return this.outbox.emit(actor.userId, async (tx, emit) => {
-      const seq = (await tx.delivery.count()) + 1;
+      const seq = await nextSequence(tx.delivery, (n) => makeDeliveryRef(office, n));
       const ref = makeDeliveryRef(office, seq);
       const delivery = await tx.delivery.create({
         data: {

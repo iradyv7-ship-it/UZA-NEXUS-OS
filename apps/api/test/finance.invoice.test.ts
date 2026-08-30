@@ -1,10 +1,9 @@
 import { beforeEach, afterAll, describe, expect, it } from 'vitest';
-import { minor, type Minor } from '@uza/contracts';
+import { type Minor } from '@uza/contracts';
 import { prisma, resetDb } from './db';
 import { resetFinanceDb } from './finance-db';
 import {
-  invoices, payments, finance, customer, vm, agent,
-  invoicedOrder, uploadFor, orderCreated, STANDARD_TOTAL,
+  invoices, payments, finance, customer, invoicedOrder, uploadFor, orderCreated, STANDARD_TOTAL,
 } from './finance-fixtures';
 
 beforeEach(async () => {

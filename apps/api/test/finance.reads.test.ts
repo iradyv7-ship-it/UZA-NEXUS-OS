@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { beforeEach, afterAll, describe, expect, it } from 'vitest';
-import { inScope, type Actor, type EventEnvelope, type Minor } from '@uza/contracts';
+import { inScope, type EventEnvelope, type Minor } from '@uza/contracts';
 import { prisma, resetDb } from './db';
 import { resetFinanceDb } from './finance-db';
 import {
@@ -23,7 +23,6 @@ const CONF = 308150 as Minor; // new-tier confirmation installment on the standa
 // boundary. Built through the real invoice handler with a hand-rolled envelope (trade would
 // have published this) so the Payment's customerRef is set exactly as production would.
 const CUSTOMER_B = 'CUS-CD-000002';
-const customerB: Actor = { userId: 'CUS-2', role: 'customer', office: 'GOM', scope: { customerId: CUSTOMER_B } };
 
 async function invoiceFor(customerRef: string, orderRef: string, agentId = ''): Promise<string> {
   const envelope: EventEnvelope<'order.created'> = {

@@ -5,6 +5,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { CommandAccessService } from '../command-authz.service';
 import { grantRef } from '../command-ids';
 import { canSeeGrant, grantScopeWhere } from '../command-scope';
+import { nextSequence } from '../../platform/ids/next-sequence';
 
 export interface RequirementItem {
   readonly item: string;
@@ -69,7 +70,7 @@ export class GrantService {
     if (!Number.isInteger(input.amountMinor)) {
       throw new BadRequestException('amountMinor must be an integer (minor units)');
     }
-    const seq = (await this.prisma.grant.count()) + 1;
+    const seq = await nextSequence(this.prisma.grant, (n) => grantRef(n));
     const ref = grantRef(seq);
     const created = await this.prisma.grant.create({
       data: {

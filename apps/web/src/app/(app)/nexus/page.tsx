@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { authedCall } from '../../../lib/api';
 import { getSession } from '../../../lib/session';
-import { Card, Badge } from '../../../components/ui';
+import { Card } from '../../../components/ui';
 
 interface Review {
   weekKey: string;

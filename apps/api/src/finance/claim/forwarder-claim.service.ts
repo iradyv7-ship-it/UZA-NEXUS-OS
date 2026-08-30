@@ -1,3 +1,4 @@
+import { nextSequence } from '../../platform/ids/next-sequence';
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { BILLING_CLAIM_THRESHOLD, type Actor, type EventEnvelope } from '@uza/contracts';
 import { PrismaService } from '../../prisma/prisma.service';
@@ -57,7 +58,7 @@ export class ForwarderClaimService {
         return { status: 'within_tolerance' as const, shipmentRef, overRevenueTon };
       }
 
-      const seq = (await tx.forwarderClaim.count()) + 1;
+      const seq = await nextSequence(tx.forwarderClaim, (n) => claimRef(n));
       const ref = claimRef(seq);
       await tx.forwarderClaim.create({
         data: {

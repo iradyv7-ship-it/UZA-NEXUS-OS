@@ -1,3 +1,4 @@
+import { nextSequence } from '../../platform/ids/next-sequence';
 import { Injectable } from '@nestjs/common';
 import {
   CBM_TOLERANCE,
@@ -89,7 +90,7 @@ export class ReceivingService {
     const hardStop = variance > CBM_HARD_STOP;
 
     return this.outbox.emit(actor.userId, async (tx, emit) => {
-      const lotSeq = (await tx.warehouseReceipt.count()) + 1;
+      const lotSeq = await nextSequence(tx.warehouseReceipt, (n) => lotRef(input.orderRef, n));
       const lot = lotRef(input.orderRef, lotSeq);
 
       const receipt = await tx.warehouseReceipt.create({

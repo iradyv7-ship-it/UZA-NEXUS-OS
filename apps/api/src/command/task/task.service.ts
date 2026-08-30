@@ -5,6 +5,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { CommandAccessService } from '../command-authz.service';
 import { commandTaskRef } from '../command-ids';
 import { managedDepartmentIds, canSeeTask, taskScopeWhere } from '../command-scope';
+import { nextSequence } from '../../platform/ids/next-sequence';
 
 export interface ListPage {
   readonly limit: number;
@@ -76,7 +77,7 @@ export class TaskService {
       if (!parent) throw new NotFoundException(`parent task ${input.parentTaskRef} not found`);
     }
 
-    const seq = (await this.prisma.commandTask.count()) + 1;
+    const seq = await nextSequence(this.prisma.commandTask, (n) => commandTaskRef(n));
     const ref = commandTaskRef(seq);
     const created = await this.prisma.commandTask.create({
       data: {

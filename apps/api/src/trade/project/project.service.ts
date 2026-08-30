@@ -1,3 +1,4 @@
+import { nextSequence } from '../../platform/ids/next-sequence';
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import type { Prisma } from '@prisma/client';
 import type { Actor } from '@uza/contracts';
@@ -39,7 +40,7 @@ export class ProjectService {
 
     const customer = await this.prisma.customer.findUnique({ where: { ref: request.customerRef } });
 
-    const seq = (await this.prisma.project.count()) + 1;
+    const seq = await nextSequence(this.prisma.project, (n) => makeRef('project', { venture: VENTURE, year: currentYear(), seq: n }));
     const ref = makeRef('project', { venture: VENTURE, year: currentYear(), seq });
     return this.prisma.project.create({
       data: {
@@ -115,7 +116,7 @@ export class ProjectService {
     const project = await this.prisma.project.findUnique({ where: { ref: input.projectRef } });
     if (!project) throw new NotFoundException(`project ${input.projectRef} not found`);
 
-    const seq = (await this.prisma.task.count()) + 1;
+    const seq = await nextSequence(this.prisma.task, (n) => makeRef('task', { venture: VENTURE, year: currentYear(), seq: n }));
     const ref = makeRef('task', { venture: VENTURE, year: currentYear(), seq });
     return this.prisma.task.create({
       data: {

@@ -59,4 +59,8 @@ jobs:
 
       # Types first: it is the fastest signal and it fails for the clearest reason.
       - run: pnpm typecheck
+      # Added 30 August 2026. This monorepo had no linter at all until then — types
+      # were strict and the suite passed, but nothing enforced anything below the
+      # type level.
+      - run: pnpm lint
       - run: pnpm -r test

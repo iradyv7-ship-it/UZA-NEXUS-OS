@@ -31,20 +31,18 @@ const pad = (seq: number, width: number): string => String(seq).padStart(width, 
  * number, and the `ref` unique constraint is still the backstop. It makes SEQUENTIAL writers
  * safe, which is the actual failure that occurred.
  */
-export async function nextSequence(
-  model: { findFirst(args: unknown): Promise<{ ref: string } | null> },
-  prefix: string,
-): Promise<number> {
-  const newest = await model.findFirst({
-    where: { ref: { startsWith: prefix } },
-    orderBy: { ref: 'desc' },
-    select: { ref: true },
-  });
-  if (!newest) return 1;
-  const tail = newest.ref.slice(prefix.length).replace(/^-/, '');
-  const parsed = Number.parseInt(tail, 10);
-  return Number.isNaN(parsed) ? 1 : parsed + 1;
-}
+/**
+ * Re-exported from the shared implementation.
+ *
+ * This module used to carry its own copy, prefix-based, written when the `count() + 1`
+ * collision was found on 24 August. Twenty-one other call sites had the same bug and
+ * could not use it, because their ref formats are not all `KIND-YEAR-SEQ`. The shared
+ * version takes the caller's own ref builder instead, which works for every format in
+ * the estate — see `platform/ids/next-sequence.ts`.
+ *
+ * Kept as a re-export so existing imports from this module keep working.
+ */
+export { nextSequence } from '../platform/ids/next-sequence';
 
 /** The prefix a ref of this kind carries in the current year, e.g. `DEC-2026-`. */
 export const refPrefix = (kind: string): string => `${kind}-${currentYear()}-`;

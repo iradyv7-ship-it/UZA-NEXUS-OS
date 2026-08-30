@@ -50,9 +50,9 @@ export default async function VerifyQueuePage({
         </p>
       )}
       {err === 'denied' && <StatePanel tone="amber" title={t('state.denied.title')} body={t('state.denied.body')} />}
-      {err === 'verify' && <ErrLine t={t} msg={t('verify.error')} />}
-      {err === 'reject' && <ErrLine t={t} msg={t('verify.error')} />}
-      {err === 'reason' && <ErrLine t={t} msg={t('verify.reasonRequired')} />}
+      {err === 'verify' && <ErrLine msg={t('verify.error')} />}
+      {err === 'reject' && <ErrLine msg={t('verify.error')} />}
+      {err === 'reason' && <ErrLine msg={t('verify.reasonRequired')} />}
 
       {res.kind === 'denied' ? (
         <StatePanel tone="amber" title={t('state.denied.title')} body={t('verify.deniedBody')} />
@@ -141,7 +141,7 @@ function Row({ label, children }: { label: string; children: React.ReactNode }) 
   );
 }
 
-function ErrLine({ t, msg }: { t: Translate; msg: string }) {
+function ErrLine({ msg }: { msg: string }) {
   return (
     <p role="alert" className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">
       {msg}

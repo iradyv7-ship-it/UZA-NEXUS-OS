@@ -1,3 +1,4 @@
+import { nextSequence } from '../../platform/ids/next-sequence';
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import type { Prisma, OrderStatus } from '@prisma/client';
 import {
@@ -62,7 +63,7 @@ export class OrderService {
     const parts = splitInstallments(totalMinor, schedule);
 
     return this.outbox.emit(actor.userId, async (tx, emit) => {
-      const seq = (await tx.order.count()) + 1;
+      const seq = await nextSequence(tx.order, (n) => makeRef('order', { venture: VENTURE, year: currentYear(), seq: n }));
       const ref = makeRef('order', { venture: VENTURE, year: currentYear(), seq });
       const order = await tx.order.create({
         data: {

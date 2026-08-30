@@ -6,6 +6,25 @@ import type { CapturedSignal } from './captured-signal';
 const API = 'https://gmail.googleapis.com/gmail/v1/users/me';
 
 /**
+ * The parts of a Gmail `messages.get?format=full` response this source actually reads.
+ *
+ * Deliberately partial. Declaring the whole API surface would be a maintenance burden
+ * for no benefit; declaring nothing (`any`) means a rename upstream fails at runtime
+ * inside a loop rather than at the compiler. This is the contract we depend on.
+ */
+interface GmailMessagePart {
+  mimeType?: string;
+  body?: { data?: string };
+  parts?: GmailMessagePart[];
+}
+
+interface GmailMessage {
+  snippet?: string;
+  internalDate?: string;
+  payload?: GmailMessagePart & { headers?: { name: string; value: string }[] };
+}
+
+/**
  * Reads the founder's mailbox.
  *
  * **Read only, permanently.** This class holds no send, reply, label, or delete path and
@@ -24,6 +43,7 @@ const API = 'https://gmail.googleapis.com/gmail/v1/users/me';
  * then passes through the compartmentalisation rules before it is stored.
  */
 @Injectable()
+
 export class GmailSource {
   private readonly logger = new Logger(GmailSource.name);
   private readonly client: OAuth2Client | null;
@@ -80,7 +100,7 @@ export class GmailSource {
 
     const out: CapturedSignal[] = [];
     for (const { id } of list.messages) {
-      const msg = await this.get<any>(`${API}/messages/${id}?format=full`, token);
+      const msg = await this.get<GmailMessage>(`${API}/messages/${id}?format=full`, token);
       if (!msg) continue;
       const headers: { name: string; value: string }[] = msg.payload?.headers ?? [];
       const header = (n: string) => headers.find((h) => h.name.toLowerCase() === n)?.value ?? '';
@@ -114,7 +134,7 @@ export class GmailSource {
   }
 
   /** Depth-first for the first text/plain part; falls back to stripping a text/html one. */
-  private plainText(part: any): string {
+  private plainText(part: GmailMessagePart | undefined): string {
     if (!part) return '';
     if (part.mimeType === 'text/plain' && part.body?.data) return decode(part.body.data);
     for (const child of part.parts ?? []) {

@@ -75,7 +75,7 @@ export class ClaudeCodeSource {
     const out: CapturedSignal[] = [];
     for (const line of contents.split('\n')) {
       if (!line.trim()) continue;
-      let row: Record<string, any>;
+      let row: Record<string, unknown>;
       try {
         row = JSON.parse(line);
       } catch {
@@ -87,10 +87,16 @@ export class ClaudeCodeSource {
       if (row.isSidechain) continue; // a subagent's prompt, not the founder's
       if (!this.humanAuthored(row)) continue;
 
-      const at = new Date(row.timestamp);
+      // Every field below comes from another program's log file, so each is narrowed
+      // at the point of use rather than trusted from a declared shape.
+      const timestamp = row.timestamp;
+      if (typeof timestamp !== 'string' && typeof timestamp !== 'number') continue;
+
+      const at = new Date(timestamp);
       if (Number.isNaN(at.getTime()) || at <= since) continue;
 
-      const text = this.textOf(row.message?.content);
+      const message = row.message as { content?: unknown } | undefined;
+      const text = this.textOf(message?.content);
       if (!text || text.length < ClaudeCodeSource.MIN_CHARS) continue;
       // System-injected turns wrap themselves in tags; they are not human input.
       if (text.trimStart().startsWith('<')) continue;
@@ -119,8 +125,8 @@ export class ClaudeCodeSource {
    * present; older transcripts predate it, so the explicit markers are checked as a
    * fallback rather than trusting the absence of a field.
    */
-  private humanAuthored(row: Record<string, any>): boolean {
-    const origin = row.origin?.kind;
+  private humanAuthored(row: Record<string, unknown>): boolean {
+    const origin = (row.origin as { kind?: unknown } | undefined)?.kind;
     if (typeof origin === 'string') return origin === 'human';
     return row.isMeta !== true && row.isCompactSummary !== true;
   }
@@ -129,8 +135,16 @@ export class ClaudeCodeSource {
     if (typeof content === 'string') return content.trim();
     if (Array.isArray(content)) {
       const parts = content
-        .filter((b: any) => b?.type === 'text' && typeof b.text === 'string')
-        .map((b: any) => b.text);
+        // Content blocks come from another program's log format. Narrow each one
+        // rather than trusting the shape; a block that is not text is skipped.
+        .filter(
+          (b): b is { type: 'text'; text: string } =>
+            typeof b === 'object' &&
+            b !== null &&
+            (b as { type?: unknown }).type === 'text' &&
+            typeof (b as { text?: unknown }).text === 'string',
+        )
+        .map((b) => b.text);
       return parts.length ? parts.join('\n').trim() : null;
     }
     return null;

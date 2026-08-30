@@ -1,3 +1,4 @@
+import { nextSequence } from '../../platform/ids/next-sequence';
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { Prisma, type Quotation, type QuotationStatus } from '@prisma/client';
 import {
@@ -52,7 +53,7 @@ export class QuotationService {
     const sellIncoterm = pricing.sellIncoterm ?? 'CIF';
     const priced = priceQuotation({ ...pricing, sellIncoterm });
 
-    const seq = (await this.prisma.quotation.count()) + 1;
+    const seq = await nextSequence(this.prisma.quotation, (n) => makeRef('quotation', { venture: VENTURE, year: currentYear(), seq: n }));
     const ref = makeRef('quotation', { venture: VENTURE, year: currentYear(), seq });
     return this.prisma.quotation.create({
       data: {
@@ -90,7 +91,7 @@ export class QuotationService {
     const priced = priceQuotation({ ...pricing, sellIncoterm });
 
     return this.prisma.$transaction(async (tx) => {
-      const seq = (await tx.quotation.count()) + 1;
+      const seq = await nextSequence(tx.quotation, (n) => makeRef('quotation', { venture: VENTURE, year: currentYear(), seq: n }));
       const ref = makeRef('quotation', { venture: VENTURE, year: currentYear(), seq });
       const next = await tx.quotation.create({
         data: {

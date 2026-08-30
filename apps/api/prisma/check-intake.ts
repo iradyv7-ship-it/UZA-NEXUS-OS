@@ -14,12 +14,12 @@ import { GmailSource } from '../src/intake/sources/gmail.source';
 import { DocumentSource } from '../src/intake/sources/document.source';
 
 const prisma = new PrismaClient();
-const audit = { deny: async () => ({ id: 'noop' }), allow: async () => ({ id: 'noop' }) } as any;
+const audit = { deny: async () => ({ id: 'noop' }), allow: async () => ({ id: 'noop' }) } as never;
 
 async function main() {
   const config = new ConfigService();
   const intake = new IntakeService(
-    prisma as any,
+    prisma as never,
     new PlanningAccessService(audit),
     new ClaudeCodeSource(config),
     new GmailSource(config),

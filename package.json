@@ -10,6 +10,17 @@
     "typecheck": "pnpm -r typecheck",
     "test": "pnpm -r test",
     "contracts:typecheck": "pnpm --filter @uza/contracts typecheck",
-    "verify": "pnpm typecheck && pnpm -r test"
+    "verify": "pnpm typecheck && pnpm lint && pnpm -r test",
+    "lint": "eslint apps packages --max-warnings=0",
+    "lint:fix": "eslint apps packages --fix",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "eslint": "^10.9.1",
+    "globals": "^17.11.0",
+    "prettier": "^3.9.6",
+    "typescript-eslint": "^8.68.0"
   }
 }

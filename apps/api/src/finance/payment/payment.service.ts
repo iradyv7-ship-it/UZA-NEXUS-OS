@@ -1,3 +1,4 @@
+import { nextSequence } from '../../platform/ids/next-sequence';
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import type { Prisma, PaymentStatus } from '@prisma/client';
 import {
@@ -69,7 +70,7 @@ export class PaymentService {
     });
 
     return this.outbox.emit(actor.userId, async (tx, emit) => {
-      const seq = (await tx.payment.count()) + 1;
+      const seq = await nextSequence(tx.payment, (n) => paymentRef(n));
       const ref = paymentRef(seq);
       const payment = await tx.payment.create({
         data: {

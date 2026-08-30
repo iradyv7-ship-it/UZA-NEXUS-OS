@@ -1,3 +1,4 @@
+import { nextSequence } from '../../platform/ids/next-sequence';
 import { Injectable, NotFoundException } from '@nestjs/common';
 import {
   PAYMENT_SCHEDULES,
@@ -52,9 +53,9 @@ export class InvoiceService {
       const schedule = PAYMENT_SCHEDULES[tier];
       const parts = splitInstallments(totalMinor, schedule);
 
-      const seq = (await tx.invoice.count()) + 1;
+      const seq = await nextSequence(tx.invoice, (n) => invoiceRef(n));
       const ref = invoiceRef(seq);
-      const invoice = await tx.invoice.create({
+      await tx.invoice.create({
         data: {
           ref,
           orderRef,

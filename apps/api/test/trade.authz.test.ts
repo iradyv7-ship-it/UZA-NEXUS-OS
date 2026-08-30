@@ -3,7 +3,7 @@ import { UzaError, type Actor } from '@uza/contracts';
 import { prisma, resetDb } from './db';
 import { resetTradeDb } from './trade-db';
 import {
-  customers, projects, quotations, orders, intake,
+  projects, quotations, orders, intake,
   vm, agent, SUPPLIER_UNIT, standardEst, approvedChain,
 } from './trade-fixtures';
 

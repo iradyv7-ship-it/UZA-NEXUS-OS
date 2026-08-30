@@ -1,3 +1,4 @@
+import { nextSequence } from '../../platform/ids/next-sequence';
 import { Injectable } from '@nestjs/common';
 import { UzaError, type Actor, type Destination } from '@uza/contracts';
 import { PrismaService } from '../../prisma/prisma.service';
@@ -121,7 +122,7 @@ export class ContainerService {
     const daysWaiting = earliest ? Math.max(0, Math.floor((Date.now() - earliest.getTime()) / DAY_MS)) : 0;
 
     return this.outbox.emit(actor.userId, async (tx, emit) => {
-      const seq = (await tx.shipment.count()) + 1;
+      const seq = await nextSequence(tx.shipment, (n) => makeShipmentRef(n));
       const ref = makeShipmentRef(seq);
       const shipment = await tx.shipment.create({
         data: {

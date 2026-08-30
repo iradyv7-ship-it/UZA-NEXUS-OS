@@ -1,3 +1,4 @@
+import { nextSequence } from '../../platform/ids/next-sequence';
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { UzaError, type Actor } from '@uza/contracts';
 import { PrismaService } from '../../prisma/prisma.service';
@@ -64,7 +65,7 @@ export class InspectionService {
     const result = gradeInspection(input.critical, input.major);
 
     return this.outbox.emit(actor.userId, async (tx, emit) => {
-      const seq = (await tx.inspection.count()) + 1;
+      const seq = await nextSequence(tx.inspection, (n) => makeRef('inspection', { country: COUNTRY, year: currentYear(), seq: n }));
       const ref = makeRef('inspection', { country: COUNTRY, year: currentYear(), seq });
 
       const inspection = await tx.inspection.create({
@@ -125,7 +126,7 @@ export class InspectionService {
         // A critical defect fails and blocks release with no override. The CAPA opens
         // automatically here; it can only be CLOSED later by a human against a passing
         // reinspection (CapaService.close).
-        const capaSeq = (await tx.capa.count()) + 1;
+        const capaSeq = await nextSequence(tx.capa, (n) => makeRef('capa', { country: COUNTRY, year: currentYear(), seq: n }));
         const capaRef = makeRef('capa', { country: COUNTRY, year: currentYear(), seq: capaSeq });
         capa = await tx.capa.create({
           data: {

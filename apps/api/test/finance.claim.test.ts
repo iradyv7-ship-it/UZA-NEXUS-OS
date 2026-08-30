@@ -2,7 +2,7 @@ import { beforeEach, afterAll, describe, expect, it } from 'vitest';
 import { prisma, resetDb } from './db';
 import { resetFinanceDb } from './finance-db';
 import { ForwarderClaimService } from '../src/finance/claim/forwarder-claim.service';
-import { claims, finance, billedWeight } from './finance-fixtures';
+import { claims, billedWeight } from './finance-fixtures';
 
 beforeEach(async () => {
   await resetDb();

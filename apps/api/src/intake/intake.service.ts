@@ -1,3 +1,4 @@
+import { nextSequence } from '../platform/ids/next-sequence';
 import { Injectable, Logger, NotFoundException, BadRequestException } from '@nestjs/common';
 import type { Actor } from '@uza/contracts';
 import type { SignalSource, SignalStatus } from '@prisma/client';
@@ -123,7 +124,7 @@ export class IntakeService {
     if (existing) return null;
 
     const { lane, wallTags } = classify(input.title, input.body);
-    const seq = (await this.prisma.signal.count()) + 1;
+    const seq = await nextSequence(this.prisma.signal, (n) => `SIG-${new Date().getFullYear()}-${String(n).padStart(4, '0')}`);
     const ref = `SIG-${new Date().getFullYear()}-${String(seq).padStart(4, '0')}`;
 
     return this.prisma.signal.create({

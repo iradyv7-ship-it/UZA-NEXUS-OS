@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { COMMISSION_RATE, pct, type Actor, type EventEnvelope, type Minor } from '@uza/contracts';
 import { PrismaService } from '../../prisma/prisma.service';

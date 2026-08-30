@@ -1,3 +1,4 @@
+import { nextSequence } from '../../platform/ids/next-sequence';
 import { Injectable, NotFoundException } from '@nestjs/common';
 import type { Actor, Minor } from '@uza/contracts';
 import { PrismaService } from '../../prisma/prisma.service';
@@ -47,7 +48,7 @@ export class PurchaseOrderService {
     const declaredKg = round(input.qty * input.unitKg, 1);
 
     return this.outbox.emit(actor.userId, async (tx, emit) => {
-      const seq = (await tx.purchaseOrder.count()) + 1;
+      const seq = await nextSequence(tx.purchaseOrder, (n) => makeRef('po', { country: COUNTRY, year: currentYear(), seq: n }));
       const ref = makeRef('po', { country: COUNTRY, year: currentYear(), seq });
       const po = await tx.purchaseOrder.create({
         data: {

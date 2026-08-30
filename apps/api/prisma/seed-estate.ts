@@ -18,7 +18,6 @@ const prisma = new PrismaClient();
 
 const YVES = 'CEO-KGL-0001';
 const SCORAH = 'EMP-KGL-0002';
-const BADIANE = 'EMP-KGL-0003';
 const GAD = 'EMP-KGL-0007';
 const SADDOCK = 'EMP-KGL-0008';
 const ABIJURU = 'EMP-KGL-0009';

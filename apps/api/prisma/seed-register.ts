@@ -22,7 +22,6 @@ const YVES = 'CEO-KGL-0001';
 const SCORAH = 'EMP-KGL-0002';
 const BADIANE = 'EMP-KGL-0003';
 const CECILIA = 'EMP-CHN-0004';
-const FRANCOIS = 'EMP-CHN-0005';
 const TRESOR = 'EMP-KGL-0006';
 const GAD = 'EMP-KGL-0007';
 const SADDOCK = 'EMP-KGL-0008';

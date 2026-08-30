@@ -19,14 +19,14 @@ const prisma = new PrismaClient();
 const audit = {
   deny: async () => ({ id: 'noop' }),
   allow: async () => ({ id: 'noop' }),
-} as any;
+} as never;
 
 const CEO: Actor = { userId: 'CEO-KGL-0001', role: 'ceo', office: 'KGL', scope: {} };
 
 async function main() {
   const access = new PlanningAccessService(audit);
-  const review = new ReviewService(prisma as any, access);
-  const decisions = new DecisionService(prisma as any, access);
+  const review = new ReviewService(prisma as never, access);
+  const decisions = new DecisionService(prisma as never, access);
 
   console.log(await review.brief(CEO));
   console.log('\n---\n');
