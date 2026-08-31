@@ -64,3 +64,14 @@ jobs:
       # type level.
       - run: pnpm lint
       - run: pnpm -r test
+
+      # The build is a separate check because only the bundler sees some errors — a
+      # misplaced 'use client' directive typechecks, lints and tests clean and then
+      # fails the production build. That happened in uza-mobility-fn on 30 August.
+      #
+      # It runs HERE and not in `pnpm verify`, deliberately. Next's standalone output
+      # writes symlinks, which need Developer Mode on Windows; making the local command
+      # fail for every Windows developer on an environment quirk is how a team learns to
+      # ignore a red command. CI is Linux, so it just works.
+      - name: Build the web application
+        run: pnpm --filter @uza/web build
