@@ -74,16 +74,16 @@ export default async function PartnerShipmentPage({
 
       <div className="flex items-start justify-between gap-3">
         <div>
-          <h1 className="text-xl font-bold text-slate-900">{t(`dest.${s.destination}`)}</h1>
-          <p className="font-mono text-xs text-slate-400">{s.ref}</p>
+          <h1 className="text-xl font-bold text-fg">{t(`dest.${s.destination}`)}</h1>
+          <p className="font-mono text-xs text-fgSubtle">{s.ref}</p>
         </div>
         <Badge tone={statusTone(s.status)}>{t(promise.stageKey)}</Badge>
       </div>
 
-      <div className="rounded-xl border border-brand/30 bg-brand-soft/50 p-4">
-        <p className="text-[11px] uppercase tracking-wide text-brand/70">{t('dash.col.next')}</p>
-        <p className="text-base font-semibold text-slate-900">{t(promise.nextKey)}</p>
-        <p className="mt-0.5 text-sm text-slate-600">
+      <div className="rounded-xl border border-primary/30 bg-primarySoft/20 p-4">
+        <p className="text-[11px] uppercase tracking-wide text-primary/70">{t('dash.col.next')}</p>
+        <p className="text-base font-semibold text-fg">{t(promise.nextKey)}</p>
+        <p className="mt-0.5 text-sm text-fgMuted">
           {t('dash.col.owner')}:{' '}
           <span className="font-medium">{t(`owner.${promise.ownerRole}`)}</span>
         </p>
@@ -94,7 +94,7 @@ export default async function PartnerShipmentPage({
       <div className="grid gap-4 lg:grid-cols-2 lg:items-start">
         <div className="space-y-4">
           <Card>
-            <dl className="divide-y divide-slate-100">
+            <dl className="divide-y divide-border">
               <Field label={t('ship.carrier')}>{s.carrier}</Field>
               <Field label={t('ship.container')}>
                 <span className="font-mono text-xs">{s.container}</span>
@@ -113,7 +113,7 @@ export default async function PartnerShipmentPage({
                 )}
               </Field>
             </dl>
-            <p className="mt-2 text-[11px] text-slate-400">{t('ship.freightNote')}</p>
+            <p className="mt-2 text-[11px] text-fgSubtle">{t('ship.freightNote')}</p>
           </Card>
 
           <PackagesSection res={pkgRes} t={t} locale={locale} />
@@ -140,41 +140,41 @@ function PackagesSection({
   void locale;
   return (
     <section>
-      <h2 className="mb-2 text-sm font-semibold text-slate-700">{t('pkg.title')}</h2>
+      <h2 className="mb-2 text-sm font-semibold text-fgMuted">{t('pkg.title')}</h2>
       {res.kind !== 'ok' ? (
-        <p className="rounded-lg bg-slate-50 px-3 py-2 text-sm text-slate-600">
+        <p className="rounded-lg bg-surface2 px-3 py-2 text-sm text-fgMuted">
           {t('pkg.unavailable')}
         </p>
       ) : res.data.length === 0 ? (
-        <p className="rounded-lg bg-slate-50 px-3 py-2 text-sm text-slate-600">{t('pkg.empty')}</p>
+        <p className="rounded-lg bg-surface2 px-3 py-2 text-sm text-fgMuted">{t('pkg.empty')}</p>
       ) : (
         <ul className="space-y-2">
           {res.data.map((p) => (
-            <li key={p.ref} className="rounded-xl border border-slate-200 bg-white p-3">
+            <li key={p.ref} className="rounded-xl border border-border bg-surface p-3">
               <div className="flex items-center justify-between gap-3">
-                <p className="font-mono text-xs text-slate-500">{p.ref}</p>
+                <p className="font-mono text-xs text-fgMuted">{p.ref}</p>
                 <Badge tone={p.qcReleased ? 'green' : 'amber'}>
                   {p.qcReleased ? t('pkg.released') : t('pkg.held')}
                 </Badge>
               </div>
               <div className="mt-2 grid grid-cols-2 gap-2 text-sm">
                 <div>
-                  <p className="text-[11px] uppercase tracking-wide text-slate-400">
+                  <p className="text-[11px] uppercase tracking-wide text-fgSubtle">
                     {t('pkg.kg')}
                   </p>
-                  <p className="font-medium tabular-nums text-slate-900">{p.kg}</p>
+                  <p className="font-medium tabular-nums text-fg">{p.kg}</p>
                 </div>
                 <div>
-                  <p className="text-[11px] uppercase tracking-wide text-slate-400">
+                  <p className="text-[11px] uppercase tracking-wide text-fgSubtle">
                     {t('pkg.cbm')}
                   </p>
-                  <p className="font-medium tabular-nums text-slate-900">{p.cbm}</p>
+                  <p className="font-medium tabular-nums text-fg">{p.cbm}</p>
                 </div>
               </div>
               {p.destination && (
-                <p className="mt-1 text-xs text-slate-500">
+                <p className="mt-1 text-xs text-fgMuted">
                   {t('ship.destination')}:{' '}
-                  <span className="font-medium text-slate-700">{t(`dest.${p.destination}`)}</span>
+                  <span className="font-medium text-fg">{t(`dest.${p.destination}`)}</span>
                 </p>
               )}
             </li>
@@ -188,18 +188,18 @@ function PackagesSection({
 function DeliverySection({ res, t }: { res: ApiResult<DeliveryView>; t: Translate }) {
   return (
     <section>
-      <h2 className="mb-2 text-sm font-semibold text-slate-700">{t('delivery.title')}</h2>
+      <h2 className="mb-2 text-sm font-semibold text-fgMuted">{t('delivery.title')}</h2>
       {res.kind === 'notfound' ? (
-        <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
+        <p className="rounded-lg border border-warn/30 bg-warn/10 px-3 py-2 text-sm text-warn">
           {t('delivery.none')}
         </p>
       ) : res.kind !== 'ok' ? (
-        <p className="rounded-lg bg-slate-50 px-3 py-2 text-sm text-slate-600">
+        <p className="rounded-lg bg-surface2 px-3 py-2 text-sm text-fgMuted">
           {t('delivery.unavailable')}
         </p>
       ) : (
         <Card>
-          <dl className="divide-y divide-slate-100">
+          <dl className="divide-y divide-border">
             <Field label={t('delivery.status')}>
               <Badge
                 tone={
@@ -227,23 +227,23 @@ function DeliverySection({ res, t }: { res: ApiResult<DeliveryView>; t: Translat
 function TimelineSection({ res, t }: { res: ApiResult<TrackingEventView[]>; t: Translate }) {
   return (
     <section>
-      <h2 className="mb-2 text-sm font-semibold text-slate-700">{t('timeline.title')}</h2>
+      <h2 className="mb-2 text-sm font-semibold text-fgMuted">{t('timeline.title')}</h2>
       {res.kind !== 'ok' ? (
-        <p className="rounded-lg bg-slate-50 px-3 py-2 text-sm text-slate-600">
+        <p className="rounded-lg bg-surface2 px-3 py-2 text-sm text-fgMuted">
           {t('timeline.unavailable')}
         </p>
       ) : res.data.length === 0 ? (
-        <p className="rounded-lg bg-slate-50 px-3 py-2 text-sm text-slate-600">
+        <p className="rounded-lg bg-surface2 px-3 py-2 text-sm text-fgMuted">
           {t('timeline.empty')}
         </p>
       ) : (
         <ol className="space-y-2">
           {res.data.map((e) => (
-            <li key={e.ref} className="rounded-xl border border-slate-200 bg-white p-3">
+            <li key={e.ref} className="rounded-xl border border-border bg-surface p-3">
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
-                  <p className="text-sm font-medium text-slate-900">{e.milestone}</p>
-                  <p className="text-xs text-slate-500">
+                  <p className="text-sm font-medium text-fg">{e.milestone}</p>
+                  <p className="text-xs text-fgMuted">
                     {new Date(e.occurredAt).toLocaleString()}
                   </p>
                 </div>
@@ -252,7 +252,7 @@ function TimelineSection({ res, t }: { res: ApiResult<TrackingEventView[]>; t: T
                   label={e.confirmed ? t('provenance.confirmed') : t('provenance.estimated')}
                 />
               </div>
-              {e.note && <p className="mt-1 text-xs text-slate-500">{e.note}</p>}
+              {e.note && <p className="mt-1 text-xs text-fgMuted">{e.note}</p>}
             </li>
           ))}
         </ol>
@@ -263,7 +263,7 @@ function TimelineSection({ res, t }: { res: ApiResult<TrackingEventView[]>; t: T
 
 function BackLink({ label }: { label: string }) {
   return (
-    <Link href="/partner/shipments" className="inline-flex items-center text-sm text-slate-500">
+    <Link href="/partner/shipments" className="inline-flex items-center text-sm text-fgMuted">
       ← {label}
     </Link>
   );

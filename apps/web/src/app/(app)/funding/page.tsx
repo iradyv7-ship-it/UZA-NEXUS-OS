@@ -78,7 +78,7 @@ export default async function FundingPage() {
   if (res.kind === 'denied')
     return (
       <Card>
-        <p className="text-sm text-slate-600">
+        <p className="text-sm text-fgMuted">
           Funding is visible to the CEO and project managers.
         </p>
       </Card>
@@ -86,7 +86,7 @@ export default async function FundingPage() {
   if (res.kind !== 'ok')
     return (
       <Card>
-        <p className="text-sm text-slate-600">Funding could not be loaded.</p>
+        <p className="text-sm text-fgMuted">Funding could not be loaded.</p>
       </Card>
     );
 
@@ -97,8 +97,8 @@ export default async function FundingPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-xl font-bold text-slate-900">Funding</h1>
-        <p className="mt-0.5 text-sm text-slate-500">
+        <h1 className="text-xl font-bold text-fg">Funding</h1>
+        <p className="mt-0.5 text-sm text-fgMuted">
           {liveTracks} live tracks · {money(totalSought, 'RWF')} sought · each venture presentable
           on its own
         </p>
@@ -106,16 +106,16 @@ export default async function FundingPage() {
 
       {unlocksNothing.length > 0 ? (
         <Card>
-          <p className="text-xs font-semibold uppercase tracking-wide text-amber-600">
+          <p className="text-xs font-semibold uppercase tracking-wide text-warn">
             Releases nothing currently held
           </p>
-          <p className="mt-1 text-sm text-slate-600">
+          <p className="mt-1 text-sm text-fgMuted">
             Either the money is not needed for anything yet, or the dependency was never recorded.
           </p>
           <ul className="mt-2 space-y-1">
             {unlocksNothing.map((u) => (
-              <li key={u.ref} className="text-sm text-slate-700">
-                <span className="font-mono text-xs text-slate-400">{u.ref}</span> {u.name}
+              <li key={u.ref} className="text-sm text-fg">
+                <span className="font-mono text-xs text-fgSubtle">{u.ref}</span> {u.name}
               </li>
             ))}
           </ul>
@@ -128,10 +128,10 @@ export default async function FundingPage() {
         return (
           <section key={v} className="space-y-3">
             <div className="flex flex-wrap items-baseline justify-between gap-2">
-              <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-500">
+              <h2 className="text-sm font-semibold uppercase tracking-wide text-fgMuted">
                 {v} — {rows.length} {rows.length === 1 ? 'track' : 'tracks'}
               </h2>
-              <span className="font-mono text-xs tabular-nums text-slate-500">
+              <span className="font-mono text-xs tabular-nums text-fgMuted">
                 {money(sought, 'RWF')}
               </span>
             </div>
@@ -140,14 +140,14 @@ export default async function FundingPage() {
               <Card key={t.ref}>
                 <div className="flex flex-wrap items-start justify-between gap-2">
                   <div className="min-w-0">
-                    <p className="font-semibold text-slate-900">{t.name}</p>
-                    <p className="mt-0.5 font-mono text-[11px] text-slate-400">
+                    <p className="font-semibold text-fg">{t.name}</p>
+                    <p className="mt-0.5 font-mono text-[11px] text-fgSubtle">
                       {t.ref} · {t.funder}
                       {t.decisionBy ? ` · decides by ${fmtDate(t.decisionBy)}` : ''}
                     </p>
                   </div>
                   <div className="flex shrink-0 flex-wrap items-center gap-1.5">
-                    <span className="font-mono text-sm font-bold tabular-nums text-slate-800">
+                    <span className="font-mono text-sm font-bold tabular-nums text-fg">
                       {money(t.amountSought, t.currency)}
                     </span>
                     <Badge tone={STAGE_TONE[t.stage] ?? 'slate'}>{t.stage.replace('_', ' ')}</Badge>
@@ -156,35 +156,35 @@ export default async function FundingPage() {
                 </div>
 
                 {t.blocker ? (
-                  <p className="mt-2 border-l-2 border-amber-400 pl-3 text-sm text-slate-700">
-                    <span className="font-medium text-amber-700">Blocked: </span>
+                  <p className="mt-2 border-l-2 border-warn pl-3 text-sm text-fg">
+                    <span className="font-medium text-warn">Blocked: </span>
                     {t.blocker}
                   </p>
                 ) : null}
 
                 {t.releases.length > 0 ? (
                   <div className="mt-3">
-                    <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">
+                    <p className="text-[11px] font-semibold uppercase tracking-wide text-fgSubtle">
                       If this closes, it releases
                     </p>
                     <ul className="mt-1 space-y-1">
                       {t.releases.map((r) => (
                         <li key={r.ref} className="flex flex-wrap items-baseline gap-2 text-sm">
-                          <span className="font-mono text-[11px] text-slate-400">{r.ref}</span>
-                          <span className="text-slate-700">{r.name}</span>
+                          <span className="font-mono text-[11px] text-fgSubtle">{r.ref}</span>
+                          <span className="text-fg">{r.name}</span>
                           {r.attention === 'holds' ? <Badge tone="amber">held</Badge> : null}
                         </li>
                       ))}
                     </ul>
                   </div>
                 ) : (
-                  <p className="mt-2 text-xs text-slate-400">
+                  <p className="mt-2 text-xs text-fgSubtle">
                     Nothing recorded against this yet — name what it releases.
                   </p>
                 )}
 
                 {t.danglingRefs.length > 0 ? (
-                  <p className="mt-2 text-xs text-amber-700">
+                  <p className="mt-2 text-xs text-warn">
                     Names {t.danglingRefs.join(', ')}, which{' '}
                     {t.danglingRefs.length === 1 ? 'is' : 'are'} not in the register.
                   </p>
@@ -196,14 +196,14 @@ export default async function FundingPage() {
       })}
 
       <Card>
-        <p className="text-sm text-slate-600">
+        <p className="text-sm text-fgMuted">
           {unowned > 0 ? (
             <>
               <strong>{unowned}</strong> {unowned === 1 ? 'track has' : 'tracks have'} no owner. An
               unowned funder conversation does not happen — that is a decision for{' '}
               <Link
                 href="/register"
-                className="font-medium text-brand underline underline-offset-2"
+                className="font-medium text-primary underline underline-offset-2"
               >
                 the review
               </Link>

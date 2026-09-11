@@ -72,17 +72,17 @@ function Metric({
 }) {
   const color =
     tone === 'red'
-      ? 'text-red-600'
+      ? 'text-danger'
       : tone === 'amber'
-        ? 'text-amber-600'
+        ? 'text-warn'
         : tone === 'blue'
-          ? 'text-sky-600'
-          : 'text-slate-800';
+          ? 'text-info'
+          : 'text-fg';
   const inner = (
     <Card className="h-full">
       <div className={`text-3xl font-bold tabular-nums ${color}`}>{value}</div>
-      <div className="mt-1 text-xs leading-tight text-slate-500">{label}</div>
-      {hint ? <div className="mt-0.5 text-[11px] text-slate-400">{hint}</div> : null}
+      <div className="mt-1 text-xs leading-tight text-fgMuted">{label}</div>
+      {hint ? <div className="mt-0.5 text-[11px] text-fgSubtle">{hint}</div> : null}
     </Card>
   );
   return href ? (
@@ -130,11 +130,11 @@ export default async function NexusPage() {
   if (!isExec) {
     return (
       <div className="space-y-4">
-        <h1 className="text-xl font-bold text-slate-900">UZA Nexus OS</h1>
+        <h1 className="text-xl font-bold text-fg">UZA Nexus OS</h1>
         <Card>
-          <p className="text-sm text-slate-600">
+          <p className="text-sm text-fgMuted">
             The group view is for the CEO and project managers. Everything that is yours is on{' '}
-            <Link href="/week" className="font-medium text-brand underline underline-offset-2">
+            <Link href="/week" className="font-medium text-primary underline underline-offset-2">
               My week
             </Link>
             {inbox && inbox.unread > 0 ? (
@@ -162,39 +162,39 @@ export default async function NexusPage() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <div>
-          <h1 className="text-xl font-bold text-slate-900">UZA Nexus OS</h1>
-          <p className="mt-0.5 text-sm text-slate-500">
+          <h1 className="text-xl font-bold text-fg">UZA Nexus OS</h1>
+          <p className="mt-0.5 text-sm text-fgMuted">
             Everything, {r ? `week of ${r.weekKey}` : 'now'}
           </p>
         </div>
         <div className="flex flex-wrap gap-2 text-sm">
           <Link
             href="/register"
-            className="rounded-lg border border-slate-300 px-3 py-1.5 text-slate-700 hover:bg-slate-50"
+            className="rounded-lg border border-border px-3 py-1.5 text-fgMuted hover:bg-surface2"
           >
             The review
           </Link>
           <Link
             href="/projects"
-            className="rounded-lg border border-slate-300 px-3 py-1.5 text-slate-700 hover:bg-slate-50"
+            className="rounded-lg border border-border px-3 py-1.5 text-fgMuted hover:bg-surface2"
           >
             Projects
           </Link>
           <Link
             href="/tasks"
-            className="rounded-lg border border-slate-300 px-3 py-1.5 text-slate-700 hover:bg-slate-50"
+            className="rounded-lg border border-border px-3 py-1.5 text-fgMuted hover:bg-surface2"
           >
             Tasks
           </Link>
           <Link
             href="/funding"
-            className="rounded-lg border border-slate-300 px-3 py-1.5 text-slate-700 hover:bg-slate-50"
+            className="rounded-lg border border-border px-3 py-1.5 text-fgMuted hover:bg-surface2"
           >
             Funding
           </Link>
           <Link
             href="/memos"
-            className="rounded-lg border border-slate-300 px-3 py-1.5 text-slate-700 hover:bg-slate-50"
+            className="rounded-lg border border-border px-3 py-1.5 text-fgMuted hover:bg-surface2"
           >
             Memos{inbox && inbox.unread > 0 ? ` (${inbox.unread})` : ''}
           </Link>
@@ -203,7 +203,7 @@ export default async function NexusPage() {
 
       {/* What is wrong, first. */}
       <section>
-        <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-slate-500">
+        <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-fgMuted">
           Needs you
         </h2>
         <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
@@ -242,7 +242,7 @@ export default async function NexusPage() {
       </section>
 
       <section>
-        <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-slate-500">
+        <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-fgMuted">
           How the work is held
         </h2>
         <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
@@ -268,7 +268,7 @@ export default async function NexusPage() {
       </section>
 
       <section>
-        <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-slate-500">
+        <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-fgMuted">
           What is being raised
         </h2>
         <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
@@ -310,7 +310,7 @@ export default async function NexusPage() {
       </section>
 
       <section>
-        <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-slate-500">
+        <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-fgMuted">
           What we own
         </h2>
         <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
@@ -339,13 +339,13 @@ export default async function NexusPage() {
 
       {byVenture.length > 0 ? (
         <section>
-          <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-slate-500">
+          <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-fgMuted">
             By venture
           </h2>
-          <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white">
+          <div className="overflow-x-auto rounded-xl border border-border bg-surface">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-slate-200 text-left text-xs uppercase tracking-wide text-slate-500">
+                <tr className="border-b border-border text-left text-xs uppercase tracking-wide text-fgMuted">
                   <th className="px-4 py-2 font-medium">Venture</th>
                   <th className="px-4 py-2 text-right font-medium">Running</th>
                   <th className="px-4 py-2 text-right font-medium">Systems</th>
@@ -353,12 +353,12 @@ export default async function NexusPage() {
               </thead>
               <tbody>
                 {byVenture.map((v) => (
-                  <tr key={v.code} className="border-b border-slate-100 last:border-0">
-                    <td className="px-4 py-2 font-medium text-slate-800">{v.code}</td>
-                    <td className="px-4 py-2 text-right tabular-nums text-slate-700">
+                  <tr key={v.code} className="border-b border-border last:border-0">
+                    <td className="px-4 py-2 font-medium text-fg">{v.code}</td>
+                    <td className="px-4 py-2 text-right tabular-nums text-fgMuted">
                       {v.running}
                     </td>
-                    <td className="px-4 py-2 text-right tabular-nums text-slate-700">
+                    <td className="px-4 py-2 text-right tabular-nums text-fgMuted">
                       {v.systems}
                     </td>
                   </tr>
@@ -371,15 +371,15 @@ export default async function NexusPage() {
 
       {r && r.escalations.length > 0 ? (
         <section className="space-y-2">
-          <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-500">
+          <h2 className="text-sm font-semibold uppercase tracking-wide text-fgMuted">
             Asked of you this week
           </h2>
           <Card>
-            <ul className="divide-y divide-slate-100">
+            <ul className="divide-y divide-border">
               {r.escalations.map((e) => (
                 <li key={e.initiativeRef} className="py-2">
-                  <p className="text-sm text-slate-800">{e.needsFromCeo}</p>
-                  <p className="mt-0.5 text-xs text-slate-500">{e.name}</p>
+                  <p className="text-sm text-fg">{e.needsFromCeo}</p>
+                  <p className="mt-0.5 text-xs text-fgMuted">{e.name}</p>
                 </li>
               ))}
             </ul>
@@ -389,21 +389,21 @@ export default async function NexusPage() {
 
       {running.length > 0 ? (
         <section className="space-y-2">
-          <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-500">
+          <h2 className="text-sm font-semibold uppercase tracking-wide text-fgMuted">
             Running now — {running.length}
           </h2>
           <Card>
-            <ul className="divide-y divide-slate-100">
+            <ul className="divide-y divide-border">
               {running.map((i) => (
                 <li key={i.ref} className="py-2.5">
                   <div className="flex flex-wrap items-baseline justify-between gap-2">
-                    <span className="text-sm font-medium text-slate-900">{i.name}</span>
-                    <span className="shrink-0 font-mono text-[11px] text-slate-400">
+                    <span className="text-sm font-medium text-fg">{i.name}</span>
+                    <span className="shrink-0 font-mono text-[11px] text-fgSubtle">
                       {i.ventureCode ?? '—'} · {i.ownerId}
                     </span>
                   </div>
                   {i.nextAction ? (
-                    <p className="mt-0.5 line-clamp-2 text-xs text-slate-600">{i.nextAction}</p>
+                    <p className="mt-0.5 line-clamp-2 text-xs text-fgMuted">{i.nextAction}</p>
                   ) : null}
                 </li>
               ))}

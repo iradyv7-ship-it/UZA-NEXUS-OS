@@ -41,13 +41,13 @@ export default async function ProjectsPage() {
   if (res.kind === 'denied')
     return (
       <Card>
-        <p className="text-sm text-slate-600">You do not have access to the systems register.</p>
+        <p className="text-sm text-fgMuted">You do not have access to the systems register.</p>
       </Card>
     );
   if (res.kind !== 'ok')
     return (
       <Card>
-        <p className="text-sm text-slate-600">The systems register could not be loaded.</p>
+        <p className="text-sm text-fgMuted">The systems register could not be loaded.</p>
       </Card>
     );
 
@@ -61,8 +61,8 @@ export default async function ProjectsPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-xl font-bold text-slate-900">Projects and systems</h1>
-        <p className="mt-0.5 text-sm text-slate-500">
+        <h1 className="text-xl font-bold text-fg">Projects and systems</h1>
+        <p className="mt-0.5 text-sm text-fgMuted">
           {systems.length} recorded · {publicCount} with public source · {dupCount} duplicated
         </p>
       </div>
@@ -71,17 +71,17 @@ export default async function ProjectsPage() {
         const rows = systems.filter((s) => (s.ventureCode ?? 'Unassigned') === v);
         return (
           <section key={v} className="space-y-2">
-            <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-500">
+            <h2 className="text-sm font-semibold uppercase tracking-wide text-fgMuted">
               {v} — {rows.length}
             </h2>
             <Card>
-              <ul className="divide-y divide-slate-100">
+              <ul className="divide-y divide-border">
                 {rows.map((s) => (
                   <li key={s.ref} className="py-3">
                     <div className="flex flex-wrap items-start justify-between gap-2">
                       <div className="min-w-0">
-                        <p className="font-medium text-slate-900">{s.name}</p>
-                        <p className="mt-0.5 font-mono text-[11px] text-slate-400">
+                        <p className="font-medium text-fg">{s.name}</p>
+                        <p className="mt-0.5 font-mono text-[11px] text-fgSubtle">
                           {s.ref} · {s.kind.replace('_', ' ')} · {s.ownerId}
                           {s.daysSincePush !== null ? ` · pushed ${s.daysSincePush}d ago` : ''}
                         </p>
@@ -98,7 +98,7 @@ export default async function ProjectsPage() {
                       </div>
                     </div>
 
-                    {s.notes ? <p className="mt-1.5 text-xs text-slate-600">{s.notes}</p> : null}
+                    {s.notes ? <p className="mt-1.5 text-xs text-fgMuted">{s.notes}</p> : null}
 
                     <div className="mt-1.5 flex flex-wrap gap-3 text-xs">
                       {s.repoUrl ? (
@@ -106,7 +106,7 @@ export default async function ProjectsPage() {
                           href={s.repoUrl}
                           target="_blank"
                           rel="noreferrer"
-                          className="text-brand underline underline-offset-2"
+                          className="text-primary underline underline-offset-2"
                         >
                           source
                         </a>
@@ -116,16 +116,16 @@ export default async function ProjectsPage() {
                           href={s.liveUrl}
                           target="_blank"
                           rel="noreferrer"
-                          className="text-brand underline underline-offset-2"
+                          className="text-primary underline underline-offset-2"
                         >
                           live
                         </a>
                       ) : null}
                       {s.initiativeRef ? (
-                        <span className="font-mono text-slate-400">{s.initiativeRef}</span>
+                        <span className="font-mono text-fgSubtle">{s.initiativeRef}</span>
                       ) : null}
                       {s.supersededBy ? (
-                        <span className="text-amber-700">keep {s.supersededBy} instead</span>
+                        <span className="text-warn">keep {s.supersededBy} instead</span>
                       ) : null}
                     </div>
                   </li>

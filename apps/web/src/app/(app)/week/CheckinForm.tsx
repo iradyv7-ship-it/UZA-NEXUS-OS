@@ -20,7 +20,7 @@ export function CheckinForm({ initiativeRef }: { initiativeRef: string }) {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="mt-3 rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+        className="mt-3 rounded-lg border border-border px-3 py-1.5 text-xs font-semibold text-fgMuted hover:bg-surface2"
       >
         File this week
       </button>
@@ -28,47 +28,47 @@ export function CheckinForm({ initiativeRef }: { initiativeRef: string }) {
   }
 
   return (
-    <form action={checkinAction} className="mt-3 space-y-2 border-t border-slate-100 pt-3">
+    <form action={checkinAction} className="mt-3 space-y-2 border-t border-border pt-3">
       <input type="hidden" name="initiativeRef" value={initiativeRef} />
 
       <label className="block">
-        <span className="text-xs font-medium text-slate-600">What moved?</span>
+        <span className="text-xs font-medium text-fgMuted">What moved?</span>
         <textarea
           name="moved"
           required
           rows={2}
           autoFocus
           placeholder="One line is enough. What is different from last week?"
-          className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+          className="mt-1 w-full rounded-lg border border-border px-3 py-2 text-sm"
         />
       </label>
 
       <label className="block">
-        <span className="text-xs font-medium text-slate-600">Blocked by anything? (optional)</span>
+        <span className="text-xs font-medium text-fgMuted">Blocked by anything? (optional)</span>
         <input
           name="blocked"
-          className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+          className="mt-1 w-full rounded-lg border border-border px-3 py-2 text-sm"
         />
       </label>
 
       <label className="block">
-        <span className="text-xs font-medium text-slate-600">
+        <span className="text-xs font-medium text-fgMuted">
           Need something from the CEO? (optional — this goes straight onto the Monday review)
         </span>
         <input
           name="needsFromCeo"
-          className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+          className="mt-1 w-full rounded-lg border border-border px-3 py-2 text-sm"
         />
       </label>
 
       <div className="flex gap-2 pt-1">
-        <button className="rounded-lg bg-brand px-3 py-1.5 text-xs font-semibold text-white">
+        <button className="rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-surface">
           File it
         </button>
         <button
           type="button"
           onClick={() => setOpen(false)}
-          className="rounded-lg border border-slate-300 px-3 py-1.5 text-xs text-slate-600"
+          className="rounded-lg border border-border px-3 py-1.5 text-xs text-fgMuted"
         >
           Cancel
         </button>

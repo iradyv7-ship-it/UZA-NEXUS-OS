@@ -57,7 +57,7 @@ export default async function TasksPage() {
   if (res.kind !== 'ok') {
     return (
       <Card>
-        <p className="text-sm text-slate-600">
+        <p className="text-sm text-fgMuted">
           {res.kind === 'denied'
             ? 'You do not have access to tasks.'
             : 'Tasks could not be loaded.'}
@@ -78,8 +78,8 @@ export default async function TasksPage() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <div>
-          <h1 className="text-xl font-bold text-slate-900">Tasks</h1>
-          <p className="mt-0.5 text-sm text-slate-500">
+          <h1 className="text-xl font-bold text-fg">Tasks</h1>
+          <p className="mt-0.5 text-sm text-fgMuted">
             {open.length} open · {mine.length} mine · {late.length} overdue
           </p>
         </div>
@@ -88,16 +88,13 @@ export default async function TasksPage() {
 
       {late.length > 0 ? (
         <section className="space-y-2">
-          <h2 className="text-sm font-semibold uppercase tracking-wide text-red-600">Overdue</h2>
+          <h2 className="text-sm font-semibold uppercase tracking-wide text-danger">Overdue</h2>
           <Card>
-            <ul className="divide-y divide-slate-100">
+            <ul className="divide-y divide-border">
               {late.map((t) => (
-                <li
-                  key={t.ref}
-                  className="flex flex-wrap items-baseline justify-between gap-2 py-2"
-                >
-                  <span className="text-sm text-slate-800">{t.title}</span>
-                  <span className="shrink-0 font-mono text-[11px] text-slate-400">
+                <li key={t.ref} className="flex flex-wrap items-baseline justify-between gap-2 py-2">
+                  <span className="text-sm text-fg">{t.title}</span>
+                  <span className="shrink-0 font-mono text-[11px] text-fgSubtle">
                     {t.assigneeId} · was due {fmt(t.dueAt)}
                   </span>
                 </li>
@@ -112,24 +109,24 @@ export default async function TasksPage() {
           const rows = open.filter((t) => t.status === col.key);
           return (
             <section key={col.key} className="space-y-2">
-              <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-500">
+              <h2 className="text-sm font-semibold uppercase tracking-wide text-fgMuted">
                 {col.label} — {rows.length}
               </h2>
               {rows.length === 0 ? (
                 <Card>
-                  <p className="text-xs text-slate-400">Nothing here.</p>
+                  <p className="text-xs text-fgSubtle">Nothing here.</p>
                 </Card>
               ) : (
                 rows.map((t) => (
                   <Card key={t.ref}>
                     <div className="flex items-start justify-between gap-2">
-                      <p className="text-sm font-medium text-slate-900">{t.title}</p>
+                      <p className="text-sm font-medium text-fg">{t.title}</p>
                       <Badge tone={PRIORITY_TONE[t.priority]}>{t.priority}</Badge>
                     </div>
                     {t.description ? (
-                      <p className="mt-1 text-xs text-slate-600">{t.description}</p>
+                      <p className="mt-1 text-xs text-fgMuted">{t.description}</p>
                     ) : null}
-                    <p className="mt-1.5 font-mono text-[11px] text-slate-400">
+                    <p className="mt-1.5 font-mono text-[11px] text-fgSubtle">
                       {t.assigneeId}
                       {t.dueAt ? ` · due ${fmt(t.dueAt)}` : ''}
                       {t.linkedRef ? ` · ${t.linkedRef}` : ''}

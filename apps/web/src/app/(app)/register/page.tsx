@@ -72,17 +72,17 @@ function Stat({
 }) {
   const color =
     tone === 'red'
-      ? 'text-red-600'
+      ? 'text-danger'
       : tone === 'amber'
-        ? 'text-amber-600'
+        ? 'text-warn'
         : tone === 'blue'
-          ? 'text-sky-600'
-          : 'text-slate-800';
+          ? 'text-info'
+          : 'text-fg';
   return (
     <Card className="text-center">
       <div className={`text-3xl font-bold tabular-nums ${color}`}>{value}</div>
-      <div className="mt-1 text-xs text-slate-500">{label}</div>
-      {hint ? <div className="mt-0.5 text-[11px] text-slate-400">{hint}</div> : null}
+      <div className="mt-1 text-xs text-fgMuted">{label}</div>
+      {hint ? <div className="mt-0.5 text-[11px] text-fgSubtle">{hint}</div> : null}
     </Card>
   );
 }
@@ -105,9 +105,9 @@ export default async function RegisterPage() {
   if (reviewRes.kind === 'denied') {
     return (
       <Card>
-        <p className="text-sm text-slate-600">
+        <p className="text-sm text-fgMuted">
           The weekly review is for the CEO and venture managers. Your own initiatives are on{' '}
-          <a href="/week" className="font-medium text-brand underline underline-offset-2">
+          <a href="/week" className="font-medium text-primary underline underline-offset-2">
             My week
           </a>
           .
@@ -118,7 +118,7 @@ export default async function RegisterPage() {
   if (reviewRes.kind !== 'ok') {
     return (
       <Card>
-        <p className="text-sm text-slate-600">The review could not be loaded.</p>
+        <p className="text-sm text-fgMuted">The review could not be loaded.</p>
       </Card>
     );
   }
@@ -130,8 +130,8 @@ export default async function RegisterPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-xl font-bold text-slate-900">The register — week of {r.weekKey}</h1>
-        <p className="mt-0.5 text-sm text-slate-500">
+        <h1 className="text-xl font-bold text-fg">The register — week of {r.weekKey}</h1>
+        <p className="mt-0.5 text-sm text-fgMuted">
           {r.counts.runs} running · {r.counts.holds} held · {r.counts.parked} parked
         </p>
       </div>
@@ -163,18 +163,18 @@ export default async function RegisterPage() {
 
       {r.decisions.length > 0 ? (
         <section className="space-y-3">
-          <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-500">
+          <h2 className="text-sm font-semibold uppercase tracking-wide text-fgMuted">
             Waiting on you — oldest first
           </h2>
           {r.decisions.map((d) => (
             <Card key={d.ref}>
               <div className="flex flex-wrap items-start justify-between gap-2">
-                <p className="font-medium text-slate-900">{d.question}</p>
+                <p className="font-medium text-fg">{d.question}</p>
                 <Badge tone={d.ageDays >= 7 ? 'red' : d.ageDays >= 3 ? 'amber' : 'slate'}>
                   {d.ageDays}d
                 </Badge>
               </div>
-              <p className="mt-0.5 font-mono text-xs text-slate-400">
+              <p className="mt-0.5 font-mono text-xs text-fgSubtle">
                 {d.ref} · raised by {d.raisedById}
                 {d.initiativeRef ? ` · ${d.initiativeRef}` : ''}
               </p>
@@ -184,7 +184,7 @@ export default async function RegisterPage() {
         </section>
       ) : (
         <Card>
-          <p className="text-sm text-slate-600">
+          <p className="text-sm text-fgMuted">
             Nothing is waiting on you. That is rare — enjoy it.
           </p>
         </Card>
@@ -192,14 +192,14 @@ export default async function RegisterPage() {
 
       {r.deferralsNowDue.length > 0 ? (
         <section className="space-y-2">
-          <h2 className="text-sm font-semibold uppercase tracking-wide text-amber-600">
+          <h2 className="text-sm font-semibold uppercase tracking-wide text-warn">
             Deferred, and now due
           </h2>
           <Card>
-            <ul className="divide-y divide-slate-100">
+            <ul className="divide-y divide-border">
               {r.deferralsNowDue.map((d) => (
-                <li key={d.ref} className="py-2 text-sm text-slate-700">
-                  {d.question} <span className="font-mono text-xs text-slate-400">{d.ref}</span>
+                <li key={d.ref} className="py-2 text-sm text-fgMuted">
+                  {d.question} <span className="font-mono text-xs text-fgSubtle">{d.ref}</span>
                 </li>
               ))}
             </ul>
@@ -209,15 +209,15 @@ export default async function RegisterPage() {
 
       {r.escalations.length > 0 ? (
         <section className="space-y-2">
-          <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-500">
+          <h2 className="text-sm font-semibold uppercase tracking-wide text-fgMuted">
             Asked of you in a check-in
           </h2>
           <Card>
-            <ul className="divide-y divide-slate-100">
+            <ul className="divide-y divide-border">
               {r.escalations.map((e) => (
                 <li key={e.initiativeRef} className="py-2">
-                  <p className="text-sm text-slate-800">{e.needsFromCeo}</p>
-                  <p className="mt-0.5 text-xs text-slate-500">{e.name}</p>
+                  <p className="text-sm text-fg">{e.needsFromCeo}</p>
+                  <p className="mt-0.5 text-xs text-fgMuted">{e.name}</p>
                 </li>
               ))}
             </ul>
@@ -227,18 +227,18 @@ export default async function RegisterPage() {
 
       {r.silent.length > 0 ? (
         <section className="space-y-2">
-          <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-500">
+          <h2 className="text-sm font-semibold uppercase tracking-wide text-fgMuted">
             Running, but silent this week
           </h2>
           <Card>
-            <p className="mb-2 text-xs text-slate-500">
+            <p className="mb-2 text-xs text-fgMuted">
               No check-in filed. Either it is not really running, or it has no real owner.
             </p>
-            <ul className="divide-y divide-slate-100">
+            <ul className="divide-y divide-border">
               {r.silent.map((s) => (
                 <li key={s.ref} className="flex items-baseline justify-between gap-3 py-2">
-                  <span className="text-sm text-slate-800">{s.name}</span>
-                  <span className="shrink-0 font-mono text-xs text-slate-400">{s.ownerId}</span>
+                  <span className="text-sm text-fg">{s.name}</span>
+                  <span className="shrink-0 font-mono text-xs text-fgSubtle">{s.ownerId}</span>
                 </li>
               ))}
             </ul>
@@ -248,14 +248,14 @@ export default async function RegisterPage() {
 
       {r.overdueReviews.length > 0 ? (
         <section className="space-y-2">
-          <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-500">
+          <h2 className="text-sm font-semibold uppercase tracking-wide text-fgMuted">
             Held past their review date
           </h2>
           <Card>
-            <ul className="divide-y divide-slate-100">
+            <ul className="divide-y divide-border">
               {r.overdueReviews.map((h) => (
                 <li key={h.ref} className="flex items-baseline justify-between gap-3 py-2">
-                  <span className="text-sm text-slate-800">{h.name}</span>
+                  <span className="text-sm text-fg">{h.name}</span>
                   <Badge tone="amber">{h.daysLate}d late</Badge>
                 </li>
               ))}
@@ -266,19 +266,19 @@ export default async function RegisterPage() {
 
       {r.moved.length > 0 ? (
         <section className="space-y-2">
-          <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-500">
+          <h2 className="text-sm font-semibold uppercase tracking-wide text-fgMuted">
             What moved — {r.counts.filed} filed
           </h2>
           <Card>
-            <ul className="divide-y divide-slate-100">
+            <ul className="divide-y divide-border">
               {r.moved.map((m) => (
                 <li key={m.ref} className="py-2.5">
-                  <p className="text-sm font-medium text-slate-900">{m.name}</p>
-                  <p className="mt-0.5 text-sm text-slate-700">{m.moved}</p>
+                  <p className="text-sm font-medium text-fg">{m.name}</p>
+                  <p className="mt-0.5 text-sm text-fgMuted">{m.moved}</p>
                   {m.blocked ? (
-                    <p className="mt-1 text-xs text-amber-700">blocked: {m.blocked}</p>
+                    <p className="mt-1 text-xs text-warn">blocked: {m.blocked}</p>
                   ) : null}
-                  <p className="mt-0.5 font-mono text-[11px] text-slate-400">
+                  <p className="mt-0.5 font-mono text-[11px] text-fgSubtle">
                     {m.ref} · {m.ownerId}
                   </p>
                 </li>
@@ -290,18 +290,18 @@ export default async function RegisterPage() {
 
       {conc && conc.noBackup.length > 0 ? (
         <section className="space-y-2">
-          <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-500">
+          <h2 className="text-sm font-semibold uppercase tracking-wide text-fgMuted">
             Duties with no backup
           </h2>
           <Card>
-            <p className="mb-2 text-xs text-slate-500">
+            <p className="mb-2 text-xs text-fgMuted">
               Each of these stops the week its owner is unreachable.
             </p>
-            <ul className="divide-y divide-slate-100">
+            <ul className="divide-y divide-border">
               {conc.noBackup.map((n) => (
                 <li key={n.ref} className="flex items-baseline justify-between gap-3 py-2">
-                  <span className="text-sm text-slate-800">{n.name}</span>
-                  <span className="shrink-0 font-mono text-xs text-slate-400">{n.ownerId}</span>
+                  <span className="text-sm text-fg">{n.name}</span>
+                  <span className="shrink-0 font-mono text-xs text-fgSubtle">{n.ownerId}</span>
                 </li>
               ))}
             </ul>

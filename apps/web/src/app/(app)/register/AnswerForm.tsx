@@ -19,14 +19,14 @@ export function AnswerForm({ decisionRef }: { decisionRef: string }) {
         <button
           type="button"
           onClick={() => setMode('answer')}
-          className="rounded-lg bg-brand px-3 py-1.5 text-xs font-semibold text-white"
+          className="rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-surface"
         >
           Answer
         </button>
         <button
           type="button"
           onClick={() => setMode('defer')}
-          className="rounded-lg border border-slate-300 px-3 py-1.5 text-xs text-slate-600"
+          className="rounded-lg border border-border px-3 py-1.5 text-xs text-fgMuted"
         >
           Defer to a date
         </button>
@@ -36,7 +36,7 @@ export function AnswerForm({ decisionRef }: { decisionRef: string }) {
 
   if (mode === 'answer') {
     return (
-      <form action={answerDecisionAction} className="mt-3 space-y-2 border-t border-slate-100 pt-3">
+      <form action={answerDecisionAction} className="mt-3 space-y-2 border-t border-border pt-3">
         <input type="hidden" name="ref" value={decisionRef} />
         <textarea
           name="answer"
@@ -44,16 +44,16 @@ export function AnswerForm({ decisionRef }: { decisionRef: string }) {
           rows={3}
           autoFocus
           placeholder="The decision, and the reason in one line. Whoever executes this reads it, not you."
-          className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+          className="w-full rounded-lg border border-border px-3 py-2 text-sm"
         />
         <div className="flex gap-2">
-          <button className="rounded-lg bg-brand px-3 py-1.5 text-xs font-semibold text-white">
+          <button className="rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-surface">
             Decide it
           </button>
           <button
             type="button"
             onClick={() => setMode('closed')}
-            className="rounded-lg border border-slate-300 px-3 py-1.5 text-xs text-slate-600"
+            className="rounded-lg border border-border px-3 py-1.5 text-xs text-fgMuted"
           >
             Cancel
           </button>
@@ -63,10 +63,10 @@ export function AnswerForm({ decisionRef }: { decisionRef: string }) {
   }
 
   return (
-    <form action={deferDecisionAction} className="mt-3 space-y-2 border-t border-slate-100 pt-3">
+    <form action={deferDecisionAction} className="mt-3 space-y-2 border-t border-border pt-3">
       <input type="hidden" name="ref" value={decisionRef} />
       <label className="block">
-        <span className="text-xs font-medium text-slate-600">
+        <span className="text-xs font-medium text-fgMuted">
           Come back to it on — a date is required, there is no &ldquo;later&rdquo;
         </span>
         <input
@@ -74,17 +74,17 @@ export function AnswerForm({ decisionRef }: { decisionRef: string }) {
           name="deferredTo"
           required
           autoFocus
-          className="mt-1 rounded-lg border border-slate-300 px-3 py-2 text-sm"
+          className="mt-1 rounded-lg border border-border px-3 py-2 text-sm"
         />
       </label>
       <div className="flex gap-2">
-        <button className="rounded-lg border border-slate-400 px-3 py-1.5 text-xs font-semibold text-slate-700">
+        <button className="rounded-lg border border-border px-3 py-1.5 text-xs font-semibold text-fgMuted">
           Defer
         </button>
         <button
           type="button"
           onClick={() => setMode('closed')}
-          className="rounded-lg border border-slate-300 px-3 py-1.5 text-xs text-slate-600"
+          className="rounded-lg border border-border px-3 py-1.5 text-xs text-fgMuted"
         >
           Cancel
         </button>

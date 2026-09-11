@@ -94,10 +94,10 @@ export default async function MyWeekPage({
   ]);
 
   if (weekRes.kind === 'unauthorized') {
-    return <p className="text-sm text-slate-600">Session expired. Sign in again.</p>;
+    return <p className="text-sm text-fgMuted">Session expired. Sign in again.</p>;
   }
   if (weekRes.kind !== 'ok') {
-    return <p className="text-sm text-slate-600">Could not load your week.</p>;
+    return <p className="text-sm text-fgMuted">Could not load your week.</p>;
   }
 
   const w = weekRes.data;
@@ -112,8 +112,8 @@ export default async function MyWeekPage({
     <div className="space-y-5">
       <header className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="text-xl font-semibold text-slate-900">My week</h1>
-          <p className="text-sm text-slate-600">
+          <h1 className="text-xl font-semibold text-fg">My week</h1>
+          <p className="text-sm text-fgMuted">
             Week of {day(w.weekOf)} · {w.periodKey}
             {objectives.length > 0 && ` · ${done} of ${objectives.length} done`}
           </p>
@@ -126,39 +126,39 @@ export default async function MyWeekPage({
       </header>
 
       {ok && NOTE[ok] && (
-        <p className="rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-800">{NOTE[ok]}</p>
+        <p className="rounded-lg bg-ok/10 px-3 py-2 text-sm text-ok">{NOTE[ok]}</p>
       )}
       {err && ERR[err] && (
-        <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-800">{ERR[err]}</p>
+        <p className="rounded-lg bg-danger/10 px-3 py-2 text-sm text-danger">{ERR[err]}</p>
       )}
 
       {unreadMemos.length > 0 && (
         <Card>
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <h2 className="text-sm font-semibold text-slate-900">
+            <h2 className="text-sm font-semibold text-fg">
               {unreadMemos.length === 1
                 ? 'One message for you'
                 : `${unreadMemos.length} messages for you`}
             </h2>
             <a
               href="/memos"
-              className="rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+              className="rounded-lg border border-border px-3 py-1.5 text-xs font-semibold text-fgMuted hover:bg-surface2"
             >
               Open messages
             </a>
           </div>
           <ul className="mt-2 space-y-1">
             {unreadMemos.slice(0, 4).map((m) => (
-              <li key={m.ref} className="flex flex-wrap items-center gap-2 text-sm text-slate-800">
+              <li key={m.ref} className="flex flex-wrap items-center gap-2 text-sm text-fg">
                 <span>{m.subject}</span>
-                <span className="text-xs text-slate-500">
+                <span className="text-xs text-fgMuted">
                   from {m.fromId} · {day(m.sentAt)}
                 </span>
                 {m.needsAck && <Badge tone="amber">needs your reply</Badge>}
               </li>
             ))}
             {unreadMemos.length > 4 && (
-              <li className="text-xs text-slate-500">and {unreadMemos.length - 4} more</li>
+              <li className="text-xs text-fgMuted">and {unreadMemos.length - 4} more</li>
             )}
           </ul>
         </Card>
@@ -166,8 +166,8 @@ export default async function MyWeekPage({
 
       {/* ---------------------------------------------------------- what I owe */}
       <Card>
-        <h2 className="text-sm font-semibold text-slate-900">What I will finish this week</h2>
-        <p className="mb-3 mt-0.5 text-xs text-slate-600">
+        <h2 className="text-sm font-semibold text-fg">What I will finish this week</h2>
+        <p className="mb-3 mt-0.5 text-xs text-fgMuted">
           {w.plan
             ? 'Change anything that is not right. It is your week, not the meeting&rsquo;s.'
             : 'Nothing came out of the meeting for you. Write your own.'}
@@ -177,17 +177,14 @@ export default async function MyWeekPage({
 
       {w.iOwe.length > 0 && (
         <Card>
-          <h2 className="text-sm font-semibold text-slate-900">Problems I took on</h2>
+          <h2 className="text-sm font-semibold text-fg">Problems I took on</h2>
           <ul className="mt-2 space-y-3">
             {w.iOwe.map((b) => {
               const overdue = b.dueAt ? new Date(b.dueAt) < new Date() : false;
               return (
-                <li
-                  key={b.ref}
-                  className="border-t border-slate-100 pt-3 first:border-0 first:pt-0"
-                >
+                <li key={b.ref} className="border-t border-border pt-3 first:border-0 first:pt-0">
                   <div className="flex flex-wrap items-start justify-between gap-2">
-                    <span className="text-sm text-slate-800">{b.summary}</span>
+                    <span className="text-sm text-fg">{b.summary}</span>
                     <Badge tone={overdue ? 'red' : 'slate'}>
                       {b.dueAt ? `due ${day(b.dueAt)}` : 'no date'}
                     </Badge>
@@ -199,9 +196,9 @@ export default async function MyWeekPage({
                       name="note"
                       required
                       placeholder="How was it solved?"
-                      className="min-w-0 flex-1 rounded-lg border border-slate-300 px-3 py-1.5 text-xs"
+                      className="min-w-0 flex-1 rounded-lg border border-border px-3 py-1.5 text-xs"
                     />
-                    <button className="rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50">
+                    <button className="rounded-lg border border-border px-3 py-1.5 text-xs font-semibold text-fgMuted hover:bg-surface2">
                       Mark it solved
                     </button>
                   </form>
@@ -215,21 +212,18 @@ export default async function MyWeekPage({
       {/* ------------------------------------------------------- what I am owed */}
       {(w.waitingOnSomebody.length > 0 || w.askedOfMe.length > 0) && (
         <Card>
-          <h2 className="text-sm font-semibold text-slate-900">What I am waiting for</h2>
+          <h2 className="text-sm font-semibold text-fg">What I am waiting for</h2>
 
           {w.waitingOnSomebody.length > 0 && (
             <>
-              <p className="mb-2 mt-0.5 text-xs text-slate-600">
+              <p className="mb-2 mt-0.5 text-xs text-fgMuted">
                 I said these were stopping me and nobody has taken them yet. Chase someone, or take
                 it yourself.
               </p>
               <ul className="space-y-3">
                 {w.waitingOnSomebody.map((b) => (
-                  <li
-                    key={b.ref}
-                    className="border-t border-slate-100 pt-3 first:border-0 first:pt-0"
-                  >
-                    <span className="text-sm text-slate-800">{b.summary}</span>
+                  <li key={b.ref} className="border-t border-border pt-3 first:border-0 first:pt-0">
+                    <span className="text-sm text-fg">{b.summary}</span>
                     <form
                       action={ownBlockerAction}
                       className="mt-2 flex flex-wrap items-center gap-2"
@@ -241,15 +235,15 @@ export default async function MyWeekPage({
                         required
                         defaultValue={me}
                         placeholder="Who will do it?"
-                        className="w-44 rounded-lg border border-slate-300 px-3 py-1.5 text-xs"
+                        className="w-44 rounded-lg border border-border px-3 py-1.5 text-xs"
                       />
                       <input
                         type="date"
                         name="dueAt"
                         required
-                        className="rounded-lg border border-slate-300 px-3 py-1.5 text-xs"
+                        className="rounded-lg border border-border px-3 py-1.5 text-xs"
                       />
-                      <button className="rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50">
+                      <button className="rounded-lg border border-border px-3 py-1.5 text-xs font-semibold text-fgMuted hover:bg-surface2">
                         Give it a person and a date
                       </button>
                     </form>
@@ -261,12 +255,12 @@ export default async function MyWeekPage({
 
           {w.askedOfMe.length > 0 && (
             <>
-              <p className="mb-2 mt-4 text-xs text-slate-600">Somebody asked for my comment.</p>
+              <p className="mb-2 mt-4 text-xs text-fgMuted">Somebody asked for my comment.</p>
               <ul className="space-y-2">
                 {w.askedOfMe.map((r) => (
-                  <li key={r.ref} className="text-sm text-slate-800">
+                  <li key={r.ref} className="text-sm text-fg">
                     {r.body}
-                    <span className="ml-2 text-xs text-slate-500">
+                    <span className="ml-2 text-xs text-fgMuted">
                       on {r.subjectType} {r.subjectRef}
                     </span>
                   </li>
@@ -279,10 +273,10 @@ export default async function MyWeekPage({
 
       {/* ------------------------------------------------------------- the report */}
       <Card>
-        <h2 className="text-sm font-semibold text-slate-900">
+        <h2 className="text-sm font-semibold text-fg">
           {w.reportFiled ? 'My report for the week' : 'My report for the week'}
         </h2>
-        <p className="mb-3 mt-0.5 text-xs text-slate-600">
+        <p className="mb-3 mt-0.5 text-xs text-fgMuted">
           {w.reportFiled
             ? 'Sent. You can still change it until Monday.'
             : 'Everyone writes one, including Yves.'}
@@ -293,8 +287,8 @@ export default async function MyWeekPage({
       {/* ----------------------------------------------------------- the nudges */}
       {n && (n.mine.confirmYourPlan || n.mine.writeYourReport || n.counts) && (
         <Card>
-          <h2 className="text-sm font-semibold text-slate-900">What the system is asking for</h2>
-          <ul className="mt-2 space-y-1 text-sm text-slate-700">
+          <h2 className="text-sm font-semibold text-fg">What the system is asking for</h2>
+          <ul className="mt-2 space-y-1 text-sm text-fg">
             {unreadMemos.length > 0 && (
               <li>
                 · Read{' '}
@@ -305,7 +299,7 @@ export default async function MyWeekPage({
             {n.mine.confirmYourPlan && <li>· Agree your week above.</li>}
             {n.mine.writeYourReport && <li>· Write your report before Friday ends.</li>}
             {n.mine.overdueBlockers.map((b) => (
-              <li key={b.ref} className="text-red-700">
+              <li key={b.ref} className="text-danger">
                 · Late: {b.summary}
               </li>
             ))}
@@ -313,12 +307,12 @@ export default async function MyWeekPage({
               !n.mine.confirmYourPlan &&
               !n.mine.writeYourReport &&
               !n.mine.overdueBlockers.length && (
-                <li className="text-emerald-700">· Nothing is waiting on you.</li>
+                <li className="text-ok">· Nothing is waiting on you.</li>
               )}
           </ul>
 
           {n.counts && (
-            <p className="mt-3 border-t border-slate-100 pt-3 text-xs text-slate-600">
+            <p className="mt-3 border-t border-border pt-3 text-xs text-fgMuted">
               Across the team: <strong>{n.counts.noPlan}</strong> of {n.counts.staff} have no plan,{' '}
               <strong>{n.counts.unconfirmed}</strong> have not agreed theirs,{' '}
               <strong>{n.counts.noReport}</strong> have not written a report.

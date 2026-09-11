@@ -22,7 +22,7 @@ export function ReportForm({ filed }: { filed: boolean }) {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+        className="rounded-lg border border-border px-3 py-1.5 text-xs font-semibold text-fgMuted hover:bg-surface2"
       >
         Write it now
       </button>
@@ -32,45 +32,45 @@ export function ReportForm({ filed }: { filed: boolean }) {
   return (
     <form action={fileReportAction} className="space-y-2">
       <label className="block">
-        <span className="text-xs font-medium text-slate-600">What I finished this week</span>
+        <span className="text-xs font-medium text-fgMuted">What I finished this week</span>
         <textarea
           name="highlights"
           required
           rows={2}
           placeholder="Something you actually finished - not something you started."
-          className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+          className="mt-1 w-full rounded-lg border border-border px-3 py-2 text-sm"
         />
       </label>
       <label className="block">
-        <span className="text-xs font-medium text-slate-600">What is stopping me</span>
+        <span className="text-xs font-medium text-fgMuted">What is stopping me</span>
         <textarea
           name="blockers"
           rows={2}
           placeholder="Leave this empty if nothing is."
-          className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+          className="mt-1 w-full rounded-lg border border-border px-3 py-2 text-sm"
         />
       </label>
       <label className="block">
-        <span className="text-xs font-medium text-slate-600">What I need from someone</span>
+        <span className="text-xs font-medium text-fgMuted">What I need from someone</span>
         <textarea
           name="asking"
           rows={2}
           placeholder="Name the person and say what you need."
-          className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+          className="mt-1 w-full rounded-lg border border-border px-3 py-2 text-sm"
         />
       </label>
       <label className="block">
-        <span className="text-xs font-medium text-slate-600">What I will finish next week</span>
+        <span className="text-xs font-medium text-fgMuted">What I will finish next week</span>
         <textarea
           name="nextWeek"
           rows={2}
           placeholder="One thing. We should be able to check it next Monday."
-          className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+          className="mt-1 w-full rounded-lg border border-border px-3 py-2 text-sm"
         />
       </label>
       <button
         type="submit"
-        className="rounded-lg bg-slate-900 px-4 py-1.5 text-xs font-semibold text-white hover:bg-slate-700"
+        className="rounded-lg bg-primary px-4 py-1.5 text-xs font-semibold text-surface hover:bg-primarySoft"
       >
         {filed ? 'Update my report' : 'Send my report'}
       </button>

@@ -20,14 +20,14 @@ export function MemoActions({
   acked: boolean;
 }) {
   if (acked || (!needsAck && read)) {
-    return <p className="mt-3 text-xs text-slate-400">{acked ? 'Acknowledged.' : 'Read.'}</p>;
+    return <p className="mt-3 text-xs text-fgSubtle">{acked ? 'Acknowledged.' : 'Read.'}</p>;
   }
   return (
     <div className="mt-3 flex gap-2">
       {!read ? (
         <form action={readMemoAction}>
           <input type="hidden" name="ref" value={memoRef} />
-          <button className="rounded-lg border border-slate-300 px-3 py-1.5 text-xs text-slate-600">
+          <button className="rounded-lg border border-border px-3 py-1.5 text-xs text-fgMuted">
             Mark as read
           </button>
         </form>
@@ -35,7 +35,7 @@ export function MemoActions({
       {needsAck ? (
         <form action={ackMemoAction}>
           <input type="hidden" name="ref" value={memoRef} />
-          <button className="rounded-lg bg-brand px-3 py-1.5 text-xs font-semibold text-white">
+          <button className="rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-surface">
             I have read this and will act on it
           </button>
         </form>
@@ -55,7 +55,7 @@ export function SendMemo() {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="rounded-lg bg-brand px-4 py-2 text-sm font-semibold text-white"
+        className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-surface"
       >
         Write a memo
       </button>
@@ -65,36 +65,36 @@ export function SendMemo() {
   return (
     <form
       action={sendMemoAction}
-      className="space-y-3 rounded-xl border border-slate-200 bg-white p-4"
+      className="space-y-3 rounded-xl border border-border bg-surface p-4"
     >
       <label className="block">
-        <span className="text-xs font-medium text-slate-600">Subject</span>
+        <span className="text-xs font-medium text-fgMuted">Subject</span>
         <input
           name="subject"
           required
           autoFocus
-          className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+          className="mt-1 w-full rounded-lg border border-border px-3 py-2 text-sm"
         />
       </label>
 
       <label className="block">
-        <span className="text-xs font-medium text-slate-600">Message</span>
+        <span className="text-xs font-medium text-fgMuted">Message</span>
         <textarea
           name="body"
           required
           rows={4}
-          className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+          className="mt-1 w-full rounded-lg border border-border px-3 py-2 text-sm"
         />
       </label>
 
       <div className="flex flex-wrap gap-3">
         <label className="block">
-          <span className="text-xs font-medium text-slate-600">To</span>
+          <span className="text-xs font-medium text-fgMuted">To</span>
           <select
             name="audience"
             value={audience}
             onChange={(e) => setAudience(e.target.value)}
-            className="mt-1 rounded-lg border border-slate-300 px-3 py-2 text-sm"
+            className="mt-1 rounded-lg border border-border px-3 py-2 text-sm"
           >
             <option value="everyone">Everyone</option>
             <option value="department">A department</option>
@@ -104,10 +104,10 @@ export function SendMemo() {
 
         {audience === 'department' ? (
           <label className="block">
-            <span className="text-xs font-medium text-slate-600">Department</span>
+            <span className="text-xs font-medium text-fgMuted">Department</span>
             <select
               name="departmentCode"
-              className="mt-1 rounded-lg border border-slate-300 px-3 py-2 text-sm"
+              className="mt-1 rounded-lg border border-border px-3 py-2 text-sm"
             >
               {DEPARTMENTS.map((d) => (
                 <option key={d} value={d}>
@@ -120,28 +120,28 @@ export function SendMemo() {
 
         {audience === 'person' ? (
           <label className="block">
-            <span className="text-xs font-medium text-slate-600">Their ref</span>
+            <span className="text-xs font-medium text-fgMuted">Their ref</span>
             <input
               name="toId"
               placeholder="EMP-KGL-0003"
-              className="mt-1 rounded-lg border border-slate-300 px-3 py-2 font-mono text-sm"
+              className="mt-1 rounded-lg border border-border px-3 py-2 font-mono text-sm"
             />
           </label>
         ) : null}
 
         <label className="block">
-          <span className="text-xs font-medium text-slate-600">Link to (optional)</span>
+          <span className="text-xs font-medium text-fgMuted">Link to (optional)</span>
           <input
             name="linkedRef"
             placeholder="INIT-2026-0001"
-            className="mt-1 rounded-lg border border-slate-300 px-3 py-2 font-mono text-sm"
+            className="mt-1 rounded-lg border border-border px-3 py-2 font-mono text-sm"
           />
         </label>
       </div>
 
       <label className="flex items-start gap-2">
         <input type="checkbox" name="needsAck" className="mt-0.5" />
-        <span className="text-xs text-slate-600">
+        <span className="text-xs text-fgMuted">
           <strong>Require acknowledgement.</strong> Use this when the memo changes how someone works
           — a new rule, a threshold, a deadline. Reading it will not be enough; they have to say
           they will act.
@@ -149,13 +149,13 @@ export function SendMemo() {
       </label>
 
       <div className="flex gap-2 pt-1">
-        <button className="rounded-lg bg-brand px-4 py-2 text-sm font-semibold text-white">
+        <button className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-surface">
           Send
         </button>
         <button
           type="button"
           onClick={() => setOpen(false)}
-          className="rounded-lg border border-slate-300 px-4 py-2 text-sm text-slate-600"
+          className="rounded-lg border border-border px-4 py-2 text-sm text-fgMuted"
         >
           Cancel
         </button>

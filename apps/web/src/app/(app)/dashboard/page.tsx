@@ -54,17 +54,17 @@ export default async function DashboardPage({
   return (
     <div className="space-y-4">
       <div>
-        <h1 className="text-xl font-bold text-slate-900">{t('dash.title')}</h1>
-        <p className="text-sm text-slate-500">{t('dash.subtitle')}</p>
+        <h1 className="text-xl font-bold text-fg">{t('dash.title')}</h1>
+        <p className="text-sm text-fgMuted">{t('dash.subtitle')}</p>
       </div>
 
       {err === 'track' && (
-        <p role="alert" className="rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-800">
+        <p role="alert" className="rounded-lg bg-warn/10 px-3 py-2 text-sm text-warn">
           {t('dash.track.invalid')}
         </p>
       )}
       {err === 'seed' && (
-        <p role="alert" className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">
+        <p role="alert" className="rounded-lg bg-danger/10 px-3 py-2 text-sm text-danger">
           {t('state.error.body')}
         </p>
       )}
@@ -97,7 +97,7 @@ export default async function DashboardPage({
           {hasMore && (
             <Link
               href={`/dashboard?count=${count + PAGE_SIZE}`}
-              className="block rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-center text-sm font-semibold text-slate-700"
+              className="block rounded-lg border border-border bg-surface px-4 py-2.5 text-center text-sm font-semibold text-fgMuted"
             >
               {t('dash.loadMore')}
             </Link>
@@ -110,9 +110,9 @@ export default async function DashboardPage({
 
 function Toolbar({ t }: { t: Translate }) {
   return (
-    <div className="space-y-3 rounded-xl border border-slate-200 bg-white p-4">
+    <div className="space-y-3 rounded-xl border border-border bg-surface p-4">
       <form action={trackRefAction} className="space-y-2">
-        <label htmlFor="ref" className="block text-sm font-medium text-slate-700">
+        <label htmlFor="ref" className="block text-sm font-medium text-fgMuted">
           {t('dash.track.label')}
         </label>
         <div className="flex gap-2">
@@ -120,18 +120,18 @@ function Toolbar({ t }: { t: Translate }) {
             id="ref"
             name="ref"
             placeholder={t('dash.track.placeholder')}
-            className="min-w-0 flex-1 rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-brand focus:ring-2 focus:ring-brand/30"
+            className="min-w-0 flex-1 rounded-lg border border-border px-3 py-2 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/30"
           />
-          <button className="shrink-0 rounded-lg bg-brand px-4 py-2 text-sm font-semibold text-white">
+          <button className="shrink-0 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-surface">
             {t('dash.track.submit')}
           </button>
         </div>
       </form>
-      <form action={seedDealAction} className="border-t border-slate-100 pt-3">
-        <button className="w-full rounded-lg border border-brand/40 bg-brand-soft px-4 py-2 text-sm font-semibold text-brand">
+      <form action={seedDealAction} className="border-t border-border pt-3">
+        <button className="w-full rounded-lg border border-primary/40 bg-primarySoft px-4 py-2 text-sm font-semibold text-primary">
           {t('dash.seed.submit')}
         </button>
-        <p className="mt-1 text-center text-[11px] text-slate-400">{t('dash.seed.note')}</p>
+        <p className="mt-1 text-center text-[11px] text-fgSubtle">{t('dash.seed.note')}</p>
       </form>
     </div>
   );
@@ -156,18 +156,18 @@ function QueueSection({
   return (
     <section className="space-y-3">
       <div className="flex items-center justify-between">
-        <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-500">{title}</h2>
+        <h2 className="text-sm font-semibold uppercase tracking-wide text-fgMuted">{title}</h2>
         {state === 'ok' && (
-          <span className="text-xs font-medium text-slate-400">{cards.length}</span>
+          <span className="text-xs font-medium text-fgSubtle">{cards.length}</span>
         )}
       </div>
 
       {state === 'denied' ? (
-        <p className="rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-800">
+        <p className="rounded-lg bg-warn/10 px-3 py-2 text-sm text-warn">
           {t('dash.section.denied')}
         </p>
       ) : state === 'error' ? (
-        <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">
+        <p className="rounded-lg bg-danger/10 px-3 py-2 text-sm text-danger">
           {t('dash.section.error')}
         </p>
       ) : (
@@ -188,14 +188,14 @@ function DealCard({ card, t, locale }: { card: QueueCard; t: Translate; locale: 
   const amount = money(card.amount.minor, locale);
 
   return (
-    <li className="h-full rounded-xl border border-slate-200 bg-white shadow-sm">
+    <li className="h-full rounded-xl border border-border bg-surface shadow-sm">
       <Link href={path} className="flex h-full flex-col p-4">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
-            <p className="truncate text-base font-semibold text-slate-900">
+            <p className="truncate text-base font-semibold text-fg">
               {card.projectName ?? recordLabel}
             </p>
-            <p className="truncate text-xs text-slate-500">
+            <p className="truncate text-xs text-fgMuted">
               {recordLabel} · {t('record.for')}{' '}
               <span className="font-mono">{card.customerRef}</span>
             </p>
@@ -203,24 +203,24 @@ function DealCard({ card, t, locale }: { card: QueueCard; t: Translate; locale: 
           <Badge tone={toneForStage(promise.stageKey)}>{t(promise.stageKey)}</Badge>
         </div>
 
-        <div className="mt-3 rounded-lg bg-slate-50 px-3 py-2">
-          <p className="text-[11px] uppercase tracking-wide text-slate-400">{t('dash.col.next')}</p>
-          <p className="text-sm font-medium text-slate-800">{t(promise.nextKey)}</p>
-          <p className="mt-0.5 text-xs text-slate-500">
+        <div className="mt-3 rounded-lg bg-surface2 px-3 py-2">
+          <p className="text-[11px] uppercase tracking-wide text-fgSubtle">{t('dash.col.next')}</p>
+          <p className="text-sm font-medium text-fg">{t(promise.nextKey)}</p>
+          <p className="mt-0.5 text-xs text-fgMuted">
             {t('dash.col.owner')}:{' '}
-            <span className="font-medium text-slate-700">{t(`owner.${promise.ownerRole}`)}</span>
+            <span className="font-medium text-fg">{t(`owner.${promise.ownerRole}`)}</span>
             {card.ownerId ? (
-              <span className="ml-1 font-mono text-[11px] text-slate-400">{card.ownerId}</span>
+              <span className="ml-1 font-mono text-[11px] text-fgSubtle">{card.ownerId}</span>
             ) : null}
           </p>
         </div>
 
         <div className="mt-auto flex items-center justify-between pt-2">
-          <p className="font-mono text-[11px] text-slate-400">{card.ref}</p>
-          <p className="text-xs tabular-nums text-slate-600">
-            <span className="font-medium text-slate-800">{amount}</span>
+          <p className="font-mono text-[11px] text-fgSubtle">{card.ref}</p>
+          <p className="text-xs tabular-nums text-fgMuted">
+            <span className="font-medium text-fg">{amount}</span>
             {card.amount.per === 'unit' ? (
-              <span className="text-slate-400"> {t('dash.perUnit')}</span>
+              <span className="text-fgSubtle"> {t('dash.perUnit')}</span>
             ) : null}
           </p>
         </div>

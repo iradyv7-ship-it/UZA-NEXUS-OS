@@ -56,7 +56,7 @@ export function ObjectivesForm({ initial, isDraft }: { initial: Objective[]; isD
               checked={row.status === 'done'}
               onChange={(e) => update(i, { status: e.target.checked ? 'done' : 'todo' })}
               aria-label="Done"
-              className="mt-2.5 h-4 w-4 shrink-0 rounded border-slate-300"
+              className="mt-2.5 h-4 w-4 shrink-0 rounded border-border"
             />
             <div className="flex-1">
               <input
@@ -65,10 +65,10 @@ export function ObjectivesForm({ initial, isDraft }: { initial: Objective[]; isD
                 value={row.text}
                 onChange={(e) => update(i, { text: e.target.value })}
                 placeholder="What will be finished by Friday?"
-                className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                className="w-full rounded-lg border border-border px-3 py-2 text-sm"
               />
               {row.source === 'minutes' && (
-                <span className="mt-1 inline-block text-[11px] text-slate-500">
+                <span className="mt-1 inline-block text-[11px] text-fgMuted">
                   from Monday&rsquo;s meeting — change it if that is not what you agreed to
                 </span>
               )}
@@ -78,7 +78,7 @@ export function ObjectivesForm({ initial, isDraft }: { initial: Objective[]; isD
               type="button"
               onClick={() => setRows((r) => r.filter((_, j) => j !== i))}
               aria-label="Remove this line"
-              className="mt-1 rounded-lg border border-slate-300 px-2 py-1.5 text-xs text-slate-600 hover:bg-slate-50"
+              className="mt-1 rounded-lg border border-border px-2 py-1.5 text-xs text-fgMuted hover:bg-surface2"
             >
               Remove
             </button>
@@ -92,18 +92,18 @@ export function ObjectivesForm({ initial, isDraft }: { initial: Objective[]; isD
           onClick={() =>
             setRows((r) => [...r, withId({ text: '', status: 'todo', source: 'self' })])
           }
-          className="rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+          className="rounded-lg border border-border px-3 py-1.5 text-xs font-semibold text-fgMuted hover:bg-surface2"
         >
           Add something of my own
         </button>
         <button
           type="submit"
-          className="rounded-lg bg-slate-900 px-4 py-1.5 text-xs font-semibold text-white hover:bg-slate-700"
+          className="rounded-lg bg-primary px-4 py-1.5 text-xs font-semibold text-surface hover:bg-primarySoft"
         >
           {isDraft ? 'Yes, this is my week' : 'Save changes'}
         </button>
         {isDraft && (
-          <span className="text-xs text-amber-700">
+          <span className="text-xs text-warn">
             Until you press this, it is what the meeting said — not what you agreed.
           </span>
         )}

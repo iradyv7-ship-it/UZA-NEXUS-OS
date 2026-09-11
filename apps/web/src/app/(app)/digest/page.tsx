@@ -73,13 +73,13 @@ export default async function DigestPage() {
   const res = await authedCall<Digest>('/umurimo/digest');
 
   if (res.kind === 'unauthorized') {
-    return <p className="text-sm text-slate-600">Session expired. Sign in again.</p>;
+    return <p className="text-sm text-fgMuted">Session expired. Sign in again.</p>;
   }
   if (res.kind === 'denied') {
-    return <p className="text-sm text-slate-600">This view is for the executive and the PMs.</p>;
+    return <p className="text-sm text-fgMuted">This view is for the executive and the PMs.</p>;
   }
   if (res.kind !== 'ok') {
-    return <p className="text-sm text-slate-600">Could not load the digest.</p>;
+    return <p className="text-sm text-fgMuted">Could not load the digest.</p>;
   }
 
   const d = res.data;
@@ -91,8 +91,8 @@ export default async function DigestPage() {
     <div className="space-y-5">
       <header className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="text-xl font-semibold text-slate-900">Monday digest</h1>
-          <p className="text-sm text-slate-600">
+          <h1 className="text-xl font-semibold text-fg">Monday digest</h1>
+          <p className="text-sm text-fgMuted">
             Week of {day(d.weekOf)} · {d.periodKey}
           </p>
         </div>
@@ -106,7 +106,7 @@ export default async function DigestPage() {
 
       {nothingOutstanding && (
         <Card>
-          <p className="text-sm text-slate-700">
+          <p className="text-sm text-fg">
             Nothing outstanding, and everyone has filed. That is either a very good week or a sign
             nobody is writing anything down — worth knowing which before believing it.
           </p>
@@ -116,8 +116,8 @@ export default async function DigestPage() {
       {/* --------------------------------------------- must be empty by the end */}
       {d.unownedBlockers.length > 0 && (
         <Card>
-          <h2 className="text-sm font-semibold text-slate-900">Raised, and nobody has taken it</h2>
-          <p className="mb-3 mt-0.5 text-xs text-slate-600">
+          <h2 className="text-sm font-semibold text-fg">Raised, and nobody has taken it</h2>
+          <p className="mb-3 mt-0.5 text-xs text-fgMuted">
             This list should be empty before the meeting ends. A team that watches problems get
             discussed and dropped stops raising them within a month.
           </p>
@@ -125,10 +125,10 @@ export default async function DigestPage() {
             {d.unownedBlockers.map((b) => (
               <li
                 key={b.ref}
-                className="flex flex-wrap items-start justify-between gap-2 border-t border-slate-100 pt-2 first:border-0 first:pt-0"
+                className="flex flex-wrap items-start justify-between gap-2 border-t border-border pt-2 first:border-0 first:pt-0"
               >
-                <span className="text-sm text-slate-800">{b.summary}</span>
-                <span className="whitespace-nowrap text-xs text-slate-500">
+                <span className="text-sm text-fg">{b.summary}</span>
+                <span className="whitespace-nowrap text-xs text-fgMuted">
                   {b.raisedBy} · {ageDays(b.createdAt)}d ·{' '}
                   {!b.ownerId && !b.dueAt ? 'no name, no date' : !b.ownerId ? 'no name' : 'no date'}
                 </span>
@@ -141,8 +141,8 @@ export default async function DigestPage() {
       {/* --------------------------------------------------------------- late */}
       {d.overdueBlockers.length > 0 && (
         <Card>
-          <h2 className="text-sm font-semibold text-slate-900">Taken, dated, and past the date</h2>
-          <p className="mb-3 mt-0.5 text-xs text-slate-600">
+          <h2 className="text-sm font-semibold text-fg">Taken, dated, and past the date</h2>
+          <p className="mb-3 mt-0.5 text-xs text-fgMuted">
             A different failure from the list above: that one is a team that did not assign, this is
             a person who did not deliver. Reporting them together hides both.
           </p>
@@ -150,10 +150,10 @@ export default async function DigestPage() {
             {d.overdueBlockers.map((b) => (
               <li
                 key={b.ref}
-                className="flex flex-wrap items-start justify-between gap-2 border-t border-slate-100 pt-2 first:border-0 first:pt-0"
+                className="flex flex-wrap items-start justify-between gap-2 border-t border-border pt-2 first:border-0 first:pt-0"
               >
-                <span className="text-sm text-slate-800">{b.summary}</span>
-                <span className="whitespace-nowrap text-xs text-red-700">
+                <span className="text-sm text-fg">{b.summary}</span>
+                <span className="whitespace-nowrap text-xs text-danger">
                   {b.ownerId} · due {day(b.dueAt)}
                 </span>
               </li>
@@ -165,15 +165,15 @@ export default async function DigestPage() {
       {/* ------------------------------------------------------- the trades */}
       {d.openAsks.length > 0 && (
         <Card>
-          <h2 className="text-sm font-semibold text-slate-900">What people need from each other</h2>
-          <p className="mb-3 mt-0.5 text-xs text-slate-600">
+          <h2 className="text-sm font-semibold text-fg">What people need from each other</h2>
+          <p className="mb-3 mt-0.5 text-xs text-fgMuted">
             The field that turns a status meeting into a trade. Read these out.
           </p>
           <ul className="space-y-2">
             {d.openAsks.map((a) => (
-              <li key={a.ref} className="border-t border-slate-100 pt-2 first:border-0 first:pt-0">
-                <span className="text-sm text-slate-800">{a.asking}</span>
-                <span className="ml-2 text-xs text-slate-500">{a.ownerId}</span>
+              <li key={a.ref} className="border-t border-border pt-2 first:border-0 first:pt-0">
+                <span className="text-sm text-fg">{a.asking}</span>
+                <span className="ml-2 text-xs text-fgMuted">{a.ownerId}</span>
               </li>
             ))}
           </ul>
@@ -182,12 +182,12 @@ export default async function DigestPage() {
 
       {d.openRequests.length > 0 && (
         <Card>
-          <h2 className="text-sm font-semibold text-slate-900">Questions nobody has answered</h2>
+          <h2 className="text-sm font-semibold text-fg">Questions nobody has answered</h2>
           <ul className="mt-2 space-y-2">
             {d.openRequests.map((r) => (
-              <li key={r.ref} className="border-t border-slate-100 pt-2 first:border-0 first:pt-0">
-                <span className="text-sm text-slate-800">{r.body}</span>
-                <span className="ml-2 text-xs text-slate-500">
+              <li key={r.ref} className="border-t border-border pt-2 first:border-0 first:pt-0">
+                <span className="text-sm text-fg">{r.body}</span>
+                <span className="ml-2 text-xs text-fgMuted">
                   {r.authorId} · on {r.subjectType} {r.subjectRef} · {ageDays(r.createdAt)}d
                 </span>
               </li>
@@ -199,15 +199,15 @@ export default async function DigestPage() {
       {/* ------------------------------------------------------- by arm */}
       {d.byDepartment.length > 0 && (
         <Card>
-          <h2 className="text-sm font-semibold text-slate-900">By arm</h2>
-          <p className="mb-3 mt-0.5 text-xs text-slate-600">
+          <h2 className="text-sm font-semibold text-fg">By arm</h2>
+          <p className="mb-3 mt-0.5 text-xs text-fgMuted">
             Worst filing first. An arm where nobody filed is a different problem from three
             individuals scattered across three arms.
           </p>
           <div className="overflow-x-auto">
             <table className="w-full min-w-[520px] text-sm">
               <thead>
-                <tr className="border-b border-slate-200 text-left text-[11px] uppercase tracking-wide text-slate-500">
+                <tr className="border-b border-border text-left text-[11px] uppercase tracking-wide text-fgMuted">
                   <th className="py-2 pr-4 font-medium">Arm</th>
                   <th className="py-2 pr-4 font-medium">Filed</th>
                   <th className="py-2 pr-4 font-medium">Unassigned</th>
@@ -217,18 +217,18 @@ export default async function DigestPage() {
               </thead>
               <tbody>
                 {d.byDepartment.map((x) => (
-                  <tr key={x.code} className="border-b border-slate-100">
-                    <td className="py-2 pr-4 font-medium text-slate-800">{x.name}</td>
-                    <td className="py-2 pr-4 tabular-nums text-slate-700">
+                  <tr key={x.code} className="border-b border-border">
+                    <td className="py-2 pr-4 font-medium text-fg">{x.name}</td>
+                    <td className="py-2 pr-4 tabular-nums text-fgMuted">
                       {x.filed} / {x.people}
                     </td>
-                    <td className="py-2 pr-4 tabular-nums text-slate-700">{x.unowned || '—'}</td>
+                    <td className="py-2 pr-4 tabular-nums text-fgMuted">{x.unowned || '—'}</td>
                     <td
-                      className={`py-2 pr-4 tabular-nums ${x.overdue ? 'text-red-700' : 'text-slate-700'}`}
+                      className={`py-2 pr-4 tabular-nums ${x.overdue ? 'text-danger' : 'text-fgMuted'}`}
                     >
                       {x.overdue || '—'}
                     </td>
-                    <td className="py-2 text-xs text-slate-500">
+                    <td className="py-2 text-xs text-fgMuted">
                       {x.silent.length ? x.silent.join(', ') : '—'}
                     </td>
                   </tr>
@@ -242,16 +242,16 @@ export default async function DigestPage() {
       {/* ------------------------------------------------------- the silence */}
       {d.silent.length > 0 && (
         <Card>
-          <h2 className="text-sm font-semibold text-slate-900">Filed nothing this week</h2>
-          <p className="mb-2 mt-0.5 text-xs text-slate-600">
+          <h2 className="text-sm font-semibold text-fg">Filed nothing this week</h2>
+          <p className="mb-2 mt-0.5 text-xs text-fgMuted">
             Not an accusation — most of the time it means the week got away from someone. But it is
             the list that matters most, and it is the easiest one to leave off a dashboard.
           </p>
-          <p className="text-sm text-slate-800">{d.silent.join(' · ')}</p>
+          <p className="text-sm text-fg">{d.silent.join(' · ')}</p>
         </Card>
       )}
 
-      <p className="text-xs text-slate-500">
+      <p className="text-xs text-fgMuted">
         Derived from what people wrote in{' '}
         <Link href="/my-week" className="underline">
           My week

@@ -56,8 +56,8 @@ export default async function MemosPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-xl font-bold text-slate-900">Memos</h1>
-        <p className="mt-0.5 text-sm text-slate-500">
+        <h1 className="text-xl font-bold text-fg">Memos</h1>
+        <p className="mt-0.5 text-sm text-fgMuted">
           {inbox.unread} needing your attention · {inbox.memos.length} in total
         </p>
       </div>
@@ -65,18 +65,18 @@ export default async function MemosPage() {
       {isExec ? <SendMemo /> : null}
 
       <section className="space-y-3">
-        <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-500">Sent to me</h2>
+        <h2 className="text-sm font-semibold uppercase tracking-wide text-fgMuted">Sent to me</h2>
         {inbox.memos.length === 0 ? (
           <Card>
-            <p className="text-sm text-slate-600">Nothing yet.</p>
+            <p className="text-sm text-fgMuted">Nothing yet.</p>
           </Card>
         ) : (
           inbox.memos.map((m) => (
             <Card key={m.ref}>
               <div className="flex flex-wrap items-start justify-between gap-2">
                 <div className="min-w-0">
-                  <p className="font-semibold text-slate-900">{m.subject}</p>
-                  <p className="mt-0.5 font-mono text-[11px] text-slate-400">
+                  <p className="font-semibold text-fg">{m.subject}</p>
+                  <p className="mt-0.5 font-mono text-[11px] text-fgSubtle">
                     {m.ref} · from {m.fromId} · {fmt(m.sentAt)}
                     {m.linkedRef ? ` · ${m.linkedRef}` : ''}
                   </p>
@@ -90,7 +90,7 @@ export default async function MemosPage() {
                   {!m.needsAck && !m.readAt ? <Badge tone="amber">unread</Badge> : null}
                 </div>
               </div>
-              <p className="mt-2 whitespace-pre-line text-sm text-slate-700">{m.body}</p>
+              <p className="mt-2 whitespace-pre-line text-sm text-fg">{m.body}</p>
               <MemoActions
                 memoRef={m.ref}
                 needsAck={m.needsAck}
@@ -104,13 +104,13 @@ export default async function MemosPage() {
 
       {isExec && sent.length > 0 ? (
         <section className="space-y-2">
-          <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-500">
+          <h2 className="text-sm font-semibold uppercase tracking-wide text-fgMuted">
             Sent — and who has opened it
           </h2>
-          <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white">
+          <div className="overflow-x-auto rounded-xl border border-border bg-surface">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-slate-200 text-left text-xs uppercase tracking-wide text-slate-500">
+                <tr className="border-b border-border text-left text-xs uppercase tracking-wide text-fgMuted">
                   <th className="px-4 py-2 font-medium">Subject</th>
                   <th className="px-4 py-2 font-medium">Audience</th>
                   <th className="px-4 py-2 text-right font-medium">Sent</th>
@@ -120,22 +120,20 @@ export default async function MemosPage() {
               </thead>
               <tbody>
                 {sent.map((m) => (
-                  <tr key={m.ref} className="border-b border-slate-100 last:border-0">
-                    <td className="px-4 py-2 text-slate-800">{m.subject}</td>
-                    <td className="px-4 py-2 text-slate-500">{m.audience}</td>
-                    <td className="px-4 py-2 text-right tabular-nums text-slate-700">{m.sentTo}</td>
-                    <td className="px-4 py-2 text-right tabular-nums text-slate-700">{m.read}</td>
+                  <tr key={m.ref} className="border-b border-border last:border-0">
+                    <td className="px-4 py-2 text-fg">{m.subject}</td>
+                    <td className="px-4 py-2 text-fgMuted">{m.audience}</td>
+                    <td className="px-4 py-2 text-right tabular-nums text-fgMuted">{m.sentTo}</td>
+                    <td className="px-4 py-2 text-right tabular-nums text-fgMuted">{m.read}</td>
                     <td className="px-4 py-2 text-right tabular-nums">
                       {m.needsAck ? (
                         <span
-                          className={
-                            m.acknowledged < m.sentTo ? 'text-amber-600' : 'text-slate-700'
-                          }
+                          className={m.acknowledged < m.sentTo ? 'text-warn' : 'text-fgMuted'}
                         >
                           {m.acknowledged}
                         </span>
                       ) : (
-                        <span className="text-slate-300">—</span>
+                        <span className="text-fgSubtle">—</span>
                       )}
                     </td>
                   </tr>

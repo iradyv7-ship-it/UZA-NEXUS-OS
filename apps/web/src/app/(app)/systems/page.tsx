@@ -83,14 +83,14 @@ const CHECK_MARK: Record<CheckOutcome, string> = {
 function Check({ label, outcome }: { label: string; outcome: CheckOutcome }) {
   const color =
     outcome === 'pass'
-      ? 'text-emerald-600'
+      ? 'text-ok'
       : outcome === 'fail'
-        ? 'text-red-600'
+        ? 'text-danger'
         : outcome === 'not_run'
-          ? 'text-amber-600'
-          : 'text-slate-400';
+          ? 'text-warn'
+          : 'text-fgSubtle';
   return (
-    <span className="inline-flex items-center gap-1 text-xs text-slate-600">
+    <span className="inline-flex items-center gap-1 text-xs text-fgMuted">
       <span className={`font-bold ${color}`}>{CHECK_MARK[outcome]}</span>
       {label}
     </span>
@@ -110,17 +110,17 @@ function Metric({
 }) {
   const color =
     tone === 'red'
-      ? 'text-red-600'
+      ? 'text-danger'
       : tone === 'amber'
-        ? 'text-amber-600'
+        ? 'text-warn'
         : tone === 'green'
-          ? 'text-emerald-600'
-          : 'text-slate-800';
+          ? 'text-ok'
+          : 'text-fg';
   return (
     <Card className="h-full">
       <div className={`text-3xl font-bold tabular-nums ${color}`}>{value}</div>
-      <div className="mt-1 text-xs leading-tight text-slate-500">{label}</div>
-      {hint ? <div className="mt-0.5 text-[11px] text-slate-400">{hint}</div> : null}
+      <div className="mt-1 text-xs leading-tight text-fgMuted">{label}</div>
+      {hint ? <div className="mt-0.5 text-[11px] text-fgSubtle">{hint}</div> : null}
     </Card>
   );
 }
@@ -144,9 +144,9 @@ export default async function SystemsPage() {
   if (res.kind !== 'ok') {
     return (
       <main className="p-6">
-        <h1 className="text-xl font-semibold text-slate-800">Systems</h1>
+        <h1 className="text-xl font-semibold text-fg">Systems</h1>
         <Card className="mt-4">
-          <p className="text-sm text-slate-600">
+          <p className="text-sm text-fgMuted">
             The readiness view could not be loaded. Nothing is inferred here — the page shows
             measurements or it shows nothing.
           </p>
@@ -165,8 +165,8 @@ export default async function SystemsPage() {
   return (
     <main className="space-y-5 p-6">
       <header>
-        <h1 className="text-xl font-semibold text-slate-800">Systems</h1>
-        <p className="mt-1 text-sm text-slate-500">
+        <h1 className="text-xl font-semibold text-fg">Systems</h1>
+        <p className="mt-1 text-sm text-fgMuted">
           Where each project stands, from what was last actually run.
         </p>
       </header>
@@ -203,13 +203,13 @@ export default async function SystemsPage() {
         numbers trains people to stop reading it, and "builds clean" is a much smaller
         claim than "is finished".
       */}
-      <p className="rounded-lg bg-slate-50 px-4 py-3 text-xs leading-relaxed text-slate-600">
+      <p className="rounded-lg bg-surface2 px-4 py-3 text-xs leading-relaxed text-fgMuted">
         {caveat}
       </p>
 
       {needsAttention.length === 0 && rows.length > 0 ? (
         <Card>
-          <p className="text-sm text-slate-600">
+          <p className="text-sm text-fgMuted">
             Every system has a passing verification from the last two weeks.
           </p>
         </Card>
@@ -223,12 +223,12 @@ export default async function SystemsPage() {
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div className="min-w-0">
                   <div className="flex flex-wrap items-center gap-2">
-                    <span className="font-medium text-slate-800">{row.name}</span>
+                    <span className="font-medium text-fg">{row.name}</span>
                     <Badge tone={label.tone}>{label.text}</Badge>
                     {row.ventureCode ? <Badge>{row.ventureCode}</Badge> : null}
-                    <span className="text-xs text-slate-400">{row.ref}</span>
+                    <span className="text-xs text-fgSubtle">{row.ref}</span>
                   </div>
-                  <div className="mt-1 text-xs text-slate-500">
+                  <div className="mt-1 text-xs text-fgMuted">
                     {row.status} · owner {row.ownerId} · verified {whenVerified(row)}
                     {row.checks ? ` by ${row.checks.verifiedBy}` : ''}
                   </div>
@@ -240,21 +240,21 @@ export default async function SystemsPage() {
                     <Check label="tests" outcome={row.checks.tests} />
                     <Check label="image" outcome={row.checks.imageBuilds} />
                     {row.checks.testsTotal !== null ? (
-                      <span className="tabular-nums text-xs text-slate-600">
+                      <span className="tabular-nums text-xs text-fgMuted">
                         {row.checks.testsPassed ?? 0}/{row.checks.testsTotal}
                         {row.trend === 'growing' ? ' ↑' : row.trend === 'shrinking' ? ' ↓' : ''}
                       </span>
                     ) : null}
                   </div>
                 ) : (
-                  <span className="text-xs text-amber-700">No checks have been run.</span>
+                  <span className="text-xs text-warn">No checks have been run.</span>
                 )}
               </div>
 
               {/* The unfinished half. Green says the code works, not that it is done. */}
               {row.gaps ? (
-                <p className="mt-3 border-t border-slate-100 pt-3 text-xs leading-relaxed text-slate-600">
-                  <span className="font-medium text-slate-700">Not connected yet: </span>
+                <p className="mt-3 border-t border-border pt-3 text-xs leading-relaxed text-fgMuted">
+                  <span className="font-medium text-fg">Not connected yet: </span>
                   {row.gaps}
                 </p>
               ) : null}
@@ -265,7 +265,7 @@ export default async function SystemsPage() {
 
       {rows.length === 0 ? (
         <Card>
-          <p className="text-sm text-slate-600">
+          <p className="text-sm text-fgMuted">
             No systems are registered yet. Add them in the estate, then record a verification
             against each.
           </p>

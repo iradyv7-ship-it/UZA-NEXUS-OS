@@ -27,19 +27,19 @@ export default async function VerifyQueuePage({
 
   return (
     <div className="space-y-4">
-      <Link href="/dashboard" className="inline-flex items-center text-sm text-slate-500">
+      <Link href="/dashboard" className="inline-flex items-center text-sm text-fgMuted">
         ← {t('action.back')}
       </Link>
 
       <div>
-        <h1 className="text-xl font-bold text-slate-900">{t('verify.title')}</h1>
-        <p className="text-sm text-slate-500">{t('verify.subtitle')}</p>
+        <h1 className="text-xl font-bold text-fg">{t('verify.title')}</h1>
+        <p className="text-sm text-fgMuted">{t('verify.subtitle')}</p>
       </div>
 
       {verified && (
         <div
           role="status"
-          className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2.5 text-sm text-emerald-800"
+          className="rounded-lg border border-ok/30 bg-ok/10 px-3 py-2.5 text-sm text-ok"
         >
           <p className="font-medium">{t('verify.done')}</p>
           <Link
@@ -53,7 +53,7 @@ export default async function VerifyQueuePage({
       {rejected && (
         <p
           role="status"
-          className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700"
+          className="rounded-lg border border-border bg-surface2 px-3 py-2 text-sm text-fgMuted"
         >
           {t('verify.rejected')}
         </p>
@@ -88,26 +88,26 @@ function PaymentCard({ p, t, locale }: { p: PaymentView; t: Translate; locale: L
       <Card className="h-full">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
-            <p className="text-base font-semibold text-slate-900">{money(p.amountMinor, locale)}</p>
-            <p className="text-xs text-slate-500">{t(`trigger.${p.targetTrigger}`)}</p>
+            <p className="text-base font-semibold text-fg">{money(p.amountMinor, locale)}</p>
+            <p className="text-xs text-fgMuted">{t(`trigger.${p.targetTrigger}`)}</p>
           </div>
           <Badge tone="blue">{t('pay.pending')}</Badge>
         </div>
 
         <dl className="mt-3 space-y-1 text-xs">
           <Row label={t('record.order')}>
-            <Link href={`/orders/${p.orderRef}`} className="font-mono text-brand underline">
+            <Link href={`/orders/${p.orderRef}`} className="font-mono text-primary underline">
               {p.orderRef}
             </Link>
           </Row>
           <Row label={t('pay.invoice')}>
-            <span className="font-mono text-slate-600">{p.invoiceRef}</span>
+            <span className="font-mono text-fgMuted">{p.invoiceRef}</span>
           </Row>
           <Row label={t('record.customer')}>
-            <span className="font-mono text-slate-600">{p.customerRef}</span>
+            <span className="font-mono text-fgMuted">{p.customerRef}</span>
           </Row>
           <Row label={t('verify.proof')}>
-            <span className="font-mono text-slate-600">{p.proofRef}</span>
+            <span className="font-mono text-fgMuted">{p.proofRef}</span>
           </Row>
         </dl>
 
@@ -115,14 +115,14 @@ function PaymentCard({ p, t, locale }: { p: PaymentView; t: Translate; locale: L
           <form action={verifyPaymentAction} className="flex-1">
             <input type="hidden" name="ref" value={p.ref} />
             <input type="hidden" name="orderRef" value={p.orderRef} />
-            <button className="w-full rounded-lg bg-brand px-4 py-2.5 text-sm font-semibold text-white active:scale-[0.99]">
+            <button className="w-full rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-surface active:scale-[0.99]">
               {t('verify.verify')}
             </button>
           </form>
         </div>
 
         <details className="mt-2">
-          <summary className="cursor-pointer text-xs font-medium text-slate-500">
+          <summary className="cursor-pointer text-xs font-medium text-fgMuted">
             {t('verify.reject')}
           </summary>
           <form action={rejectPaymentAction} className="mt-2 space-y-2">
@@ -131,15 +131,15 @@ function PaymentCard({ p, t, locale }: { p: PaymentView; t: Translate; locale: L
               name="reason"
               required
               placeholder={t('verify.reasonPlaceholder')}
-              className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-red-400 focus:ring-2 focus:ring-red-200"
+              className="w-full rounded-lg border border-border px-3 py-2 text-sm outline-none focus:border-danger focus:ring-2 focus:ring-danger/20"
             />
-            <button className="w-full rounded-lg border border-red-300 bg-red-50 px-4 py-2 text-sm font-semibold text-red-700">
+            <button className="w-full rounded-lg border border-danger/40 bg-danger/10 px-4 py-2 text-sm font-semibold text-danger">
               {t('verify.rejectConfirm')}
             </button>
           </form>
         </details>
 
-        <p className="mt-2 font-mono text-[11px] text-slate-400">{p.ref}</p>
+        <p className="mt-2 font-mono text-[11px] text-fgSubtle">{p.ref}</p>
       </Card>
     </li>
   );
@@ -148,7 +148,7 @@ function PaymentCard({ p, t, locale }: { p: PaymentView; t: Translate; locale: L
 function Row({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="flex items-center justify-between gap-3">
-      <dt className="text-slate-400">{label}</dt>
+      <dt className="text-fgSubtle">{label}</dt>
       <dd className="text-right">{children}</dd>
     </div>
   );
@@ -156,7 +156,7 @@ function Row({ label, children }: { label: string; children: React.ReactNode }) 
 
 function ErrLine({ msg }: { msg: string }) {
   return (
-    <p role="alert" className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">
+    <p role="alert" className="rounded-lg bg-danger/10 px-3 py-2 text-sm text-danger">
       {msg}
     </p>
   );

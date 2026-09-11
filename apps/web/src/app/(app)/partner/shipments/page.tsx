@@ -41,8 +41,8 @@ export default async function PartnerShipmentsPage() {
   return (
     <div className="space-y-4">
       <div>
-        <h1 className="text-xl font-bold text-slate-900">{t('partner.title')}</h1>
-        <p className="text-sm text-slate-500">{t('partner.subtitle')}</p>
+        <h1 className="text-xl font-bold text-fg">{t('partner.title')}</h1>
+        <p className="text-sm text-fgMuted">{t('partner.subtitle')}</p>
       </div>
 
       {res.kind === 'denied' ? (
@@ -66,41 +66,41 @@ function ShipmentCard({ s, t, locale }: { s: ShipmentView; t: Translate; locale:
   void locale;
   const promise = shipmentPromise(s.status);
   return (
-    <li className="h-full rounded-xl border border-slate-200 bg-white shadow-sm">
+    <li className="h-full rounded-xl border border-border bg-surface shadow-sm">
       <Link href={`/partner/shipments/${s.ref}`} className="flex h-full flex-col p-4">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
-            <p className="truncate text-base font-semibold text-slate-900">
+            <p className="truncate text-base font-semibold text-fg">
               {t(`dest.${s.destination}`)}
             </p>
-            <p className="truncate text-xs text-slate-500">
+            <p className="truncate text-xs text-fgMuted">
               {s.carrier} · <span className="font-mono">{s.container}</span>
             </p>
           </div>
           <Badge tone={statusTone(s.status)}>{t(promise.stageKey)}</Badge>
         </div>
 
-        <div className="mt-3 grid grid-cols-2 gap-2 rounded-lg bg-slate-50 px-3 py-2 text-xs">
+        <div className="mt-3 grid grid-cols-2 gap-2 rounded-lg bg-surface2 px-3 py-2 text-xs">
           <div>
-            <p className="text-[11px] uppercase tracking-wide text-slate-400">{t('ship.etd')}</p>
-            <p className="font-medium text-slate-800">{s.etd}</p>
+            <p className="text-[11px] uppercase tracking-wide text-fgSubtle">{t('ship.etd')}</p>
+            <p className="font-medium text-fg">{s.etd}</p>
           </div>
           <div>
-            <p className="text-[11px] uppercase tracking-wide text-slate-400">{t('ship.eta')}</p>
-            <p className="font-medium text-slate-800">{s.eta}</p>
+            <p className="text-[11px] uppercase tracking-wide text-fgSubtle">{t('ship.eta')}</p>
+            <p className="font-medium text-fg">{s.eta}</p>
           </div>
         </div>
 
-        <div className="mt-2 rounded-lg bg-slate-50 px-3 py-2">
-          <p className="text-[11px] uppercase tracking-wide text-slate-400">{t('dash.col.next')}</p>
-          <p className="text-sm font-medium text-slate-800">{t(promise.nextKey)}</p>
-          <p className="mt-0.5 text-xs text-slate-500">
+        <div className="mt-2 rounded-lg bg-surface2 px-3 py-2">
+          <p className="text-[11px] uppercase tracking-wide text-fgSubtle">{t('dash.col.next')}</p>
+          <p className="text-sm font-medium text-fg">{t(promise.nextKey)}</p>
+          <p className="mt-0.5 text-xs text-fgMuted">
             {t('dash.col.owner')}:{' '}
-            <span className="font-medium text-slate-700">{t(`owner.${promise.ownerRole}`)}</span>
+            <span className="font-medium text-fg">{t(`owner.${promise.ownerRole}`)}</span>
           </p>
         </div>
 
-        <p className="mt-auto pt-2 font-mono text-[11px] text-slate-400">{s.ref}</p>
+        <p className="mt-auto pt-2 font-mono text-[11px] text-fgSubtle">{s.ref}</p>
       </Link>
     </li>
   );

@@ -92,15 +92,15 @@ export default async function MyWeekPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-xl font-bold text-slate-900">My week</h1>
-        <p className="mt-0.5 text-sm text-slate-500">
+        <h1 className="text-xl font-bold text-fg">My week</h1>
+        <p className="mt-0.5 text-sm text-fgMuted">
           {running.length} running · {held.length} held · {mine?.load ?? 0} standing duties
         </p>
       </div>
 
       {running.length === 0 && held.length === 0 ? (
         <Card>
-          <p className="text-sm text-slate-600">
+          <p className="text-sm text-fgMuted">
             Nothing in the register is owned by <span className="font-mono">{me}</span>. If that is
             wrong, the initiative needs its owner changed — it is not a display problem.
           </p>
@@ -109,13 +109,13 @@ export default async function MyWeekPage() {
 
       {running.length > 0 ? (
         <section className="space-y-3">
-          <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-500">Running</h2>
+          <h2 className="text-sm font-semibold uppercase tracking-wide text-fgMuted">Running</h2>
           {running.map((i) => (
             <Card key={i.ref}>
               <div className="flex flex-wrap items-start justify-between gap-2">
                 <div className="min-w-0">
-                  <p className="font-semibold text-slate-900">{i.name}</p>
-                  <p className="mt-0.5 font-mono text-xs text-slate-400">
+                  <p className="font-semibold text-fg">{i.name}</p>
+                  <p className="mt-0.5 font-mono text-xs text-fgSubtle">
                     {i.ref}
                     {i.ventureCode ? ` · ${i.ventureCode}` : ''}
                     {i.targetDate ? ` · target ${fmt(i.targetDate)}` : ''}
@@ -128,7 +128,7 @@ export default async function MyWeekPage() {
               </div>
 
               {i.nextAction ? (
-                <p className="mt-3 border-l-2 border-slate-200 pl-3 text-sm text-slate-700">
+                <p className="mt-3 border-l-2 border-border pl-3 text-sm text-fg">
                   {i.nextAction}
                 </p>
               ) : null}
@@ -138,7 +138,7 @@ export default async function MyWeekPage() {
                   href={i.artifactUrl}
                   target="_blank"
                   rel="noreferrer"
-                  className="mt-2 inline-block text-xs font-medium text-brand underline underline-offset-2"
+                  className="mt-2 inline-block text-xs font-medium text-primary underline underline-offset-2"
                 >
                   Open the document
                 </a>
@@ -152,15 +152,15 @@ export default async function MyWeekPage() {
 
       {held.length > 0 ? (
         <section className="space-y-3">
-          <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-500">
+          <h2 className="text-sm font-semibold uppercase tracking-wide text-fgMuted">
             Held — deliberately paused, with a date
           </h2>
           {held.map((i) => (
             <Card key={i.ref}>
               <div className="flex flex-wrap items-start justify-between gap-2">
                 <div className="min-w-0">
-                  <p className="font-semibold text-slate-900">{i.name}</p>
-                  <p className="mt-0.5 font-mono text-xs text-slate-400">
+                  <p className="font-semibold text-fg">{i.name}</p>
+                  <p className="mt-0.5 font-mono text-xs text-fgSubtle">
                     {i.ref}
                     {i.ventureCode ? ` · ${i.ventureCode}` : ''}
                   </p>
@@ -169,7 +169,7 @@ export default async function MyWeekPage() {
                   review {fmt(i.reviewAt) ?? '—'}
                 </Badge>
               </div>
-              {i.nextAction ? <p className="mt-2 text-sm text-slate-600">{i.nextAction}</p> : null}
+              {i.nextAction ? <p className="mt-2 text-sm text-fgMuted">{i.nextAction}</p> : null}
             </Card>
           ))}
         </section>
@@ -177,21 +177,18 @@ export default async function MyWeekPage() {
 
       {mine && mine.owns.length > 0 ? (
         <section className="space-y-3">
-          <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-500">
+          <h2 className="text-sm font-semibold uppercase tracking-wide text-fgMuted">
             What I am always on the hook for
           </h2>
           <Card>
-            <ul className="divide-y divide-slate-100">
+            <ul className="divide-y divide-border">
               {mine.owns.map((r) => {
                 const future = r.startsOn && new Date(r.startsOn) > new Date();
                 return (
-                  <li
-                    key={r.ref}
-                    className="flex flex-wrap items-start justify-between gap-2 py-2.5"
-                  >
+                  <li key={r.ref} className="flex flex-wrap items-start justify-between gap-2 py-2.5">
                     <div className="min-w-0">
-                      <p className="text-sm font-medium text-slate-900">{r.name}</p>
-                      <p className="mt-0.5 text-xs text-slate-500">
+                      <p className="text-sm font-medium text-fg">{r.name}</p>
+                      <p className="mt-0.5 text-xs text-fgMuted">
                         {TRIGGER_LABEL[r.trigger] ?? r.trigger}
                         {r.responseHours ? ` · respond within ${r.responseHours}h` : ''}
                         {r.backupId ? ` · backup ${r.backupId}` : ' · no backup'}
@@ -211,13 +208,13 @@ export default async function MyWeekPage() {
 
       {mine && mine.covers.length > 0 ? (
         <section className="space-y-2">
-          <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-500">
+          <h2 className="text-sm font-semibold uppercase tracking-wide text-fgMuted">
             What I cover when someone else is away
           </h2>
           <Card>
             <ul className="space-y-1.5">
               {mine.covers.map((r) => (
-                <li key={r.ref} className="text-sm text-slate-600">
+                <li key={r.ref} className="text-sm text-fgMuted">
                   {r.name}
                 </li>
               ))}
