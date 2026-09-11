@@ -17,6 +17,7 @@ import { BlockerService } from './blocker/blocker.service';
 import { DigestService } from './digest/digest.service';
 import { WeekService } from './week/week.service';
 import { WorkspaceService } from './workspace/workspace.service';
+import { MyAdvisorService, type MyAdvisorTurn } from './advisor/my-advisor.service';
 import { COMMENT_SUBJECTS } from './umurimo-access';
 
 const COMMENT_KIND = ['comment', 'request'] as const;
@@ -95,6 +96,15 @@ class FileReportDto {
   @IsOptional() @IsString() nextWeek?: string;
   @IsOptional() @IsString() asking?: string;
   @IsOptional() @IsDateString() week?: string;
+}
+class AdvisorTurnDto {
+  @IsIn(['user', 'assistant']) role!: 'user' | 'assistant';
+  @IsString() @MinLength(1) content!: string;
+}
+class AskAdvisorDto {
+  @IsString() @MinLength(1) question!: string;
+  @IsOptional() @IsArray() @ValidateNested({ each: true }) @Type(() => AdvisorTurnDto)
+  history?: MyAdvisorTurn[];
 }
 
 /**
@@ -201,7 +211,10 @@ export class UmurimoDigestController {
 @ApiBearerAuth()
 @Controller('umurimo/week')
 export class UmurimoWeekController {
-  constructor(private readonly week: WeekService) {}
+  constructor(
+    private readonly week: WeekService,
+    private readonly myAdvisor: MyAdvisorService,
+  ) {}
 
   /** Post the minutes of a weekly review. Idempotent per person per week. */
   @Post('minutes')
@@ -237,6 +250,22 @@ export class UmurimoWeekController {
   @Get('nudges')
   nudges(@CurrentActor() actor: Actor, @Query() q: WeekQuery) {
     return this.week.nudges(actor, q.week ? new Date(q.week) : undefined);
+  }
+
+  /**
+   * Coach me on my own week — fixed prompt, nothing to type. Grounded only in what this
+   * person already sees on `mine`/`scorecard`; see `MyAdvisorService` for why it can never
+   * compare across people.
+   */
+  @Get('advisor')
+  coachMe(@CurrentActor() actor: Actor) {
+    return this.myAdvisor.coachMe(actor);
+  }
+
+  /** Ask my own advisor something specific about my own week. */
+  @Post('advisor/ask')
+  askAdvisor(@CurrentActor() actor: Actor, @Body() dto: AskAdvisorDto) {
+    return this.myAdvisor.ask(actor, { question: dto.question, history: dto.history });
   }
 }
 

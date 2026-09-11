@@ -6,6 +6,7 @@ import { BlockerService } from './blocker/blocker.service';
 import { DigestService } from './digest/digest.service';
 import { WeekService } from './week/week.service';
 import { WorkspaceService } from './workspace/workspace.service';
+import { MyAdvisorService } from './advisor/my-advisor.service';
 import {
   UmurimoCommentController,
   UmurimoBlockerController,
@@ -64,6 +65,7 @@ import {
     DigestService,
     WeekService,
     WorkspaceService,
+    MyAdvisorService,
   ],
   controllers: [
     UmurimoCommentController,
@@ -72,6 +74,13 @@ import {
     UmurimoWeekController,
     UmurimoWorkspaceController,
   ],
-  exports: [CommentService, BlockerService, DigestService, WeekService, WorkspaceService],
+  exports: [
+    CommentService,
+    BlockerService,
+    DigestService,
+    WeekService,
+    WorkspaceService,
+    MyAdvisorService,
+  ],
 })
 export class UmurimoModule {}
