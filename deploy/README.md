@@ -1,7 +1,12 @@
 # Deploying UZA Nexus
 
-One host, four containers, about forty minutes of work. Everything below is run **on the
+One host, six containers, about forty minutes of work. Everything below is run **on the
 server**, not on your laptop.
+
+Deploying to more than one host instead — Vercel for the web app, a different host for
+the API and worker, a managed Postgres — see `docs/DEPLOYMENT.md` for the complete,
+host-agnostic reference (every environment variable, what each container actually needs,
+and why both `api` and `worker` have to run together).
 
 ## What you need first
 

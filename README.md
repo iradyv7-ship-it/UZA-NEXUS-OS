@@ -166,7 +166,8 @@ risk genuinely lives in the markup.
 | Understand the business rules | `CLAUDE.md`, in this repo |
 | Understand the wider estate | The `UZA-SOLUTIONS-GUIDE` repo, `00-group/` |
 | Know how modules stay compatible | `docs/integration-contract.md` |
-| Deploy it | `deploy/README.md` and `docker-compose.prod.yml` |
+| Deploy it — one VPS, fastest path | `deploy/README.md` and `docker-compose.prod.yml` |
+| Deploy it — any other host, full env var reference | `docs/DEPLOYMENT.md` |
 
 ---
 
