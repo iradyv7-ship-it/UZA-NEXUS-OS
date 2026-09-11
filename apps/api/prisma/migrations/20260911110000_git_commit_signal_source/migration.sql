@@ -1,0 +1,11 @@
+-- Adds `git_commit` to the SignalSource enum — the source that harmonises Claude Code and
+-- Lovable work into one pipeline view (see GitActivitySource's own doc comment for why this
+-- is one source, not two). Hand-authored and NOT applied against a live database as part of
+-- this change: Docker was not running on this machine at the time, so there was no local
+-- Postgres to run `prisma migrate dev` against. Run `npm run db:migrate:deploy` (or the
+-- monorepo's equivalent) once a database is reachable, and confirm it applies cleanly before
+-- relying on it.
+--
+-- ALTER TYPE ... ADD VALUE cannot run inside the same transaction as a statement that uses
+-- the new value, which is why this migration does nothing else.
+ALTER TYPE "SignalSource" ADD VALUE 'git_commit';

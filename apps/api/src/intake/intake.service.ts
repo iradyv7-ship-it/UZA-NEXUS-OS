@@ -10,6 +10,7 @@ import type { CapturedSignal } from './sources/captured-signal';
 import { ClaudeCodeSource } from './sources/claude-code.source';
 import { GmailSource } from './sources/gmail.source';
 import { DocumentSource } from './sources/document.source';
+import { GitActivitySource } from './sources/git-activity.source';
 
 const RESOURCE = 'signal';
 
@@ -43,6 +44,7 @@ export class IntakeService {
     private readonly claudeCode: ClaudeCodeSource,
     private readonly gmail: GmailSource,
     private readonly documents: DocumentSource,
+    private readonly gitActivity: GitActivitySource,
   ) {}
 
   private seesPrivate(actor: Actor): boolean {
@@ -86,6 +88,7 @@ export class IntakeService {
       this.claudeCode.collect(since).catch((e) => this.failed('claude_code', e)),
       this.gmail.collect(since).catch((e) => this.failed('email', e)),
       this.documents.collect(since).catch((e) => this.failed('artifact', e)),
+      this.gitActivity.collect(since).catch((e) => this.failed('git_commit', e)),
     ]);
 
     const captured = batches.flat();

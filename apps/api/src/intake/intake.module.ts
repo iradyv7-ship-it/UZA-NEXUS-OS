@@ -7,14 +7,18 @@ import { IntakeController } from './intake.controller';
 import { ClaudeCodeSource } from './sources/claude-code.source';
 import { GmailSource } from './sources/gmail.source';
 import { DocumentSource } from './sources/document.source';
+import { GitActivitySource } from './sources/git-activity.source';
 
 /**
  * Intake — the layer that watches where ideas actually appear and files them as
  * candidates for the register.
  *
- * Three sources today: Claude Code session transcripts on disk, documents in the working
- * repository, and the founder's mailbox. Each is incremental and idempotent, so a sweep
- * can be run at any frequency without duplicating anything.
+ * Four sources today: Claude Code session transcripts on disk, documents in the working
+ * repository, the founder's mailbox, and commit history across the configured repositories
+ * (`GitActivitySource` — the one place Claude Code work and Lovable work are harmonised
+ * into a single pipeline view, because a commit is a commit regardless of which tool wrote
+ * it). Each is incremental and idempotent, so a sweep can be run at any frequency without
+ * duplicating anything.
  *
  * Two rules hold the whole module together:
  *
@@ -42,6 +46,7 @@ import { DocumentSource } from './sources/document.source';
     ClaudeCodeSource,
     GmailSource,
     DocumentSource,
+    GitActivitySource,
   ],
   controllers: [IntakeController],
   exports: [IntakeService, TriageService],

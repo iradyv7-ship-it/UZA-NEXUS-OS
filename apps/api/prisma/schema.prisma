@@ -1909,6 +1909,12 @@ enum SignalSource {
   artifact // a published artifact
   email
   manual // typed in by a person
+  /// A commit landed in one of the configured repositories. Deliberately tool-agnostic:
+  /// a commit built with Claude Code and one built in Lovable are indistinguishable here,
+  /// on purpose — this source answers "what shipped", not "which tool wrote it", which is
+  /// the harmonised, one-pipeline view across the estate that a per-tool source could not
+  /// give without adding a wall between two things that are the same kind of fact.
+  git_commit
 }
 
 enum SignalLane {

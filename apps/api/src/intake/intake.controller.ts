@@ -7,7 +7,7 @@ import { CurrentActor } from '../platform/auth/current-actor.decorator';
 import { IntakeService } from './intake.service';
 import { TriageService } from './triage.service';
 
-const SOURCES = ['claude_code', 'artifact', 'email', 'manual'] as const;
+const SOURCES = ['claude_code', 'artifact', 'email', 'manual', 'git_commit'] as const;
 const STATUSES = ['new', 'triaged', 'promoted', 'dismissed'] as const;
 
 class ListQuery {

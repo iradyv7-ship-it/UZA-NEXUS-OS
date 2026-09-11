@@ -5,12 +5,19 @@ import { AuditService } from '../src/platform/audit/audit.service';
 import { PlanningAccessService } from '../src/planning/planning-authz.service';
 import { IntakeService } from '../src/intake/intake.service';
 
-// The three capture sources are only used by sweep(); add/read/promote/dismiss/share never
+// The four capture sources are only used by sweep(); add/read/promote/dismiss/share never
 // touch them, so a stub is enough here — matching how other fixtures use `as never` for
 // dependencies a given test file doesn't exercise.
 const audit = new AuditService(prisma as never);
 const access = new PlanningAccessService(audit);
-const intake = new IntakeService(prisma as never, access, {} as never, {} as never, {} as never);
+const intake = new IntakeService(
+  prisma as never,
+  access,
+  {} as never,
+  {} as never,
+  {} as never,
+  {} as never,
+);
 
 const finance: Actor = { userId: 'FIN-1', role: 'finance', office: 'RW', scope: {} };
 
