@@ -15,7 +15,7 @@ export function LocaleSwitch({ locale }: { locale: Locale }) {
         defaultValue={locale}
         aria-label="Language"
         onChange={() => formRef.current?.requestSubmit()}
-        className="rounded-lg border border-slate-300 bg-white px-2 py-2 text-sm"
+        className="rounded-lg border border-border bg-surface px-2 py-2 text-sm text-fg"
       >
         {LOCALES.map((l) => (
           <option key={l} value={l}>

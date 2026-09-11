@@ -42,18 +42,18 @@ export default async function LoginPage({
     <main className="mx-auto flex min-h-screen max-w-md flex-col justify-center px-5 py-10 sm:max-w-lg sm:px-6">
       <div className="mb-6 flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-brand">{t('app.name')}</h1>
-          <p className="text-sm text-slate-500">{t('app.tagline')}</p>
+          <h1 className="text-2xl font-bold text-primary">{t('app.name')}</h1>
+          <p className="text-sm text-fgMuted">{t('app.tagline')}</p>
         </div>
         <LocaleSwitch locale={locale} />
       </div>
 
-      <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-        <h2 className="text-xl font-semibold text-slate-900">{t('login.title')}</h2>
-        <p className="mb-5 text-sm text-slate-500">{t('login.subtitle')}</p>
+      <div className="rounded-2xl border border-border bg-surface p-6 shadow-sm">
+        <h2 className="text-xl font-semibold text-fg">{t('login.title')}</h2>
+        <p className="mb-5 text-sm text-fgMuted">{t('login.subtitle')}</p>
 
         {errorKey && (
-          <p role="alert" className="mb-4 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">
+          <p role="alert" className="mb-4 rounded-lg bg-danger/10 px-3 py-2 text-sm text-danger">
             {t(errorKey)}
           </p>
         )}
@@ -70,11 +70,11 @@ export default async function LoginPage({
         />
 
         <div className="my-5 flex items-center gap-3" aria-hidden="true">
-          <span className="h-px flex-1 bg-slate-200" />
-          <span className="text-xs uppercase tracking-wide text-slate-400">
+          <span className="h-px flex-1 bg-border" />
+          <span className="text-xs uppercase tracking-wide text-fgSubtle">
             {t('login.google.or')}
           </span>
-          <span className="h-px flex-1 bg-slate-200" />
+          <span className="h-px flex-1 bg-border" />
         </div>
 
         <GoogleSignInButton
@@ -84,7 +84,7 @@ export default async function LoginPage({
         />
       </div>
 
-      <p className="mt-4 text-center text-xs text-slate-400">{t('login.hint')}</p>
+      <p className="mt-4 text-center text-xs text-fgSubtle">{t('login.hint')}</p>
     </main>
   );
 }

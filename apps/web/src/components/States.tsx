@@ -14,14 +14,14 @@ export function StatePanel({
 }) {
   const ring =
     tone === 'red'
-      ? 'border-red-200 bg-red-50'
+      ? 'border-danger/30 bg-danger/10'
       : tone === 'amber'
-        ? 'border-amber-200 bg-amber-50'
-        : 'border-slate-200 bg-white';
+        ? 'border-warn/30 bg-warn/10'
+        : 'border-border bg-surface';
   return (
     <div className={`rounded-xl border p-6 text-center ${ring}`}>
-      <p className="text-base font-semibold text-slate-900">{title}</p>
-      <p className="mt-1 text-sm text-slate-600">{body}</p>
+      <p className="text-base font-semibold text-fg">{title}</p>
+      <p className="mt-1 text-sm text-fgMuted">{body}</p>
     </div>
   );
 }
@@ -30,9 +30,9 @@ export function LoadingPanel({ t }: { t: Translate }) {
   return (
     <div className="space-y-3" aria-busy="true" aria-live="polite">
       {[0, 1, 2].map((i) => (
-        <div key={i} className="h-20 animate-pulse rounded-xl bg-slate-200/70" />
+        <div key={i} className="h-20 animate-pulse rounded-xl bg-surface2" />
       ))}
-      <p className="text-center text-sm text-slate-400">{t('state.loading')}</p>
+      <p className="text-center text-sm text-fgSubtle">{t('state.loading')}</p>
     </div>
   );
 }

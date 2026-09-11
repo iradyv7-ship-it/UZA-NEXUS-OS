@@ -5,40 +5,44 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        // The real UZA palette (brand book, "UZA Bulk & Mall", 2026) — replaces an earlier
-        // placeholder green (#0f5132) that didn't appear anywhere in the actual guidelines.
-        // `brand` is dark blue: the anchor color for a work console (navy reads as serious/
-        // operational), with `accent` (cyber orange) reserved for the sparing highlight role
-        // the book itself gives it — primary actions, the one thing on a screen that should
-        // pull the eye — not backgrounds or large fills.
-        brand: {
-          DEFAULT: '#233448', // Dark blue
-          soft: '#3d4f66', // one step lighter, for hover/active states — not in the book,
-          // derived to keep the same hue since the book has no tint scale
-        },
-        accent: {
-          DEFAULT: '#FBAF43', // Cyber (Pantone 142C)
-        },
-        // The book's named grayscale, in place of default Tailwind slate/gray so text,
-        // borders and surfaces are actually on-brand rather than an unrelated gray ramp.
-        mist: '#F7F7F8',
-        fog: '#EEEEEF',
-        cloud: '#CCCCCC',
-        steel: '#999999',
-        stone: '#474749',
-        charcoal: '#333333',
-        ink: '#000000',
+        // The UZA Build branding project (Claude Design canvas) — the formal token system
+        // for the same brand book as before (dark navy + cyber orange). This is not a
+        // rebrand: it replaces the old ad-hoc `brand`/`mist`/`fog`/`cloud`/`steel`/`stone`/
+        // `charcoal`/`ink` palette with semantic HSL custom properties defined in
+        // globals.css, each with real light + dark values (`:root`, the
+        // `prefers-color-scheme: dark` media query, and `[data-theme="dark"]`).
+        //
+        // `hsl(var(--token) / <alpha-value>)` keeps Tailwind's opacity modifiers working
+        // (e.g. `bg-primary/10`) since the variable itself only holds the h/s/l triplet.
+        bg: 'hsl(var(--bg) / <alpha-value>)',
+        surface: 'hsl(var(--surface) / <alpha-value>)',
+        surface2: 'hsl(var(--surface-2) / <alpha-value>)',
+        border: 'hsl(var(--border) / <alpha-value>)',
+        fg: 'hsl(var(--fg) / <alpha-value>)',
+        fgMuted: 'hsl(var(--fg-muted) / <alpha-value>)',
+        fgSubtle: 'hsl(var(--fg-subtle) / <alpha-value>)',
+        // `primary` is the brand navy (inverts to near-white in dark mode — see globals.css).
+        // `accent` (cyber orange) stays the sparing highlight color the brand book gives it.
+        primary: 'hsl(var(--primary) / <alpha-value>)',
+        primarySoft: 'hsl(var(--primary-soft) / <alpha-value>)',
+        accent: 'hsl(var(--accent) / <alpha-value>)',
+        accentStrong: 'hsl(var(--accent-strong) / <alpha-value>)',
+        ok: 'hsl(var(--ok) / <alpha-value>)',
+        warn: 'hsl(var(--warn) / <alpha-value>)',
+        danger: 'hsl(var(--danger) / <alpha-value>)',
+        info: 'hsl(var(--info) / <alpha-value>)',
       },
       fontFamily: {
-        // Set by next/font in app/layout.tsx (self-hosted, no external request). The
-        // fallback stack matters here: this app is used on outdoor/warehouse screens where
-        // the font may not have loaded yet.
-        //
-        // NOT yet the brand book's Mont — Mont is a licensed commercial font, not on Google
-        // Fonts, and can't be embedded without the actual license/font files. Inter is a
-        // placeholder until real Mont files are available (see chat) — same idea (Helvetica
-        // Neue, the book's own documented fallback, isn't freely embeddable either).
-        sans: ['var(--font-brand)', 'system-ui', 'sans-serif'],
+        // Set by next/font in app/layout.tsx (self-hosted, no external request). Archivo is
+        // the brand kit's one type family for headings and body alike; Helvetica Neue is the
+        // kit's own documented office fallback. system-ui/sans-serif close the stack for the
+        // rare case neither has loaded yet — this app is used on outdoor/warehouse screens.
+        sans: ['var(--font-brand)', 'Helvetica Neue', 'system-ui', 'sans-serif'],
+        // Numerals are instrumentation (money, weights, dates, route/ID strings, eyebrow/
+        // label text) per the kit, but IBM Plex Mono is not yet self-hosted via next/font —
+        // this keeps Tailwind's default mono stack for the existing `font-mono` usages
+        // rather than reference an undefined `--font-*` variable (which would invalidate
+        // the whole font-family value, not just fall through to the next font).
       },
     },
   },

@@ -50,12 +50,12 @@ export default function GoogleSignInButton({
           type="button"
           disabled
           aria-disabled="true"
-          className={`${base} cursor-not-allowed border-slate-200 bg-slate-50 text-slate-400`}
+          className={`${base} cursor-not-allowed border-border bg-surface2 text-fgSubtle`}
         >
           <GoogleMark />
           {label}
         </button>
-        <p className="mt-2 text-center text-xs text-slate-400">{unavailable}</p>
+        <p className="mt-2 text-center text-xs text-fgSubtle">{unavailable}</p>
       </div>
     );
   }
@@ -63,7 +63,7 @@ export default function GoogleSignInButton({
   return (
     <a
       href="/auth/google/start"
-      className={`${base} border-slate-300 bg-white text-slate-700 shadow-sm hover:bg-slate-50 active:scale-[0.99] focus:outline-none focus:ring-2 focus:ring-brand/30`}
+      className={`${base} border-border bg-surface text-fgMuted shadow-sm hover:bg-surface2 active:scale-[0.99] focus:outline-none focus:ring-2 focus:ring-primary/30`}
     >
       <GoogleMark />
       {label}

@@ -9,7 +9,7 @@ import { logoutAction } from '@/app/actions';
 import { authedCall } from '@/lib/api';
 
 /** One class for every secondary nav item, so the bar stays even as links are added. */
-const NAV = 'rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-700 hover:bg-slate-50';
+const NAV = 'rounded-lg border border-border px-3 py-2 text-sm text-fgMuted hover:bg-surface2';
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const session = await getSession();
@@ -29,21 +29,21 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const unread = inbox.kind === 'ok' ? inbox.data.unread : 0;
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="min-h-screen bg-bg">
       {/* Full-bleed sticky bar; its inner content is centred to the shared shell width so
           the header lines up with the page below at every breakpoint. */}
-      <header className="sticky top-0 z-10 border-b border-slate-200 bg-white/95 backdrop-blur">
+      <header className="sticky top-0 z-10 border-b border-border bg-surface/95 backdrop-blur">
         <div className={`mx-auto w-full ${SHELL_WIDTH} ${SHELL_PADDING_X} py-3`}>
           <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-2">
             <Link href={home} className="flex flex-col leading-tight">
-              <span className="text-lg font-bold text-brand">{t('app.name')}</span>
-              <span className="text-[11px] text-slate-500">{t('app.tagline')}</span>
+              <span className="text-lg font-bold text-primary">{t('app.name')}</span>
+              <span className="text-[11px] text-fgMuted">{t('app.tagline')}</span>
             </Link>
             <div className="flex flex-wrap items-center justify-end gap-2">
               {showCommand && (
                 <Link
                   href="/nexus"
-                  className="rounded-lg bg-brand px-3 py-2 text-sm font-semibold text-white"
+                  className="rounded-lg bg-primary px-3 py-2 text-sm font-semibold text-surface"
                 >
                   Nexus
                 </Link>
@@ -64,7 +64,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
                 {unread > 0 && (
                   <span
                     aria-label={`${unread} unread`}
-                    className="ml-1.5 inline-flex min-w-[1.25rem] items-center justify-center rounded-full bg-red-600 px-1.5 py-0.5 text-[11px] font-semibold leading-none text-white"
+                    className="ml-1.5 inline-flex min-w-[1.25rem] items-center justify-center rounded-full bg-danger px-1.5 py-0.5 text-[11px] font-semibold leading-none text-surface"
                   >
                     {unread}
                   </span>
@@ -105,19 +105,19 @@ export default async function AppLayout({ children }: { children: React.ReactNod
               )}
               <LocaleSwitch locale={locale} />
               <form action={logoutAction}>
-                <button className="rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-600">
+                <button className="rounded-lg border border-border px-3 py-2 text-sm text-fgMuted">
                   {t('nav.logout')}
                 </button>
               </form>
             </div>
           </div>
-          <p className="mt-1.5 text-xs text-slate-500">
+          <p className="mt-1.5 text-xs text-fgMuted">
             {t('nav.signedInAs')}{' '}
-            <span className="font-medium text-slate-700">{session.actor.userId}</span>
+            <span className="font-medium text-fg">{session.actor.userId}</span>
             {' · '}
-            <span className="text-slate-500">{roleLabel}</span>
+            <span className="text-fgMuted">{roleLabel}</span>
             {' · '}
-            <span className="text-slate-400">{session.actor.office}</span>
+            <span className="text-fgSubtle">{session.actor.office}</span>
           </p>
         </div>
       </header>
