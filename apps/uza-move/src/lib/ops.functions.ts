@@ -21,7 +21,12 @@ export const opsOverview = createServerFn({ method: "GET" })
         .order("created_at", { ascending: false })
         .limit(50),
       db.from("fare_tariffs").select("*").order("vehicle_type"),
-      db.from("incidents").select("*").eq("resolved", false).order("created_at", { ascending: false }).limit(30),
+      db
+        .from("incidents")
+        .select("*")
+        .eq("resolved", false)
+        .order("created_at", { ascending: false })
+        .limit(30),
       db.from("momo_transactions").select("status,amount,direction").limit(500),
     ]);
 
@@ -36,7 +41,9 @@ export const opsOverview = createServerFn({ method: "GET" })
       stats: {
         pendingDrivers: (drivers.data ?? []).filter((d) => d.status === "pending").length,
         onlineDrivers: (drivers.data ?? []).filter((d) => d.is_online).length,
-        liveTrips: tripRows.filter((t) => ["requested", "accepted", "arriving", "started"].includes(t.status)).length,
+        liveTrips: tripRows.filter((t) =>
+          ["requested", "accepted", "arriving", "started"].includes(t.status),
+        ).length,
         grossRecent: gross,
         commissionRecent: splitFare(gross).commission,
         momoFailed: (momo.data ?? []).filter((m) => m.status === "failed").length,
@@ -47,13 +54,21 @@ export const opsOverview = createServerFn({ method: "GET" })
 export const setDriverStatus = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) =>
-    z.object({ driverId: z.string().uuid(), status: z.enum(["pending", "approved", "suspended", "rejected"]) }).parse(d),
+    z
+      .object({
+        driverId: z.string().uuid(),
+        status: z.enum(["pending", "approved", "suspended", "rejected"]),
+      })
+      .parse(d),
   )
   .handler(async ({ data, context }) => {
     const { admin, requireOps } = await import("./uza.server");
     const db = admin();
     await requireOps(db, context.userId);
-    const { error } = await db.from("drivers").update({ status: data.status }).eq("id", data.driverId);
+    const { error } = await db
+      .from("drivers")
+      .update({ status: data.status })
+      .eq("id", data.driverId);
     if (error) throw new Error(error.message);
     return { ok: true };
   });
@@ -90,7 +105,10 @@ export const resolveIncident = createServerFn({ method: "POST" })
     const { admin, requireOps } = await import("./uza.server");
     const db = admin();
     await requireOps(db, context.userId);
-    const { error } = await db.from("incidents").update({ resolved: true }).eq("id", data.incidentId);
+    const { error } = await db
+      .from("incidents")
+      .update({ resolved: true })
+      .eq("id", data.incidentId);
     if (error) throw new Error(error.message);
     return { ok: true };
   });
@@ -106,7 +124,11 @@ export const forceCancelTrip = createServerFn({ method: "POST" })
     const db = admin();
     await requireOps(db, context.userId);
 
-    const { data: trip } = await db.from("trips").select("status").eq("id", data.tripId).maybeSingle();
+    const { data: trip } = await db
+      .from("trips")
+      .select("status")
+      .eq("id", data.tripId)
+      .maybeSingle();
     if (!trip) throw new Error("Trip not found.");
     if (["completed", "cancelled_by_rider", "cancelled_by_driver", "no_show"].includes(trip.status))
       throw new Error("This trip is already closed.");

@@ -12,38 +12,71 @@ export const getWalletOverview = createServerFn({ method: "GET" })
     const wallet = await getOrCreateWallet(db, uid);
 
     const { data: transactions } = await db
-      .from("wallet_transactions").select("*").eq("wallet_id", wallet.id)
-      .order("created_at", { ascending: false }).limit(40);
+      .from("wallet_transactions")
+      .select("*")
+      .eq("wallet_id", wallet.id)
+      .order("created_at", { ascending: false })
+      .limit(40);
 
     const { data: driver } = await db.from("drivers").select("*").eq("user_id", uid).maybeSingle();
     if (!driver) {
       return {
-        wallet, transactions: transactions ?? [],
-        driver: null as never, rule: null as never, loan: null as never,
+        wallet,
+        transactions: transactions ?? [],
+        driver: null as never,
+        rule: null as never,
+        loan: null as never,
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        installments: [] as any[], pace: 0, overdue: 0,
+        installments: [] as any[],
+        pace: 0,
+        overdue: 0,
         eco: null as never,
         stats: { completedTrips: 0, earnedToday: 0 },
       };
     }
 
-    const [{ data: rule }, { data: loan }, { data: charging }, { data: training }, { data: parts }, { data: batteries }, { data: trips }] =
-      await Promise.all([
-        db.from("savings_rules").select("*").eq("driver_id", driver.id).maybeSingle(),
-        db.from("loan_accounts").select("*").eq("driver_id", driver.id).eq("status", "active").maybeSingle(),
-        db.from("charging_sessions").select("*").eq("driver_id", driver.id).order("created_at", { ascending: false }).limit(10),
-        db.from("training_records").select("*").eq("driver_id", driver.id),
-        db.from("parts_redemptions").select("*").eq("driver_id", driver.id).limit(10),
-        db.from("battery_returns").select("*").eq("driver_id", driver.id).limit(10),
-        db.from("trips").select("id, completed_at, driver_earnings, status").eq("driver_id", driver.id).eq("status", "completed"),
-      ]);
+    const [
+      { data: rule },
+      { data: loan },
+      { data: charging },
+      { data: training },
+      { data: parts },
+      { data: batteries },
+      { data: trips },
+    ] = await Promise.all([
+      db.from("savings_rules").select("*").eq("driver_id", driver.id).maybeSingle(),
+      db
+        .from("loan_accounts")
+        .select("*")
+        .eq("driver_id", driver.id)
+        .eq("status", "active")
+        .maybeSingle(),
+      db
+        .from("charging_sessions")
+        .select("*")
+        .eq("driver_id", driver.id)
+        .order("created_at", { ascending: false })
+        .limit(10),
+      db.from("training_records").select("*").eq("driver_id", driver.id),
+      db.from("parts_redemptions").select("*").eq("driver_id", driver.id).limit(10),
+      db.from("battery_returns").select("*").eq("driver_id", driver.id).limit(10),
+      db
+        .from("trips")
+        .select("id, completed_at, driver_earnings, status")
+        .eq("driver_id", driver.id)
+        .eq("status", "completed"),
+    ]);
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let installments: any[] = [];
     let overdue = 0;
     if (loan) {
       const { data: rows } = await db
-        .from("loan_installments").select("*").eq("loan_id", loan.id).order("due_date").limit(12);
+        .from("loan_installments")
+        .select("*")
+        .eq("loan_id", loan.id)
+        .order("due_date")
+        .limit(12);
       installments = rows ?? [];
       const today = new Date().toISOString().slice(0, 10);
       overdue = (rows ?? [])
@@ -62,7 +95,8 @@ export const getWalletOverview = createServerFn({ method: "GET" })
       missedInstallments: overdue > 0 ? 1 : 0,
       trainingCertified: driver.training_certified,
     });
-    if (score !== driver.uza_score) await db.from("drivers").update({ uza_score: score }).eq("id", driver.id);
+    if (score !== driver.uza_score)
+      await db.from("drivers").update({ uza_score: score }).eq("id", driver.id);
 
     const todayKey = new Date().toISOString().slice(0, 10);
     const earnedToday = (trips ?? [])
@@ -70,11 +104,19 @@ export const getWalletOverview = createServerFn({ method: "GET" })
       .reduce((s, t) => s + Number(t.driver_earnings ?? 0), 0);
 
     return {
-      wallet, transactions: transactions ?? [],
+      wallet,
+      transactions: transactions ?? [],
       driver: { ...driver, uza_score: score },
-      rule, loan, installments, pace, overdue,
+      rule,
+      loan,
+      installments,
+      pace,
+      overdue,
       eco: {
-        charging: charging ?? [], training: training ?? [], parts: parts ?? [], batteries: batteries ?? [],
+        charging: charging ?? [],
+        training: training ?? [],
+        parts: parts ?? [],
+        batteries: batteries ?? [],
         kwh: (charging ?? []).reduce((s, c) => s + Number(c.kwh), 0),
       },
       stats: { completedTrips: trips?.length ?? 0, earnedToday },
@@ -84,20 +126,31 @@ export const getWalletOverview = createServerFn({ method: "GET" })
 export const setSavingsRule = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) =>
-    z.object({
-      rule_type: z.enum(["fixed_daily", "percent_trip", "round_up", "none"]),
-      fixed_daily: z.number().min(0).max(100000),
-      percent: z.number().min(0).max(50),
-      round_to: z.number().min(50).max(1000),
-    }).parse(d),
+    z
+      .object({
+        rule_type: z.enum(["fixed_daily", "percent_trip", "round_up", "none"]),
+        fixed_daily: z.number().min(0).max(100000),
+        percent: z.number().min(0).max(50),
+        round_to: z.number().min(50).max(1000),
+      })
+      .parse(d),
   )
   .handler(async ({ data, context }) => {
     const { admin } = await import("./uza.server");
     const db = admin();
-    const { data: driver } = await db.from("drivers").select("id").eq("user_id", context.userId).maybeSingle();
+    const { data: driver } = await db
+      .from("drivers")
+      .select("id")
+      .eq("user_id", context.userId)
+      .maybeSingle();
     if (!driver) throw new Error("Nta mwirondoro w'umushoferi.");
     await db.from("savings_rules").upsert(
-      { driver_id: driver.id, ...data, active: data.rule_type !== "none", updated_at: new Date().toISOString() },
+      {
+        driver_id: driver.id,
+        ...data,
+        active: data.rule_type !== "none",
+        updated_at: new Date().toISOString(),
+      },
       { onConflict: "driver_id" },
     );
     return { ok: true };
@@ -106,18 +159,35 @@ export const setSavingsRule = createServerFn({ method: "POST" })
 export const topUpWallet = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) =>
-    z.object({ amount: z.number().min(100).max(1000000), phone: z.string().min(9).max(15), provider: z.enum(["mtn", "airtel"]) }).parse(d),
+    z
+      .object({
+        amount: z.number().min(100).max(1000000),
+        phone: z.string().min(9).max(15),
+        provider: z.enum(["mtn", "airtel"]),
+      })
+      .parse(d),
   )
   .handler(async ({ data, context }) => {
     const { admin, requestToPay } = await import("./uza.server");
     const db = admin();
     const { externalRef, simulated } = await requestToPay({
-      provider: data.provider, phone: data.phone, amount: data.amount, reference: `topup-${context.userId.slice(0, 6)}`,
+      provider: data.provider,
+      phone: data.phone,
+      amount: data.amount,
+      reference: `topup-${context.userId.slice(0, 6)}`,
     });
-    const { data: momo, error } = await db.from("momo_transactions").insert({
-      provider: data.provider, direction: "collection", phone: data.phone, amount: data.amount,
-      external_ref: externalRef, initiated_by: context.userId,
-    }).select("*").single();
+    const { data: momo, error } = await db
+      .from("momo_transactions")
+      .insert({
+        provider: data.provider,
+        direction: "collection",
+        phone: data.phone,
+        amount: data.amount,
+        external_ref: externalRef,
+        initiated_by: context.userId,
+      })
+      .select("*")
+      .single();
     if (error) throw error;
     return { momo, simulated };
   });
@@ -126,10 +196,17 @@ export const topUpWallet = createServerFn({ method: "POST" })
 export const cashOut = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) =>
-    z.object({ amount: z.number().min(500).max(1000000), phone: z.string().min(9).max(15), provider: z.enum(["mtn", "airtel"]) }).parse(d),
+    z
+      .object({
+        amount: z.number().min(500).max(1000000),
+        phone: z.string().min(9).max(15),
+        provider: z.enum(["mtn", "airtel"]),
+      })
+      .parse(d),
   )
   .handler(async ({ data, context }) => {
-    const { admin, getOrCreateWallet, settleOwed, post, requestToPay } = await import("./uza.server");
+    const { admin, getOrCreateWallet, settleOwed, post, requestToPay } =
+      await import("./uza.server");
     const db = admin();
     await settleOwed(db, context.userId, "cashout");
     const wallet = await getOrCreateWallet(db, context.userId);
@@ -137,14 +214,24 @@ export const cashOut = createServerFn({ method: "POST" })
       return { ok: false as const, error: "Nta mafaranga ahagije uhari." };
     }
     const { externalRef } = await requestToPay({
-      provider: data.provider, phone: data.phone, amount: data.amount, reference: `payout-${context.userId.slice(0, 6)}`,
+      provider: data.provider,
+      phone: data.phone,
+      amount: data.amount,
+      reference: `payout-${context.userId.slice(0, 6)}`,
     });
     await db.from("momo_transactions").insert({
-      provider: data.provider, direction: "disbursement", phone: data.phone, amount: data.amount,
-      external_ref: externalRef, initiated_by: context.userId, status: "successful",
+      provider: data.provider,
+      direction: "disbursement",
+      phone: data.phone,
+      amount: data.amount,
+      external_ref: externalRef,
+      initiated_by: context.userId,
+      status: "successful",
     });
     await post(db, context.userId, "payout", data.amount, {
-      delta: -data.amount, ref: `momo:${externalRef}`, note: "Gukura amafaranga (MoMo)",
+      delta: -data.amount,
+      ref: `momo:${externalRef}`,
+      note: "Gukura amafaranga (MoMo)",
     });
     return { ok: true as const, externalRef };
   });
@@ -153,17 +240,31 @@ export const cashOut = createServerFn({ method: "POST" })
 export const logChargingSession = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) =>
-    z.object({ station_name: z.string().min(2).max(80), kwh: z.number().min(0.1).max(200), cost: z.number().min(0).max(200000) }).parse(d),
+    z
+      .object({
+        station_name: z.string().min(2).max(80),
+        kwh: z.number().min(0.1).max(200),
+        cost: z.number().min(0).max(200000),
+      })
+      .parse(d),
   )
   .handler(async ({ data, context }) => {
     const { admin, post } = await import("./uza.server");
     const db = admin();
-    const { data: driver } = await db.from("drivers").select("id").eq("user_id", context.userId).maybeSingle();
+    const { data: driver } = await db
+      .from("drivers")
+      .select("id")
+      .eq("user_id", context.userId)
+      .maybeSingle();
     if (!driver) throw new Error("Nta mwirondoro w'umushoferi.");
     const reward = Math.round(data.kwh * 30); // RWF 30 per kWh back into the wallet
-    await db.from("charging_sessions").insert({ driver_id: driver.id, ...data, reward_amount: reward });
+    await db
+      .from("charging_sessions")
+      .insert({ driver_id: driver.id, ...data, reward_amount: reward });
     await post(db, context.userId, "charging_reward", reward, {
-      delta: reward, ref: `charge:${data.station_name}`, note: "Inyungu yo kwishyuza amashanyarazi",
+      delta: reward,
+      ref: `charge:${data.station_name}`,
+      note: "Inyungu yo kwishyuza amashanyarazi",
     });
     return { ok: true, reward };
   });
@@ -174,12 +275,20 @@ export const returnBattery = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { admin, post } = await import("./uza.server");
     const db = admin();
-    const { data: driver } = await db.from("drivers").select("id").eq("user_id", context.userId).maybeSingle();
+    const { data: driver } = await db
+      .from("drivers")
+      .select("id")
+      .eq("user_id", context.userId)
+      .maybeSingle();
     if (!driver) throw new Error("Nta mwirondoro w'umushoferi.");
     const credit = 15000;
-    await db.from("battery_returns").insert({ driver_id: driver.id, battery_ref: data.battery_ref, credit_amount: credit });
+    await db
+      .from("battery_returns")
+      .insert({ driver_id: driver.id, battery_ref: data.battery_ref, credit_amount: credit });
     await post(db, context.userId, "recycling_credit", credit, {
-      delta: credit, ref: `battery:${data.battery_ref}`, note: "Kugarura bateri ishaje",
+      delta: credit,
+      ref: `battery:${data.battery_ref}`,
+      note: "Kugarura bateri ishaje",
     });
     return { ok: true, credit };
   });
@@ -224,12 +333,27 @@ export const getEarningsStatement = createServerFn({ method: "GET" })
     const since = new Date(Date.now() - 30 * 864e5).toISOString();
 
     const [{ data: trips }, { data: txs }, { data: loan }, { data: rule }] = await Promise.all([
-      db.from("trips").select("id, completed_at, final_fare, commission_amount, driver_earnings, pay_method, vehicle_type, pickup_address, dropoff_address")
-        .eq("driver_id", driver.id).eq("status", "completed").gte("completed_at", since)
-        .order("completed_at", { ascending: false }).limit(200),
-      db.from("wallet_transactions").select("type, amount, ref, created_at")
-        .eq("wallet_id", wallet.id).gte("created_at", since),
-      db.from("loan_accounts").select("*").eq("driver_id", driver.id).eq("status", "active").maybeSingle(),
+      db
+        .from("trips")
+        .select(
+          "id, completed_at, final_fare, commission_amount, driver_earnings, pay_method, vehicle_type, pickup_address, dropoff_address",
+        )
+        .eq("driver_id", driver.id)
+        .eq("status", "completed")
+        .gte("completed_at", since)
+        .order("completed_at", { ascending: false })
+        .limit(200),
+      db
+        .from("wallet_transactions")
+        .select("type, amount, ref, created_at")
+        .eq("wallet_id", wallet.id)
+        .gte("created_at", since),
+      db
+        .from("loan_accounts")
+        .select("*")
+        .eq("driver_id", driver.id)
+        .eq("status", "active")
+        .maybeSingle(),
       db.from("savings_rules").select("*").eq("driver_id", driver.id).maybeSingle(),
     ]);
 

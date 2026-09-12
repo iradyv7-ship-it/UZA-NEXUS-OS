@@ -5,7 +5,13 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { AppShell } from "@/components/AppShell";
 import { useSession } from "@/hooks/useSession";
 import { rwf, shortDate } from "@/lib/format";
-import { opsOverview, setDriverStatus, saveTariff, resolveIncident, forceCancelTrip } from "@/lib/ops.functions";
+import {
+  opsOverview,
+  setDriverStatus,
+  saveTariff,
+  resolveIncident,
+  forceCancelTrip,
+} from "@/lib/ops.functions";
 import { getDriverDocs } from "@/lib/identity.functions";
 import { toast } from "sonner";
 import { ShieldCheck, TriangleAlert } from "lucide-react";
@@ -16,10 +22,14 @@ export const Route = createFileRoute("/ops")({
       { title: "Ops console — UZA Move" },
       {
         name: "description",
-        content: "Kwemeza abashoferi, gucunga ibiciro bya RURA, gukurikirana ingendo n'ibibazo byatanzwe.",
+        content:
+          "Kwemeza abashoferi, gucunga ibiciro bya RURA, gukurikirana ingendo n'ibibazo byatanzwe.",
       },
       { property: "og:title", content: "Ops console — UZA Move" },
-      { property: "og:description", content: "Driver approval, RURA tariffs, live trips and incident handling." },
+      {
+        property: "og:description",
+        content: "Driver approval, RURA tariffs, live trips and incident handling.",
+      },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
     ],
@@ -60,7 +70,8 @@ function OpsPage() {
   });
 
   const approve = useMutation({
-    mutationFn: (v: { driverId: string; status: "approved" | "suspended" | "rejected" }) => driverFn({ data: v }),
+    mutationFn: (v: { driverId: string; status: "approved" | "suspended" | "rejected" }) =>
+      driverFn({ data: v }),
     onSuccess: () => {
       toast.success("Byahinduwe");
       refresh();
@@ -83,7 +94,9 @@ function OpsPage() {
         <div className="rounded-2xl border border-border bg-card p-6 text-center">
           <ShieldCheck className="mx-auto h-8 w-8 text-muted-foreground" />
           <p className="mt-2 font-semibold">Ops only</p>
-          <p className="text-sm text-muted-foreground">Iyi paje ni iy'abakozi ba UZA bafite uburenganzira.</p>
+          <p className="text-sm text-muted-foreground">
+            Iyi paje ni iy'abakozi ba UZA bafite uburenganzira.
+          </p>
         </div>
       </AppShell>
     );
@@ -107,7 +120,9 @@ function OpsPage() {
           <div key={d.id} className="border-b border-border py-3 last:border-0">
             <div className="flex items-center justify-between gap-3">
               <div className="min-w-0">
-                <p className="truncate text-sm font-semibold">{d.plate_number ?? "—"} · {d.vehicle_type}</p>
+                <p className="truncate text-sm font-semibold">
+                  {d.plate_number ?? "—"} · {d.vehicle_type}
+                </p>
                 <p className="text-xs text-muted-foreground">
                   {d.status} · UZA {d.uza_score} · {d.national_id ?? "nta ID"}
                 </p>
@@ -140,22 +155,31 @@ function OpsPage() {
 
       <Section title="Ibiciro (RURA)">
         {(data.data?.tariffs ?? []).map((t) => (
-          <TariffRow key={t.id} tariff={t} onSave={async (patch) => {
-            await tariffFn({ data: patch });
-            toast.success("Igiciro cyabitswe");
-            refresh();
-          }} />
+          <TariffRow
+            key={t.id}
+            tariff={t}
+            onSave={async (patch) => {
+              await tariffFn({ data: patch });
+              toast.success("Igiciro cyabitswe");
+              refresh();
+            }}
+          />
         ))}
       </Section>
 
       <Section title="Ibibazo (SOS / raporo)">
         {(data.data?.incidents ?? []).map((i) => (
-          <div key={i.id} className="flex items-center justify-between gap-3 border-b border-border py-3 last:border-0">
+          <div
+            key={i.id}
+            className="flex items-center justify-between gap-3 border-b border-border py-3 last:border-0"
+          >
             <div className="min-w-0">
               <p className="flex items-center gap-1.5 text-sm font-semibold">
                 <TriangleAlert className="h-4 w-4 text-destructive" /> {i.kind}
               </p>
-              <p className="truncate text-xs text-muted-foreground">{i.description ?? "—"} · {shortDate(i.created_at)}</p>
+              <p className="truncate text-xs text-muted-foreground">
+                {i.description ?? "—"} · {shortDate(i.created_at)}
+              </p>
             </div>
             <button
               onClick={() => close.mutate(i.id)}
@@ -170,7 +194,10 @@ function OpsPage() {
 
       <Section title="Ingendo za vuba">
         {(data.data?.trips ?? []).slice(0, 15).map((t) => (
-          <div key={t.id} className="flex items-center justify-between gap-3 border-b border-border py-2.5 last:border-0">
+          <div
+            key={t.id}
+            className="flex items-center justify-between gap-3 border-b border-border py-2.5 last:border-0"
+          >
             <div className="min-w-0">
               <p className="text-sm font-semibold">{rwf(Number(t.final_fare ?? t.quoted_fare))}</p>
               <p className="text-xs text-muted-foreground">
@@ -294,7 +321,9 @@ function Stat({ label, value }: { label: string; value: string }) {
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <section className="rounded-2xl border border-border bg-card p-4">
-      <h2 className="mb-1 text-sm font-bold uppercase tracking-wide text-muted-foreground">{title}</h2>
+      <h2 className="mb-1 text-sm font-bold uppercase tracking-wide text-muted-foreground">
+        {title}
+      </h2>
       {children}
     </section>
   );
@@ -316,7 +345,10 @@ function DriverDocs({ driverId }: { driverId: string }) {
 
   return (
     <div className="mt-2">
-      <button onClick={() => setOpen((v) => !v)} className="text-xs font-semibold underline text-muted-foreground">
+      <button
+        onClick={() => setOpen((v) => !v)}
+        className="text-xs font-semibold underline text-muted-foreground"
+      >
         {open ? "Hide documents" : "Review documents"}
       </button>
       {open ? (
@@ -328,12 +360,19 @@ function DriverDocs({ driverId }: { driverId: string }) {
           <div className="mt-2 grid grid-cols-3 gap-2">
             {(docs.data?.docs ?? []).map((doc) => (
               <a key={doc.label} href={doc.url} target="_blank" rel="noreferrer" className="block">
-                <img src={doc.url} alt={doc.label} loading="lazy" className="h-20 w-full rounded-lg object-cover" />
+                <img
+                  src={doc.url}
+                  alt={doc.label}
+                  loading="lazy"
+                  className="h-20 w-full rounded-lg object-cover"
+                />
                 <span className="mt-1 block text-[11px] text-muted-foreground">{doc.label}</span>
               </a>
             ))}
             {docs.data?.insurance_expiry ? (
-              <p className="col-span-3 text-[11px] text-muted-foreground">Insurance expires {docs.data.insurance_expiry}</p>
+              <p className="col-span-3 text-[11px] text-muted-foreground">
+                Insurance expires {docs.data.insurance_expiry}
+              </p>
             ) : null}
           </div>
         )

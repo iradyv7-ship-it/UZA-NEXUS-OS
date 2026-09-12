@@ -42,7 +42,12 @@ export function AdSlot({
       type="button"
       onClick={() => {
         void click({
-          data: { campaignId: ad.campaignId, creativeId: ad.creativeId, placement, userId: userId ?? null },
+          data: {
+            campaignId: ad.campaignId,
+            creativeId: ad.creativeId,
+            placement,
+            userId: userId ?? null,
+          },
         }).catch(() => undefined);
         if (ad.destinationUrl) window.open(ad.destinationUrl, "_blank", "noopener,noreferrer");
       }}
@@ -52,7 +57,9 @@ export function AdSlot({
         <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
           {ad.sponsored ? "Icyemezo giterwa inkunga" : "Kwamamaza"}
         </span>
-        {ad.ctaLabel ? <span className="text-xs font-semibold text-primary">{ad.ctaLabel}</span> : null}
+        {ad.ctaLabel ? (
+          <span className="text-xs font-semibold text-primary">{ad.ctaLabel}</span>
+        ) : null}
       </div>
       <p className="mt-1 font-semibold text-foreground">{ad.headline}</p>
       {ad.body ? <p className="text-sm text-muted-foreground">{ad.body}</p> : null}

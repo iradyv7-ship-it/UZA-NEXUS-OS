@@ -9,7 +9,15 @@ import { formatMoney } from "@/lib/pricing";
 import { COMMISSION_OWED_LIMIT, COMMISSION_BPS, BPS_DENOMINATOR } from "@/config/policy";
 import { EarningsWaterfall } from "@/components/EarningsWaterfall";
 import { useSession } from "@/hooks/useSession";
-import { getWalletOverview, setSavingsRule, topUpWallet, cashOut, logChargingSession, returnBattery , settleCommission } from "@/lib/wallet.functions";
+import {
+  getWalletOverview,
+  setSavingsRule,
+  topUpWallet,
+  cashOut,
+  logChargingSession,
+  returnBattery,
+  settleCommission,
+} from "@/lib/wallet.functions";
 import { simulateMomoCallback } from "@/lib/trips.functions";
 import { toast } from "sonner";
 import { Lock, PiggyBank, Zap } from "lucide-react";
@@ -23,7 +31,10 @@ export const Route = createFileRoute("/wallet")({
         content: "One UZA wallet: trip earnings, locked savings, loan pace and charging rewards.",
       },
       { property: "og:title", content: "Wallet & savings — UZA Move" },
-      { property: "og:description", content: "One UZA wallet: trip earnings, locked savings, loan pace and charging rewards." },
+      {
+        property: "og:description",
+        content: "One UZA wallet: trip earnings, locked savings, loan pace and charging rewards.",
+      },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
     ],
@@ -53,7 +64,11 @@ function WalletPage() {
     if (ready && !user) navigate({ to: "/auth" });
   }, [ready, user, navigate]);
 
-  const wallet = useQuery({ queryKey: ["wallet"], enabled: Boolean(user), queryFn: () => overviewFn({}) });
+  const wallet = useQuery({
+    queryKey: ["wallet"],
+    enabled: Boolean(user),
+    queryFn: () => overviewFn({}),
+  });
   const refresh = () => qc.invalidateQueries({ queryKey: ["wallet"] });
 
   const settle = useMutation({
@@ -64,7 +79,6 @@ function WalletPage() {
     },
     onError: (e: Error) => toast.error(e.message),
   });
-
 
   const topUp = useMutation({
     mutationFn: async () => {
@@ -116,8 +130,9 @@ function WalletPage() {
                 : "Commission owed from cash trips"}
             </p>
             <p className="mt-1 text-xs text-muted-foreground">
-              Cash trips leave UZA&rsquo;s {(COMMISSION_BPS / BPS_DENOMINATOR) * 100}% in your pocket. Pay it back here to
-              keep driving. The limit is {formatMoney(COMMISSION_OWED_LIMIT)}.
+              Cash trips leave UZA&rsquo;s {(COMMISSION_BPS / BPS_DENOMINATOR) * 100}% in your
+              pocket. Pay it back here to keep driving. The limit is{" "}
+              {formatMoney(COMMISSION_OWED_LIMIT)}.
             </p>
             <button
               onClick={() => settle.mutate()}
@@ -141,7 +156,8 @@ function WalletPage() {
               </p>
             ) : null}
             <p className="mt-2 text-xs text-muted-foreground">
-              {t("driver.today")}: {rwf(d.stats.earnedToday)} · {t("eco.score")} {d.driver.uza_score}
+              {t("driver.today")}: {rwf(d.stats.earnedToday)} · {t("eco.score")}{" "}
+              {d.driver.uza_score}
             </p>
           </div>
         ) : null}
@@ -201,7 +217,9 @@ function WalletPage() {
               <div className="grid grid-cols-2 gap-2">
                 <button
                   onClick={async () => {
-                    const res = await chargeFn({ data: { station_name: "UZA Kigali", kwh: 4, cost: 1200 } });
+                    const res = await chargeFn({
+                      data: { station_name: "UZA Kigali", kwh: 4, cost: 1200 },
+                    });
                     toast.success(`+${rwf(res.reward)}`);
                     refresh();
                   }}
@@ -211,7 +229,9 @@ function WalletPage() {
                 </button>
                 <button
                   onClick={async () => {
-                    await batteryFn({ data: { battery_ref: `BAT-${Date.now().toString().slice(-6)}` } });
+                    await batteryFn({
+                      data: { battery_ref: `BAT-${Date.now().toString().slice(-6)}` },
+                    });
                     toast.success(t("eco.battery"));
                     refresh();
                   }}
@@ -233,7 +253,9 @@ function WalletPage() {
                   <span className="block font-medium">{tx.note ?? tx.type}</span>
                   <span className="text-xs text-muted-foreground">{shortDate(tx.created_at)}</span>
                 </span>
-                <span className={Number(tx.amount) < 0 ? "text-destructive" : "text-primary"}>{rwf(tx.amount)}</span>
+                <span className={Number(tx.amount) < 0 ? "text-destructive" : "text-primary"}>
+                  {rwf(tx.amount)}
+                </span>
               </li>
             ))}
           </ul>
@@ -243,15 +265,7 @@ function WalletPage() {
   );
 }
 
-function Stat({
-  icon: Icon,
-  label,
-  value,
-}: {
-  icon: typeof Lock;
-  label: string;
-  value: string;
-}) {
+function Stat({ icon: Icon, label, value }: { icon: typeof Lock; label: string; value: string }) {
   return (
     <div className="card-uza p-4">
       <Icon className="size-4 text-primary" />
@@ -261,7 +275,12 @@ function Stat({
   );
 }
 
-type RulePayload = { rule_type: "fixed_daily" | "percent_trip" | "round_up" | "none"; fixed_daily: number; percent: number; round_to: number };
+type RulePayload = {
+  rule_type: "fixed_daily" | "percent_trip" | "round_up" | "none";
+  fixed_daily: number;
+  percent: number;
+  round_to: number;
+};
 
 function SavingsCard({
   rule,

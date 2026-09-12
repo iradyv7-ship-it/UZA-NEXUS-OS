@@ -12,7 +12,11 @@ export const getAdvertiserDashboard = createServerFn({ method: "GET" })
     const db = admin();
     const uid = context.userId;
 
-    const { data: advertiser } = await db.from("ad_advertisers").select("*").eq("user_id", uid).maybeSingle();
+    const { data: advertiser } = await db
+      .from("ad_advertisers")
+      .select("*")
+      .eq("user_id", uid)
+      .maybeSingle();
     if (!advertiser) return { advertiser: null, campaigns: [] as never[] };
 
     const { data: campaigns } = await db
@@ -23,7 +27,9 @@ export const getAdvertiserDashboard = createServerFn({ method: "GET" })
 
     const ids = (campaigns ?? []).map((c) => c.id);
     const [imps, clicks] = await Promise.all([
-      ids.length ? db.from("ad_impressions").select("campaign_id").in("campaign_id", ids) : { data: [] },
+      ids.length
+        ? db.from("ad_impressions").select("campaign_id").in("campaign_id", ids)
+        : { data: [] },
       ids.length ? db.from("ad_clicks").select("campaign_id").in("campaign_id", ids) : { data: [] },
     ]);
 
@@ -43,14 +49,23 @@ export const getAdvertiserDashboard = createServerFn({ method: "GET" })
 export const createAdvertiser = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) =>
-    z.object({ company_name: z.string().min(2).max(120), contact_phone: z.string().min(9).max(20) }).parse(d),
+    z
+      .object({
+        company_name: z.string().min(2).max(120),
+        contact_phone: z.string().min(9).max(20),
+      })
+      .parse(d),
   )
   .handler(async ({ data, context }) => {
     const { admin } = await import("./uza.server");
     const db = admin();
     const { data: row, error } = await db
       .from("ad_advertisers")
-      .insert({ user_id: context.userId, company_name: data.company_name, contact_phone: data.contact_phone })
+      .insert({
+        user_id: context.userId,
+        company_name: data.company_name,
+        contact_phone: data.contact_phone,
+      })
       .select()
       .single();
     if (error) throw new Error(error.message);
@@ -121,7 +136,15 @@ export const setCampaignStatus = createServerFn({ method: "POST" })
     z
       .object({
         campaignId: z.string().uuid(),
-        status: z.enum(["draft", "pending_review", "approved", "rejected", "running", "paused", "ended"]),
+        status: z.enum([
+          "draft",
+          "pending_review",
+          "approved",
+          "rejected",
+          "running",
+          "paused",
+          "ended",
+        ]),
         asOps: z.boolean().optional(),
       })
       .parse(d),
@@ -140,11 +163,15 @@ export const setCampaignStatus = createServerFn({ method: "POST" })
         .select("id, ad_advertisers!inner(user_id)")
         .eq("id", data.campaignId)
         .maybeSingle();
-      const owner = (owned as { ad_advertisers?: { user_id: string } } | null)?.ad_advertisers?.user_id;
+      const owner = (owned as { ad_advertisers?: { user_id: string } } | null)?.ad_advertisers
+        ?.user_id;
       if (owner !== context.userId) throw new Error("Ntufite uburenganzira.");
     }
 
-    const { error } = await db.from("ad_campaigns").update({ status: data.status }).eq("id", data.campaignId);
+    const { error } = await db
+      .from("ad_campaigns")
+      .update({ status: data.status })
+      .eq("id", data.campaignId);
     if (error) throw new Error(error.message);
     return { ok: true as const };
   });
@@ -169,14 +196,20 @@ export const serveAd = createServerFn({ method: "POST" })
 
     const { data: campaigns } = await db
       .from("ad_campaigns")
-      .select("id, budget, spent, bill_model, cpm, cpc, hour_start, hour_end, audience, is_sponsored_offer, ad_creatives(*)")
+      .select(
+        "id, budget, spent, bill_model, cpm, cpc, hour_start, hour_end, audience, is_sponsored_offer, ad_creatives(*)",
+      )
       .eq("placement", data.placement)
       .eq("status", "running")
       .in("audience", [data.audience, "both"])
       .limit(20);
 
     const eligible = (campaigns ?? []).filter(
-      (c) => Number(c.spent) < Number(c.budget) && h >= c.hour_start && h <= c.hour_end && (c.ad_creatives ?? []).length,
+      (c) =>
+        Number(c.spent) < Number(c.budget) &&
+        h >= c.hour_start &&
+        h <= c.hour_end &&
+        (c.ad_creatives ?? []).length,
     );
     if (!eligible.length) return null;
 

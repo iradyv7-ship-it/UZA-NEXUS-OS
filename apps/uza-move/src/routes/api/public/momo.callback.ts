@@ -31,7 +31,9 @@ export const Route = createFileRoute("/api/public/momo/callback")({
 
         const { settleMomoCollection } = await import("@/lib/momo.server");
         const outcome = parsed.data.status.toLowerCase() as "successful" | "failed";
-        const result = await settleMomoCollection(parsed.data.external_ref, outcome, { source: "provider_callback" });
+        const result = await settleMomoCollection(parsed.data.external_ref, outcome, {
+          source: "provider_callback",
+        });
 
         return Response.json({ ok: true, result });
       },

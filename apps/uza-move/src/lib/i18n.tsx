@@ -1,4 +1,12 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+  type ReactNode,
+} from "react";
 
 export type Lang = "rw" | "en" | "fr";
 
@@ -80,7 +88,8 @@ const rw: Dict = {
   "driver.waitmomo": "Turategereje MoMo…",
   "driver.paid": "YISHYUWE ✓ — byemejwe na UZA",
   "driver.notpaid": "Ntabwo warishyuwe",
-  "driver.scamwarn": "Ubutumwa bwa SMS cyangwa ifoto ntibihagije. Niba bitaba icyatsi hano muri UZA Move, ntabwo warishyuwe.",
+  "driver.scamwarn":
+    "Ubutumwa bwa SMS cyangwa ifoto ntibihagije. Niba bitaba icyatsi hano muri UZA Move, ntabwo warishyuwe.",
   "driver.earnings": "Uwo winjije",
   "driver.commission": "Ikigega cya UZA (8%)",
   "driver.keeps": "Ugumana 92%",
@@ -233,7 +242,8 @@ const en: Dict = {
   "driver.waitmomo": "Waiting for MoMo…",
   "driver.paid": "PAID ✓ — verified by UZA",
   "driver.notpaid": "Not paid yet",
-  "driver.scamwarn": "An SMS or a screenshot means nothing. If it isn't green here in UZA Move, you were not paid.",
+  "driver.scamwarn":
+    "An SMS or a screenshot means nothing. If it isn't green here in UZA Move, you were not paid.",
   "driver.earnings": "Your earnings",
   "driver.commission": "UZA commission (8%)",
   "driver.keeps": "You keep 92%",
@@ -317,7 +327,8 @@ const en: Dict = {
 
 const fr: Dict = {
   ...en,
-  "app.tagline": "L'application qui vous paie, vous le chauffeur — et où aucun passager ne marchande.",
+  "app.tagline":
+    "L'application qui vous paie, vous le chauffeur — et où aucun passager ne marchande.",
   "app.promise": "Le prix est affiché avant la réservation et ne change jamais.",
   "nav.rider": "Je suis passager",
   "nav.driver": "Je suis chauffeur",
@@ -378,7 +389,8 @@ const fr: Dict = {
   "driver.waitmomo": "En attente de MoMo…",
   "driver.paid": "PAYÉ ✓ — vérifié par UZA",
   "driver.notpaid": "Pas encore payé",
-  "driver.scamwarn": "Un SMS ou une capture d'écran ne vaut rien. Si ce n'est pas vert ici, vous n'avez pas été payé.",
+  "driver.scamwarn":
+    "Un SMS ou une capture d'écran ne vaut rien. Si ce n'est pas vert ici, vous n'avez pas été payé.",
   "driver.earnings": "Vos gains",
   "driver.commission": "Commission UZA (8 %)",
   "driver.keeps": "Vous gardez 92 %",
@@ -398,7 +410,8 @@ const fr: Dict = {
   "earn.pertrip": "Course par course",
   "earn.trip": "Course",
   "earn.empty": "Vos courses terminées apparaîtront ici, chacune avec le détail complet.",
-  "earn.adpending": "Les revenus publicitaires seront affichés séparément dès le début des versements.",
+  "earn.adpending":
+    "Les revenus publicitaires seront affichés séparément dès le début des versements.",
   "earn.save2own": "Progression Save2Own",
   "earn.save2owntarget": "vers la contribution minimale de",
   "wallet.title": "Votre portefeuille",
@@ -417,7 +430,11 @@ const fr: Dict = {
 
 const DICTS: Record<Lang, Dict> = { rw, en, fr };
 
-const I18nContext = createContext<{ lang: Lang; setLang: (l: Lang) => void; t: (k: string) => string }>({
+const I18nContext = createContext<{
+  lang: Lang;
+  setLang: (l: Lang) => void;
+  t: (k: string) => string;
+}>({
   lang: "en",
   setLang: () => {},
   t: (k) => k,

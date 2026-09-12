@@ -13,7 +13,14 @@ import { useTripRealtime } from "@/hooks/useTripRealtime";
 import { useDriverPing } from "@/hooks/useDriverPing";
 import { supabase } from "@/integrations/supabase/client";
 import { getMe, setOnline, submitDriverKyc, chooseRole } from "@/lib/identity.functions";
-import { listOpenTrips, acceptTrip, startTrip, completeTrip, getTrip, setTripStatus } from "@/lib/trips.functions";
+import {
+  listOpenTrips,
+  acceptTrip,
+  startTrip,
+  completeTrip,
+  getTrip,
+  setTripStatus,
+} from "@/lib/trips.functions";
 import { toast } from "sonner";
 import { AlertTriangle, CheckCircle2, Clock, Navigation } from "lucide-react";
 
@@ -23,10 +30,14 @@ export const Route = createFileRoute("/driver")({
       { title: "Driver — UZA Move" },
       {
         name: "description",
-        content: "Driver home on UZA Move: trips, earnings, you keep 92%, and MoMo payments verified in-app.",
+        content:
+          "Driver home on UZA Move: trips, earnings, you keep 92%, and MoMo payments verified in-app.",
       },
       { property: "og:title", content: "Driver — UZA Move" },
-      { property: "og:description", content: "Driver home: trips, earnings, verified MoMo payments, 92% kept." },
+      {
+        property: "og:description",
+        content: "Driver home: trips, earnings, verified MoMo payments, 92% kept.",
+      },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
     ],
@@ -114,7 +125,10 @@ function DriverPage() {
 
   if (me.isLoading) return <AppShell>{null}</AppShell>;
 
-  if (!driver || !driver.national_id) return <KycForm userId={user?.id ?? ""} onDone={() => qc.invalidateQueries({ queryKey: ["me"] })} />;
+  if (!driver || !driver.national_id)
+    return (
+      <KycForm userId={user?.id ?? ""} onDone={() => qc.invalidateQueries({ queryKey: ["me"] })} />
+    );
 
   if (driver.status !== "approved") {
     return (
@@ -122,8 +136,14 @@ function DriverPage() {
         <div className="card-uza m-4 flex gap-3 p-4">
           <Clock className="mt-0.5 size-5 text-accent" />
           <div>
-            <p className="font-semibold">{driver.status === "pending" ? "Turi gusuzuma umwirondoro wawe." : t("driver.notpaid")}</p>
-            <p className="text-xs text-muted-foreground">{driver.plate_number} · {driver.vehicle_type}</p>
+            <p className="font-semibold">
+              {driver.status === "pending"
+                ? "Turi gusuzuma umwirondoro wawe."
+                : t("driver.notpaid")}
+            </p>
+            <p className="text-xs text-muted-foreground">
+              {driver.plate_number} · {driver.vehicle_type}
+            </p>
           </div>
         </div>
       </AppShell>
@@ -136,7 +156,9 @@ function DriverPage() {
         <button
           onClick={() => toggle.mutate(!driver.is_online)}
           className={`w-full rounded-2xl px-4 py-5 text-lg font-bold ${
-            driver.is_online ? "bg-primary text-primary-foreground" : "border border-border bg-card text-foreground"
+            driver.is_online
+              ? "bg-primary text-primary-foreground"
+              : "border border-border bg-card text-foreground"
           }`}
         >
           {driver.is_online ? t("driver.online") : t("driver.offline")}
@@ -174,13 +196,17 @@ function DriverPage() {
                   </span>
                 ) : null}
                 <div className="flex items-baseline justify-between">
-                  <span className="font-display text-2xl font-bold">{rwf(trip.driver_earnings ?? 0)}</span>
+                  <span className="font-display text-2xl font-bold">
+                    {rwf(trip.driver_earnings ?? 0)}
+                  </span>
                   <span className="text-xs text-muted-foreground">{t("driver.youearn")}</span>
                 </div>
 
                 <p className="text-xs text-muted-foreground">
                   {trip.distance_km} {t("common.km")} · {trip.duration_min} {t("common.min")}
-                  {trip.pickup_distance_km != null ? ` · ${trip.pickup_distance_km} km ${t("rider.pickup")}` : ""}
+                  {trip.pickup_distance_km != null
+                    ? ` · ${trip.pickup_distance_km} km ${t("rider.pickup")}`
+                    : ""}
                 </p>
                 <p className="text-xs text-muted-foreground">
                   {t("driver.commission")}: {rwf(trip.commission_amount ?? 0)} · {t("driver.keeps")}
@@ -310,7 +336,9 @@ function ActiveJob({ data, onDone }: { data: any; onDone: () => void }) {
           <button
             onClick={async () => {
               try {
-                await statusFn({ data: { trip_id: trip.id, status: "no_show", reason: "Rider did not show up" } });
+                await statusFn({
+                  data: { trip_id: trip.id, status: "no_show", reason: "Rider did not show up" },
+                });
                 toast.success("Reported as a no-show.");
                 onDone();
               } catch (e) {
@@ -324,7 +352,13 @@ function ActiveJob({ data, onDone }: { data: any; onDone: () => void }) {
           <button
             onClick={async () => {
               try {
-                await statusFn({ data: { trip_id: trip.id, status: "cancelled_by_driver", reason: "Driver cancelled" } });
+                await statusFn({
+                  data: {
+                    trip_id: trip.id,
+                    status: "cancelled_by_driver",
+                    reason: "Driver cancelled",
+                  },
+                });
                 toast.success("Trip cancelled.");
                 onDone();
               } catch (e) {
@@ -376,7 +410,11 @@ function KycForm({ userId, onDone }: { userId: string; onDone: () => void }) {
   });
   const [busy, setBusy] = useState(false);
 
-  const missing = !form.id_photo_url || !form.licence_photo_url || !form.insurance_photo_url || !form.vehicle_photo_url;
+  const missing =
+    !form.id_photo_url ||
+    !form.licence_photo_url ||
+    !form.insurance_photo_url ||
+    !form.vehicle_photo_url;
 
   return (
     <AppShell title={t("nav.driver")}>
@@ -401,9 +439,22 @@ function KycForm({ userId, onDone }: { userId: string; onDone: () => void }) {
           }
         }}
       >
-        <Text label="National ID number" value={form.national_id} onChange={(v) => setForm({ ...form, national_id: v })} />
-        <Text label="Driving licence number" value={form.licence_number} onChange={(v) => setForm({ ...form, licence_number: v })} required={false} />
-        <Text label="Plate number" value={form.plate_number} onChange={(v) => setForm({ ...form, plate_number: v })} />
+        <Text
+          label="National ID number"
+          value={form.national_id}
+          onChange={(v) => setForm({ ...form, national_id: v })}
+        />
+        <Text
+          label="Driving licence number"
+          value={form.licence_number}
+          onChange={(v) => setForm({ ...form, licence_number: v })}
+          required={false}
+        />
+        <Text
+          label="Plate number"
+          value={form.plate_number}
+          onChange={(v) => setForm({ ...form, plate_number: v })}
+        />
         <div className="grid grid-cols-4 gap-2">
           {(["moto", "e_moto", "cab", "delivery"] as const).map((v) => (
             <button
@@ -411,7 +462,9 @@ function KycForm({ userId, onDone }: { userId: string; onDone: () => void }) {
               key={v}
               onClick={() => setForm({ ...form, vehicle_type: v })}
               className={`rounded-xl border px-2 py-2 text-xs font-semibold ${
-                form.vehicle_type === v ? "border-primary bg-primary text-primary-foreground" : "border-border"
+                form.vehicle_type === v
+                  ? "border-primary bg-primary text-primary-foreground"
+                  : "border-border"
               }`}
             >
               {v}
@@ -423,11 +476,42 @@ function KycForm({ userId, onDone }: { userId: string; onDone: () => void }) {
         <p className="-mt-2 text-xs text-muted-foreground">
           Photos stay private — only you and the UZA review team can open them.
         </p>
-        <DocUpload label="National ID photo" userId={userId} slot="id" value={form.id_photo_url} onChange={(p) => setForm({ ...form, id_photo_url: p })} />
-        <DocUpload label="Driving licence photo" userId={userId} slot="licence" value={form.licence_photo_url} onChange={(p) => setForm({ ...form, licence_photo_url: p })} />
-        <DocUpload label="Insurance certificate" userId={userId} slot="insurance" value={form.insurance_photo_url} onChange={(p) => setForm({ ...form, insurance_photo_url: p })} />
-        <DocUpload label="Vehicle photo (plate visible)" userId={userId} slot="vehicle" value={form.vehicle_photo_url} onChange={(p) => setForm({ ...form, vehicle_photo_url: p })} />
-        <DocUpload label="Your photo" hint="A clear face photo riders will see" userId={userId} slot="portrait" value={form.photo_url} onChange={(p) => setForm({ ...form, photo_url: p })} />
+        <DocUpload
+          label="National ID photo"
+          userId={userId}
+          slot="id"
+          value={form.id_photo_url}
+          onChange={(p) => setForm({ ...form, id_photo_url: p })}
+        />
+        <DocUpload
+          label="Driving licence photo"
+          userId={userId}
+          slot="licence"
+          value={form.licence_photo_url}
+          onChange={(p) => setForm({ ...form, licence_photo_url: p })}
+        />
+        <DocUpload
+          label="Insurance certificate"
+          userId={userId}
+          slot="insurance"
+          value={form.insurance_photo_url}
+          onChange={(p) => setForm({ ...form, insurance_photo_url: p })}
+        />
+        <DocUpload
+          label="Vehicle photo (plate visible)"
+          userId={userId}
+          slot="vehicle"
+          value={form.vehicle_photo_url}
+          onChange={(p) => setForm({ ...form, vehicle_photo_url: p })}
+        />
+        <DocUpload
+          label="Your photo"
+          hint="A clear face photo riders will see"
+          userId={userId}
+          slot="portrait"
+          value={form.photo_url}
+          onChange={(p) => setForm({ ...form, photo_url: p })}
+        />
 
         <label className="block">
           <span className="text-xs font-semibold text-muted-foreground">Insurance expiry</span>
@@ -449,7 +533,6 @@ function KycForm({ userId, onDone }: { userId: string; onDone: () => void }) {
     </AppShell>
   );
 }
-
 
 function Text({
   label,

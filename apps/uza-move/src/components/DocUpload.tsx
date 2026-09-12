@@ -30,7 +30,9 @@ export function DocUpload({ label, hint, userId, slot, value, onChange }: Props)
     try {
       const ext = file.name.split(".").pop()?.toLowerCase() ?? "jpg";
       const path = `${userId}/${slot}-${Date.now()}.${ext}`;
-      const { error } = await supabase.storage.from("driver-docs").upload(path, file, { upsert: true });
+      const { error } = await supabase.storage
+        .from("driver-docs")
+        .upload(path, file, { upsert: true });
       if (error) throw error;
       onChange(path);
     } catch (e) {

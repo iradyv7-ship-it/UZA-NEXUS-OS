@@ -18,7 +18,9 @@ function alertUser(title: string, body: string) {
   try {
     // Short beep, generated in the browser so there is no audio file to download
     // on a weak connection.
-    const Ctx = window.AudioContext ?? (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+    const Ctx =
+      window.AudioContext ??
+      (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
     if (!Ctx) return;
     const ctx = new Ctx();
     const osc = ctx.createOscillator();
@@ -68,11 +70,18 @@ export function useTripRealtime(opts: {
           alertUser("New ride request", "A rider nearby is waiting. Open UZA Move to accept.");
         }
 
-        if (watchTripId && row?.id === watchTripId && row.status && row.status !== lastStatus.current) {
+        if (
+          watchTripId &&
+          row?.id === watchTripId &&
+          row.status &&
+          row.status !== lastStatus.current
+        ) {
           const previous = lastStatus.current;
           lastStatus.current = row.status;
-          if (previous && row.status === "accepted") alertUser("Driver on the way", "Your driver accepted the trip.");
-          if (previous && row.status === "arriving") alertUser("Your driver has arrived", "Share your Start PIN to begin.");
+          if (previous && row.status === "accepted")
+            alertUser("Driver on the way", "Your driver accepted the trip.");
+          if (previous && row.status === "arriving")
+            alertUser("Your driver has arrived", "Share your Start PIN to begin.");
         }
       })
       .subscribe();

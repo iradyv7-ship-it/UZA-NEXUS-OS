@@ -30,7 +30,8 @@ export const Route = createFileRoute("/rider")({
       { title: "Book a trip — UZA Move" },
       {
         name: "description",
-        content: "Book a moto or cab on UZA Move. The fare is shown upfront and you pay by MoMo or cash.",
+        content:
+          "Book a moto or cab on UZA Move. The fare is shown upfront and you pay by MoMo or cash.",
       },
       { property: "og:title", content: "Book a trip — UZA Move" },
       { property: "og:description", content: "Book a moto or cab with an upfront regulated fare." },
@@ -95,8 +96,10 @@ function RiderPage() {
     if (!tripId) return;
     const channel = supabase
       .channel(`rider-trip-${tripId}`)
-      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "trips", filter: `id=eq.${tripId}` }, () =>
-        qc.invalidateQueries({ queryKey: ["trip", tripId] }),
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "trips", filter: `id=eq.${tripId}` },
+        () => qc.invalidateQueries({ queryKey: ["trip", tripId] }),
       )
       .subscribe();
     return () => {
@@ -105,7 +108,8 @@ function RiderPage() {
   }, [tripId, qc]);
 
   const book = useMutation({
-    mutationFn: () => requestFn({ data: { pickup: pickup!, dropoff: dropoff!, vehicle_type: vehicle } }),
+    mutationFn: () =>
+      requestFn({ data: { pickup: pickup!, dropoff: dropoff!, vehicle_type: vehicle } }),
     onSuccess: (trip) => setTripId(trip.id),
     onError: (e: Error) => toast.error(e.message),
   });
@@ -146,13 +150,21 @@ function RiderPage() {
         ) : (
           <ActiveTrip tripId={tripId!} data={trip.data!} onDone={() => setTripId(null)} />
         )}
-        {!active ? <AdSlot placement="rider_home_banner" audience="riders" userId={user?.id ?? null} /> : null}
+        {!active ? (
+          <AdSlot placement="rider_home_banner" audience="riders" userId={user?.id ?? null} />
+        ) : null}
       </div>
     </AppShell>
   );
 }
 
-type QuoteShape = { fare: number; distanceKm: number; durationMin: number; commission: number; driverEarnings: number };
+type QuoteShape = {
+  fare: number;
+  distanceKm: number;
+  durationMin: number;
+  commission: number;
+  driverEarnings: number;
+};
 
 function BookingPanel(props: {
   t: (k: string) => string;
@@ -205,7 +217,9 @@ function BookingPanel(props: {
             key={v}
             onClick={() => props.setVehicle(v)}
             className={`rounded-xl border px-3 py-3 text-sm font-semibold ${
-              props.vehicle === v ? "border-primary bg-primary text-primary-foreground" : "border-border bg-card"
+              props.vehicle === v
+                ? "border-primary bg-primary text-primary-foreground"
+                : "border-border bg-card"
             }`}
           >
             {label}
@@ -216,9 +230,12 @@ function BookingPanel(props: {
       {props.quote ? (
         <div className="card-uza p-4">
           <div className="flex items-baseline justify-between">
-            <span className="font-display text-3xl font-bold text-foreground">{rwf(props.quote.fare)}</span>
+            <span className="font-display text-3xl font-bold text-foreground">
+              {rwf(props.quote.fare)}
+            </span>
             <span className="text-xs text-muted-foreground">
-              {props.quote.distanceKm} {t("common.km")} · {props.quote.durationMin} {t("common.min")}
+              {props.quote.distanceKm} {t("common.km")} · {props.quote.durationMin}{" "}
+              {t("common.min")}
             </span>
           </div>
           <p className="mt-2 flex items-center gap-1.5 text-xs font-semibold text-primary">
@@ -226,7 +243,9 @@ function BookingPanel(props: {
           </p>
         </div>
       ) : (
-        <p className="text-sm text-muted-foreground">{props.loading ? t("common.loading") : t("rider.pinmap")}</p>
+        <p className="text-sm text-muted-foreground">
+          {props.loading ? t("common.loading") : t("rider.pinmap")}
+        </p>
       )}
 
       <button
@@ -267,17 +286,29 @@ function ActiveTrip({ tripId, data, onDone }: { tripId: string; data: any; onDon
   // Live distance/ETA from the driver's last GPS ping to the next waypoint.
   const live = useMemo(() => {
     if (driver?.current_lat == null || driver?.current_lng == null) return null;
-    if (["completed", "cancelled_by_rider", "cancelled_by_driver", "no_show"].includes(trip.status)) return null;
+    if (["completed", "cancelled_by_rider", "cancelled_by_driver", "no_show"].includes(trip.status))
+      return null;
     const target =
       trip.status === "started"
         ? { lat: trip.dropoff_lat, lng: trip.dropoff_lng }
         : { lat: trip.pickup_lat, lng: trip.pickup_lng };
     const km = roadDistanceKm({ lat: driver.current_lat, lng: driver.current_lng }, target);
     return { km: Math.round(km * 10) / 10, min: Math.max(1, Math.round((km / 22) * 60)) };
-  }, [driver?.current_lat, driver?.current_lng, trip.status, trip.pickup_lat, trip.pickup_lng, trip.dropoff_lat, trip.dropoff_lng]);
+  }, [
+    driver?.current_lat,
+    driver?.current_lng,
+    trip.status,
+    trip.pickup_lat,
+    trip.pickup_lng,
+    trip.dropoff_lat,
+    trip.dropoff_lng,
+  ]);
 
   const shareUrl = useMemo(
-    () => (typeof window === "undefined" ? "" : `${window.location.origin}/rider?share=${trip.share_token}`),
+    () =>
+      typeof window === "undefined"
+        ? ""
+        : `${window.location.origin}/rider?share=${trip.share_token}`,
     [trip.share_token],
   );
 
@@ -309,7 +340,9 @@ function ActiveTrip({ tripId, data, onDone }: { tripId: string; data: any; onDon
         <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
           {statusLabel[trip.status] ?? trip.status}
         </p>
-        <p className="mt-1 font-display text-3xl font-bold">{rwf(trip.final_fare ?? trip.quoted_fare)}</p>
+        <p className="mt-1 font-display text-3xl font-bold">
+          {rwf(trip.final_fare ?? trip.quoted_fare)}
+        </p>
         <p className="text-xs text-muted-foreground">{t("rider.fixedfare")}</p>
 
         {driver ? (
@@ -320,10 +353,13 @@ function ActiveTrip({ tripId, data, onDone }: { tripId: string; data: any; onDon
             </p>
             {live ? (
               <p className="mt-2 text-xs font-semibold text-primary">
-                {live.km} km away · about {live.min} min {trip.status === "started" ? "to your drop-off" : "to your pick-up"}
+                {live.km} km away · about {live.min} min{" "}
+                {trip.status === "started" ? "to your drop-off" : "to your pick-up"}
               </p>
             ) : (
-              <p className="mt-2 text-xs text-muted-foreground">Waiting for the driver's location…</p>
+              <p className="mt-2 text-xs text-muted-foreground">
+                Waiting for the driver's location…
+              </p>
             )}
             {driver.profile?.phone ? (
               <a
@@ -340,7 +376,9 @@ function ActiveTrip({ tripId, data, onDone }: { tripId: string; data: any; onDon
       {["accepted", "arriving"].includes(trip.status) && trip.start_pin ? (
         <div className="card-uza bg-accent/10 p-4 text-center">
           <p className="text-xs font-semibold text-muted-foreground">{t("rider.givepin")}</p>
-          <p className="font-display text-5xl font-bold tracking-[0.3em] text-foreground">{trip.start_pin}</p>
+          <p className="font-display text-5xl font-bold tracking-[0.3em] text-foreground">
+            {trip.start_pin}
+          </p>
           <p className="mt-1 text-xs text-muted-foreground">{t("rider.pinhelp")}</p>
         </div>
       ) : null}
@@ -377,9 +415,7 @@ function ActiveTrip({ tripId, data, onDone }: { tripId: string; data: any; onDon
         </div>
       ) : null}
 
-      {trip.status === "completed" ? (
-        <AdSlot placement="post_trip" audience="riders" />
-      ) : null}
+      {trip.status === "completed" ? <AdSlot placement="post_trip" audience="riders" /> : null}
 
       {trip.status === "completed" ? (
         <div className="card-uza space-y-3 p-4">
@@ -387,7 +423,9 @@ function ActiveTrip({ tripId, data, onDone }: { tripId: string; data: any; onDon
           <div className="flex gap-2">
             {[1, 2, 3, 4, 5].map((s) => (
               <button key={s} onClick={() => setStars(s)}>
-                <Star className={`size-7 ${s <= stars ? "fill-accent text-accent" : "text-muted-foreground"}`} />
+                <Star
+                  className={`size-7 ${s <= stars ? "fill-accent text-accent" : "text-muted-foreground"}`}
+                />
               </button>
             ))}
           </div>
@@ -447,25 +485,33 @@ function ActiveTrip({ tripId, data, onDone }: { tripId: string; data: any; onDon
           </p>
 
           <div className="grid grid-cols-2 gap-2">
-            {["Driver is too far", "I no longer need it", "Wrong pick-up point", "Other"].map((r) => (
-              <button
-                key={r}
-                onClick={() => setCancelReason(r)}
-                className={`rounded-xl border px-3 py-2 text-xs font-semibold ${
-                  cancelReason === r ? "border-primary bg-primary/10" : "border-border"
-                }`}
-              >
-                {r}
-              </button>
-            ))}
+            {["Driver is too far", "I no longer need it", "Wrong pick-up point", "Other"].map(
+              (r) => (
+                <button
+                  key={r}
+                  onClick={() => setCancelReason(r)}
+                  className={`rounded-xl border px-3 py-2 text-xs font-semibold ${
+                    cancelReason === r ? "border-primary bg-primary/10" : "border-border"
+                  }`}
+                >
+                  {r}
+                </button>
+              ),
+            )}
           </div>
           <button
             disabled={!cancelReason || cancelling}
             onClick={async () => {
               setCancelling(true);
               try {
-                await cancelFn({ data: { trip_id: tripId, status: "cancelled_by_rider", reason: cancelReason } });
-                toast.success(pendingFee > 0 ? `Trip cancelled. ${rwf(pendingFee)} was charged.` : "Trip cancelled. Nothing was charged.");
+                await cancelFn({
+                  data: { trip_id: tripId, status: "cancelled_by_rider", reason: cancelReason },
+                });
+                toast.success(
+                  pendingFee > 0
+                    ? `Trip cancelled. ${rwf(pendingFee)} was charged.`
+                    : "Trip cancelled. Nothing was charged.",
+                );
                 onDone();
               } catch (e) {
                 toast.error(e instanceof Error ? e.message : String(e));

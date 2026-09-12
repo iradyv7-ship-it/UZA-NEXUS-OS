@@ -19,7 +19,9 @@ export function useDriverPing(enabled: boolean, intervalMs = 12000) {
       const now = Date.now();
       if (now - last.current < intervalMs) return;
       last.current = now;
-      void pingRef.current({ data: { lat: pos.coords.latitude, lng: pos.coords.longitude } }).catch(() => {});
+      void pingRef
+        .current({ data: { lat: pos.coords.latitude, lng: pos.coords.longitude } })
+        .catch(() => {});
     };
 
     navigator.geolocation.getCurrentPosition(send, () => {}, { timeout: 8000 });

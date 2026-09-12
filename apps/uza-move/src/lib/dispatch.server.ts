@@ -64,7 +64,11 @@ export async function expireStaleTrips(db: SupabaseClient) {
  * Offer the trip to the closest online driver. Ties and missing GPS fall back to
  * UZA score, so a driver who has not pinged yet never blocks the queue.
  */
-export async function offerToNearestDriver(db: SupabaseClient, trip: TripRow, exclude: string[] = []) {
+export async function offerToNearestDriver(
+  db: SupabaseClient,
+  trip: TripRow,
+  exclude: string[] = [],
+) {
   const list = (await candidates(db, trip.vehicle_type)).filter((d) => !exclude.includes(d.id));
   if (!list.length) return null;
 
@@ -73,7 +77,10 @@ export async function offerToNearestDriver(db: SupabaseClient, trip: TripRow, ex
       d,
       km:
         d.current_lat != null && d.current_lng != null
-          ? haversineKm({ lat: d.current_lat, lng: d.current_lng }, { lat: trip.pickup_lat, lng: trip.pickup_lng })
+          ? haversineKm(
+              { lat: d.current_lat, lng: d.current_lng },
+              { lat: trip.pickup_lat, lng: trip.pickup_lng },
+            )
           : Number.POSITIVE_INFINITY,
     }))
     .sort((a, b) => (a.km === b.km ? Number(b.d.uza_score) - Number(a.d.uza_score) : a.km - b.km));
@@ -94,7 +101,10 @@ export async function offerToNearestDriver(db: SupabaseClient, trip: TripRow, ex
  * True when this driver may see/accept the trip: either they hold the live
  * offer, or the window lapsed and the request is open to everyone nearby.
  */
-export function offerOpenTo(trip: { offered_driver_id?: string | null; offered_until?: string | null }, driverId: string) {
+export function offerOpenTo(
+  trip: { offered_driver_id?: string | null; offered_until?: string | null },
+  driverId: string,
+) {
   if (!trip.offered_driver_id || trip.offered_driver_id === driverId) return true;
   if (!trip.offered_until) return true;
   return new Date(trip.offered_until).getTime() < Date.now();
@@ -102,7 +112,11 @@ export function offerOpenTo(trip: { offered_driver_id?: string | null; offered_u
 
 /** How much platform commission this driver still owes from cash trips. */
 export async function commissionOwed(db: SupabaseClient, userId: string) {
-  const { data } = await db.from("wallets").select("commission_owed").eq("owner_id", userId).maybeSingle();
+  const { data } = await db
+    .from("wallets")
+    .select("commission_owed")
+    .eq("owner_id", userId)
+    .maybeSingle();
   return Number(data?.commission_owed ?? 0);
 }
 

@@ -5,7 +5,12 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { AppShell } from "@/components/AppShell";
 import { useSession } from "@/hooks/useSession";
 import { rwf } from "@/lib/format";
-import { getAdvertiserDashboard, createAdvertiser, createCampaign, setCampaignStatus } from "@/lib/ads.functions";
+import {
+  getAdvertiserDashboard,
+  createAdvertiser,
+  createCampaign,
+  setCampaignStatus,
+} from "@/lib/ads.functions";
 import { toast } from "sonner";
 import { Megaphone } from "lucide-react";
 
@@ -19,7 +24,10 @@ export const Route = createFileRoute("/ads")({
           "Advertise your business to UZA riders and drivers: choose placement, timing and budget.",
       },
       { property: "og:title", content: "Advertise on UZA Move" },
-      { property: "og:description", content: "Self-serve advertising to UZA riders and drivers across Rwanda." },
+      {
+        property: "og:description",
+        content: "Self-serve advertising to UZA riders and drivers across Rwanda.",
+      },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
     ],
@@ -126,7 +134,8 @@ function AdsPage() {
           <Megaphone className="h-7 w-7 text-primary" />
           <h1 className="mt-2 text-lg font-bold">Amamaza kuri UZA</h1>
           <p className="text-sm text-muted-foreground">
-            Gera ku bagenzi n'abashoferi ku giciro gito. Wishyura ukurikije abareba (CPM) cyangwa abakanda (CPC).
+            Gera ku bagenzi n'abashoferi ku giciro gito. Wishyura ukurikije abareba (CPM) cyangwa
+            abakanda (CPC).
           </p>
           <input
             value={company}
@@ -163,7 +172,9 @@ function AdsPage() {
       </div>
 
       <section className="rounded-2xl border border-border bg-card p-4">
-        <h2 className="mb-3 text-sm font-bold uppercase tracking-wide text-muted-foreground">Kwamamaza gushya</h2>
+        <h2 className="mb-3 text-sm font-bold uppercase tracking-wide text-muted-foreground">
+          Kwamamaza gushya
+        </h2>
         <div className="space-y-2">
           <input
             value={form.name}
@@ -193,7 +204,9 @@ function AdsPage() {
           <div className="grid grid-cols-2 gap-2">
             <select
               value={form.placement}
-              onChange={(e) => setForm({ ...form, placement: e.target.value as typeof form.placement })}
+              onChange={(e) =>
+                setForm({ ...form, placement: e.target.value as typeof form.placement })
+              }
               className="rounded-xl border border-border bg-background px-3 py-2.5 text-sm"
             >
               {PLACEMENTS.map((p) => (
@@ -204,16 +217,30 @@ function AdsPage() {
             </select>
             <select
               value={form.audience}
-              onChange={(e) => setForm({ ...form, audience: e.target.value as typeof form.audience })}
+              onChange={(e) =>
+                setForm({ ...form, audience: e.target.value as typeof form.audience })
+              }
               className="rounded-xl border border-border bg-background px-3 py-2.5 text-sm"
             >
               <option value="riders">Abagenzi</option>
               <option value="drivers">Abashoferi</option>
               <option value="both">Bombi</option>
             </select>
-            <Num label="Isaha itangira" value={form.hour_start} onChange={(v) => setForm({ ...form, hour_start: v })} />
-            <Num label="Isaha irangira" value={form.hour_end} onChange={(v) => setForm({ ...form, hour_end: v })} />
-            <Num label="Ingengo y'imari (RWF)" value={form.budget} onChange={(v) => setForm({ ...form, budget: v })} />
+            <Num
+              label="Isaha itangira"
+              value={form.hour_start}
+              onChange={(v) => setForm({ ...form, hour_start: v })}
+            />
+            <Num
+              label="Isaha irangira"
+              value={form.hour_end}
+              onChange={(v) => setForm({ ...form, hour_end: v })}
+            />
+            <Num
+              label="Ingengo y'imari (RWF)"
+              value={form.budget}
+              onChange={(v) => setForm({ ...form, budget: v })}
+            />
             <label className="block">
               <span className="text-[11px] text-muted-foreground">Uburyo bwo kwishyura</span>
               <select
@@ -225,8 +252,16 @@ function AdsPage() {
                 <option value="cpc">CPC (bakanda)</option>
               </select>
             </label>
-            <Num label="CPM (RWF)" value={form.cpm} onChange={(v) => setForm({ ...form, cpm: v })} />
-            <Num label="CPC (RWF)" value={form.cpc} onChange={(v) => setForm({ ...form, cpc: v })} />
+            <Num
+              label="CPM (RWF)"
+              value={form.cpm}
+              onChange={(v) => setForm({ ...form, cpm: v })}
+            />
+            <Num
+              label="CPC (RWF)"
+              value={form.cpc}
+              onChange={(v) => setForm({ ...form, cpc: v })}
+            />
           </div>
 
           <button
@@ -240,9 +275,14 @@ function AdsPage() {
       </section>
 
       <section className="rounded-2xl border border-border bg-card p-4">
-        <h2 className="mb-1 text-sm font-bold uppercase tracking-wide text-muted-foreground">Campaigns zawe</h2>
+        <h2 className="mb-1 text-sm font-bold uppercase tracking-wide text-muted-foreground">
+          Campaigns zawe
+        </h2>
         {dash.data.campaigns.map((c) => (
-          <div key={c.id} className="flex items-center justify-between gap-3 border-b border-border py-3 last:border-0">
+          <div
+            key={c.id}
+            className="flex items-center justify-between gap-3 border-b border-border py-3 last:border-0"
+          >
             <div className="min-w-0">
               <p className="truncate text-sm font-semibold">{c.name}</p>
               <p className="text-xs text-muted-foreground">
@@ -253,7 +293,10 @@ function AdsPage() {
             {(c.status === "running" || c.status === "paused" || c.status === "approved") && (
               <button
                 onClick={() =>
-                  toggle.mutate({ campaignId: c.id, status: c.status === "running" ? "paused" : "running" })
+                  toggle.mutate({
+                    campaignId: c.id,
+                    status: c.status === "running" ? "paused" : "running",
+                  })
                 }
                 className="shrink-0 rounded-lg border border-border px-3 py-1.5 text-xs font-semibold"
               >
@@ -262,13 +305,23 @@ function AdsPage() {
             )}
           </div>
         ))}
-        {!dash.data.campaigns.length && <p className="py-3 text-sm text-muted-foreground">Nta campaign irahaba.</p>}
+        {!dash.data.campaigns.length && (
+          <p className="py-3 text-sm text-muted-foreground">Nta campaign irahaba.</p>
+        )}
       </section>
     </AppShell>
   );
 }
 
-function Num({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void }) {
+function Num({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+}) {
   return (
     <label className="block">
       <span className="text-[11px] text-muted-foreground">{label}</span>
