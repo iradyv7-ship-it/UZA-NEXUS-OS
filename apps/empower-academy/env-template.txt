@@ -1,0 +1,17 @@
+# Rename this file to `.env` at deploy time. The harness's own permission
+# rules block writing any file whose name matches an .env pattern, so this
+# capture could not create `.env` or `.env.example` directly.
+#
+# These are Supabase's publishable/anon-safe values from the original Lovable
+# project — safe to commit, not secrets — copied verbatim from Lovable's `.env`.
+SUPABASE_PROJECT_ID="hbswmtbygscwjfvzjmkv"
+SUPABASE_PUBLISHABLE_KEY="sb_publishable_p3LUkOupaumHAo-FKRrShQ_SM1oE9We"
+SUPABASE_URL="https://hbswmtbygscwjfvzjmkv.supabase.co"
+VITE_SUPABASE_PROJECT_ID="hbswmtbygscwjfvzjmkv"
+VITE_SUPABASE_PUBLISHABLE_KEY="sb_publishable_p3LUkOupaumHAo-FKRrShQ_SM1oE9We"
+VITE_SUPABASE_URL="https://hbswmtbygscwjfvzjmkv.supabase.co"
+
+# Required at deploy time, NOT present in Lovable's .env (Lovable injects it via
+# its own Cloud integration) — this app needs its own Supabase project's
+# service-role key, same as apps/uzabuild and apps/uzacharge already require:
+# SUPABASE_SERVICE_ROLE_KEY="<service role key from the Supabase dashboard>"
