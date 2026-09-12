@@ -15,6 +15,7 @@ import { UmurimoModule } from './umurimo/umurimo.module';
 import { IntakeModule } from './intake/intake.module';
 import { EventDispatchModule } from './integration/event-dispatch.module';
 import { HealthController } from './health.controller';
+import { EmpowerModule } from './empower/empower.module';
 
 @Module({
   imports: [
@@ -36,6 +37,7 @@ import { HealthController } from './health.controller';
     PlanningModule,
     UmurimoModule,
     IntakeModule,
+    EmpowerModule,
     // Composition root for cross-module event fan-out: starts the BullMQ consumer that
     // delivers published outbox events to each module's idempotent handlers.
     EventDispatchModule,

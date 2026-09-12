@@ -60,6 +60,7 @@ import {
     PlanningReviewController,
   ],
   exports: [
+    PlanningAccessService,
     InitiativeService,
     DecisionService,
     ResponsibilityService,
