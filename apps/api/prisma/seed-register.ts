@@ -192,8 +192,18 @@ const REGISTER: Row[] = [
     artifactUrl: 'https://claude.ai/code/artifact/0bfbd133-169d-42ac-ac40-c87d21b45ecd',
   },
   {
+    ref: 'INIT-2026-0025',
+    name: 'Twara EV — the product: own an electric taxi through UZA Empower',
+    kind: 'venture',
+    ventureCode: 'EMPOWER',
+    ownerId: YVES,
+    attention: 'runs',
+    nextAction:
+      'Named 12 September. Twara EV is the product; Tunga Taxi is its cohort with Unguka; the NCBA line is the second cohort. Two things gate cohort 1 teaching: a named Empower delivery lead, and the connector standard on each vehicle and each public charger. Decide D0o — which academy is the record — before either has data.',
+  },
+  {
     ref: 'INIT-2026-0011',
-    name: 'Tunga Taxi driver financing with LOLC Unguka',
+    name: 'Tunga Taxi — the Unguka cohort of Twara EV',
     kind: 'venture',
     ventureCode: 'MOBILITY',
     ownerId: SCORAH,
