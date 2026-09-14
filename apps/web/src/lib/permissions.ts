@@ -62,3 +62,15 @@ export function isPartner(actor: Actor): boolean {
 export function showSeedTools(actor: Actor): boolean {
   return actor.role === 'venture_manager' || actor.role === 'ceo';
 }
+
+/**
+ * Gate for the logistics ops workspace (Cecilia: book shipments, vessel/voyage, container
+ * numbers, venture tagging, partner rates). PROVISIONAL — today only `venture_manager`/`ceo`
+ * hold the `shipment:create` grant this workspace's API calls require; there is no dedicated
+ * internal logistics-coordinator role yet. See
+ * docs/contract-requests/2026-09-14-logistics-coordinator-role.md. Swap this to check for
+ * that role once it lands; this is UX only, the API remains the real guard.
+ */
+export function canManageShipments(actor: Actor): boolean {
+  return actor.role === 'venture_manager' || actor.role === 'ceo';
+}

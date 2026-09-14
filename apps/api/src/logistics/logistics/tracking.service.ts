@@ -76,8 +76,13 @@ export class TrackingService {
   }
 
   /**
-   * Delay a shipment: update the ETA + status, publish `shipment.delayed`, and fan out to
-   * the five affected parties, each in their own role (CF-023).
+   * Delay a shipment: revise the PLANNED eta + status, publish `shipment.delayed`, and fan
+   * out to the five affected parties, each in their own role (CF-023).
+   *
+   * This writes `etaPlanned` only — a delay revises the plan, it is not a confirmed actual
+   * arrival (that is `ShipmentDetailsService.updateDetails`'s `etaActual`, set once the
+   * carrier confirms). Same planned-vs-actual discipline as declared/measured/billed CBM:
+   * neither field is ever overwritten by the other.
    */
   async delayShipment(
     actor: Actor,
@@ -89,7 +94,7 @@ export class TrackingService {
     await this.authz.authorize(actor, 'shipment', 'create');
     const shipment = await this.prisma.shipment.findUnique({ where: { ref: shipmentRef } });
     if (!shipment) throw new NotFoundException(`shipment ${shipmentRef} not found`);
-    const oldEta = shipment.eta;
+    const oldEta = shipment.etaPlanned;
 
     const aPackage = await this.prisma.package.findFirst({ where: { shipmentRef } });
     const customerRef = aPackage?.customerRef ?? 'customer';
@@ -97,7 +102,7 @@ export class TrackingService {
     const result = await this.outbox.emit(actor.userId, async (tx, emit) => {
       const updated = await tx.shipment.update({
         where: { ref: shipmentRef },
-        data: { eta: newEta, status: 'delayed' },
+        data: { etaPlanned: newEta, status: 'delayed' },
       });
       await emit('shipment.delayed', { shipmentRef, oldEta, newEta, reason });
       return updated;

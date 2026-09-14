@@ -26,8 +26,8 @@ const bookShipment = async () => {
     packageRefs: refs,
     container: 'MSKU-1',
     carrier: 'Maersk',
-    etd: '2026-08-01',
-    eta: '2026-09-15',
+    etdPlanned: '2026-08-01',
+    etaPlanned: '2026-09-15',
     partnerId: 'IMARI',
   });
   return { shipment, refs };

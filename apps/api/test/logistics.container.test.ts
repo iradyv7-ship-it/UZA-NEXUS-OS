@@ -31,8 +31,8 @@ const book = (refs: string[], partnerId?: string) =>
     packageRefs: refs,
     container: 'MSKU-1234567',
     carrier: 'Maersk',
-    etd: '2026-08-01',
-    eta: '2026-09-15',
+    etdPlanned: '2026-08-01',
+    etaPlanned: '2026-09-15',
     partnerId,
   });
 
@@ -143,8 +143,8 @@ describe('container booking — three independent gates, in order', () => {
         packageRefs: refs,
         container: 'X',
         carrier: 'Y',
-        etd: '',
-        eta: '',
+        etdPlanned: '',
+        etaPlanned: '',
       }),
     ).rejects.toMatchObject({ code: 'ACCESS_DENIED_ROLE' });
   });

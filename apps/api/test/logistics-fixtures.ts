@@ -14,6 +14,9 @@ import { FreightService } from '../src/logistics/logistics/freight.service';
 import { TrackingService } from '../src/logistics/logistics/tracking.service';
 import { DeliveryService } from '../src/logistics/logistics/delivery.service';
 import { PartnerPortalService } from '../src/logistics/logistics/partner-portal.service';
+import { ShipmentDetailsService } from '../src/logistics/logistics/shipment-details.service';
+import { ConsigneeService } from '../src/logistics/logistics/consignee.service';
+import { PartnerRateService } from '../src/logistics/logistics/partner-rate.service';
 
 // Services instantiated directly — the platform handoff is explicit that Vitest tests do
 // not use the DI container. A raw PrismaClient stands in for PrismaService (same surface).
@@ -26,11 +29,20 @@ export const orderPayments = new OrderPaymentService(prisma as never);
 export const qualityGate = new QualityGateService(prisma as never);
 export const receiving = new ReceivingService(prisma as never, authz, outbox);
 export const release = new ReleaseService(prisma as never, authz, qualityGate);
-export const containers = new ContainerService(prisma as never, authz, outbox, orderPayments);
+export const containers = new ContainerService(
+  prisma as never,
+  authz,
+  outbox,
+  orderPayments,
+  notifications,
+);
 export const freight = new FreightService(prisma as never, authz, outbox);
 export const tracking = new TrackingService(prisma as never, authz, outbox, notifications);
 export const deliveries = new DeliveryService(prisma as never, authz, outbox, orderPayments);
 export const partnerPortal = new PartnerPortalService(prisma as never, authz);
+export const shipmentDetails = new ShipmentDetailsService(prisma as never, authz, containers);
+export const consignees = new ConsigneeService(prisma as never, authz);
+export const partnerRates = new PartnerRateService(prisma as never, authz);
 
 // ---- refs ------------------------------------------------------------------
 export const ORDER_REF = 'ORD-BULK-2026-0001';

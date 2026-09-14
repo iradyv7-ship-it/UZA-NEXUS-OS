@@ -100,8 +100,8 @@ export default async function PartnerShipmentPage({
                 <span className="font-mono text-xs">{s.container}</span>
               </Field>
               <Field label={t('ship.destination')}>{t(`dest.${s.destination}`)}</Field>
-              <Field label={t('ship.etd')}>{s.etd}</Field>
-              <Field label={t('ship.eta')}>{s.eta}</Field>
+              <Field label={t('ship.etd')}>{s.etdActual ?? s.etdPlanned}</Field>
+              <Field label={t('ship.eta')}>{s.etaActual ?? s.etaPlanned}</Field>
               <Field label={t('ship.daysWaiting')}>{s.daysWaitingForConsolidation}</Field>
               {/* Freight cost is NEVER shown to the partner — the API returns "***"; render the
               mask honestly rather than omit the row, so the masking is visible, not silent. */}

@@ -32,8 +32,8 @@ const bookShipment = async (opts: { orderRef: string; poRef: string; container: 
     packageRefs: refs,
     container: opts.container,
     carrier: 'Maersk',
-    etd: '2026-08-01',
-    eta: '2026-09-15',
+    etdPlanned: '2026-08-01',
+    etaPlanned: '2026-09-15',
     partnerId: 'IMARI',
   });
   await freight.recordBilledWeight(vm, shipment.ref, 3.0, M(3000));

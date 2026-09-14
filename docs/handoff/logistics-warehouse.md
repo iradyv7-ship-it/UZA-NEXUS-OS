@@ -261,3 +261,95 @@ local constant pending a contract-request (below).
 - `docs/contract-requests/2026-07-26-container-capacity.md` — add
   `CONTAINER_RT_CAPACITY = 28.0` to `policy.ts` (ties to the container-utilisation founder
   decision). Rendered locally meanwhile.
+- `docs/contract-requests/2026-09-14-consignee-id.md` — add `consignee: 'CNE-{seq:5}'` to
+  `ID_PATTERNS`. Rendered locally (`logistics-ids.ts::consigneeRef`) meanwhile.
+- `docs/contract-requests/2026-09-14-logistics-coordinator-role.md` — add a
+  `logistics_coordinator` role (`shipment:*`, `package:read/update`, `tracking:*`,
+  `delivery:read`, `consignee:*`, `customer:read`) so an internal ops coordinator (Cecilia)
+  doesn't have to be a `venture_manager` to book shipments. Until accepted, the ops
+  workspace and its new endpoints are gated on `venture_manager`/`ceo` (the only roles
+  holding `shipment:create` today).
+
+---
+
+## 2026-09-14 gap-closure audit — what was added
+
+Six concrete gaps a fresh audit confirmed were genuinely absent, closed on top of everything
+above WITHOUT changing the three booking gates' logic:
+
+1. **Shipment tracking fields.** `Shipment` gained `vesselName`, `voyageNumber`, `entryPort`
+   (new `EntryPort` enum: `MOMBASA` | `DAR_ES_SALAAM` — the ocean port, distinct from
+   `destination`, the final Rwanda/DRC delivery city), and split `etd`/`eta` into
+   `etdPlanned`/`etdActual` and `etaPlanned`/`etaActual` — the SAME planned-vs-actual
+   discipline as declared/measured/billed CBM; neither is ever overwritten by the other.
+   `TrackingService.delayShipment` now writes `etaPlanned` only (a delay revises the plan, it
+   is not a confirmed actual). `departureDate`/`transitTimeDays` derive cleanly from the
+   planned/actual pair (`shipment-timing.ts::shipmentTiming`) so they are NOT persisted
+   columns — storing them would risk drifting from the source dates.
+2. **`Consignee`** (`ref`, `name`, `tinNumber`, `phone`, `address`, `email`) — the receiving
+   party, distinct from the ordering `Customer`. Attachable to a `Package` (its own
+   `consigneeRef`) or a `Shipment` (default for packages that don't carry their own) via
+   `ConsigneeService`. Authorisation is anchored on the resource being touched
+   (`package:update` / `shipment:create`) since no `consignee` grant exists in
+   `ROLE_GRANTS` — inventing one would have been a contract change for a sub-field mutation,
+   the same reasoning `ReleaseService.allocateDestination` already uses.
+3. **LOOSE cargo.** `Package` gained `cargoType` (`CONSOLIDATED` default | `LOOSE`),
+   `pricePerCbmMinor`, `photoUrl`, `goodsDescription`. `ReleaseService.setCargoDetails`
+   requires a positive `pricePerCbmMinor` before a package can be `LOOSE`, and
+   `looseCargoPriceMinor(pricePerCbmMinor, cbm)` (pure, unit-tested) is the real sellable
+   line total — entirely separate from `FreightService`'s `revenueTon` cost-allocation math.
+   `ReleaseService.listLoadable` (QC-released, hold-free, destinated, not yet shipped) feeds
+   the booking form so package refs are never typed in blind.
+4. **Venture tagging.** `Shipment.ventureCode` (free string, same convention as the Command
+   Center register's `ventureCode` — not a shared enum). Chosen over `PurchaseOrder` because
+   that model belongs to sourcing-quality, out of this module's ownership.
+5. **Cecilia's ops workspace** — `apps/web/src/app/(app)/ops/shipments/` (list + book) and
+   `[ref]/` (vessel/voyage/actual-dates/venture updates, partner-rate logging, consignee).
+   Gated by `canManageShipments` (`apps/web/src/lib/permissions.ts`) —
+   `venture_manager`/`ceo` only today, pending the role contract-request above. New API
+   surface: `PATCH /containers/:ref` (`ShipmentDetailsService.updateDetails`, never touches
+   the three gates), `GET /containers/:ref/timing`, `GET /release/loadable`,
+   `GET /shipments` + `GET /shipments/:ref` (`ShipmentQueryController` — delegates to
+   `PartnerPortalService`'s already-tested scope mirror rather than re-implementing it, so
+   an internal caller and Imari share one proven scoping/masking pipeline),
+   `POST/GET /consignees`, `POST /partner-rates` + history/current.
+6. **Container-confirmed notification fan-out.** The moment `Shipment.container` is set —
+   at booking (`ContainerService.createShipment`) or corrected later
+   (`ShipmentDetailsService.updateDetails`) — an in-app `Notification` fires to each distinct
+   customer among the packages (`audience: 'customer'`) and to customer-care staff
+   (`audience: 'front_office'` — `NotificationAudience` has no dedicated `customer_care`
+   value; `front_office` is the existing customer-facing coordination role). Copy is built by
+   pure functions in `container-notice.ts` (`customerContainerMessage` warm/human,
+   `careContainerMessage` information-dense) — unit-tested directly, no I/O. Still in-app/DB
+   only, per `NotificationService`'s existing scope (real WhatsApp/email is a later sprint,
+   unchanged by this pass).
+
+**Item 7 (weekly partner price updates) — built narrow, on purpose.** No scheduler/cron
+infrastructure exists anywhere in this monorepo (confirmed: no `@Cron`/BullMQ-repeatable
+job). Rather than half-build one, this ships the manually-triggerable half only:
+`PartnerRateService.recordWeeklyRate` appends a `PartnerRateCard` row (never an UPDATE —
+`history`/`currentRate` read the append-only log, "current" = most recent by `observedAt`).
+This is the LOGISTICS-owned equivalent of `SupplierPricePoint` — that model is
+sourcing-quality's (factory/supplier pricing), out of this module's ownership; duplicating
+its logic here would have been the cross-module reach the constitution forbids. Weekly
+automation (an `@nestjs/schedule` job or a BullMQ repeatable job in `apps/worker`) is a
+stated follow-up, not built in this pass.
+
+**Migration:** `20260914130000_logistics_shipment_details_and_consignee` (hand-written — no
+live Postgres reachable in the sandbox this pass was built in; mirrors this repo's existing
+hand-written migration style, e.g. `20260830153000_remove_customer_role`). Backfills the
+existing single `etd`/`eta` into `etdPlanned`/`etaPlanned` before dropping the old columns.
+
+**Verified:** `apps/api` and `apps/web` both typecheck clean (`tsc --noEmit`) against the new
+schema/services/pages. `pnpm exec prisma generate` succeeds. The new pure-function suite
+(`test/logistics.gap-closure-pure.test.ts`, 11 assertions — `shipmentTiming`,
+`customerContainerMessage`/`careContainerMessage`, `looseCargoPriceMinor`) runs and passes
+with NO database. The new DB-backed suite (`test/logistics.gap-closure-db.test.ts`, 15
+assertions covering all six items plus authorisation) and the renamed-field updates to the
+existing container/tracking/freight/delivery/partner test files are real and structurally
+correct — confirmed by a clean typecheck and by running them, where they fail ONLY on
+`Can't reach database server at localhost:5432` (no Postgres was reachable in this sandbox;
+the pre-existing `logistics.container.test.ts` fails identically in the same environment,
+confirming this is an environment limitation, not a regression). They have not been run
+against a live Postgres and that must happen before this is called fully done per CLAUDE.md
+§5.

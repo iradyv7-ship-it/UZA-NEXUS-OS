@@ -144,15 +144,26 @@ export interface ProjectListRow {
 export type ShipmentStatus = 'planned' | 'in_transit' | 'delayed' | 'arrived' | 'delivered';
 export type Destination = 'KIGALI' | 'GOMA' | 'BUKAVU' | 'UZA_STOCK' | 'OTHER';
 
+export type EntryPort = 'MOMBASA' | 'DAR_ES_SALAAM';
+
 export interface ShipmentView {
   ref: string;
   container: string;
   carrier: string;
+  vesselName: string | null;
+  voyageNumber: string | null;
+  entryPort: EntryPort | null;
   destination: Destination;
-  etd: string;
-  eta: string;
+  /** Planned vs actual — never overwritten by each other (same discipline as the
+   *  declared/measured/billed CBM numbers). */
+  etdPlanned: string;
+  etdActual: string | null;
+  etaPlanned: string;
+  etaActual: string | null;
   status: ShipmentStatus;
   partnerId: string | null;
+  ventureCode: string | null;
+  consigneeRef: string | null;
   daysWaitingForConsolidation: number;
   /** Freight cost figures — masked "***" for a logistics_partner, never a number. */
   billedRevenueTon: Maskable<number | null>;

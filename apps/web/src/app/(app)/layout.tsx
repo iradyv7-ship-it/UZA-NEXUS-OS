@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { translator } from '@/i18n';
 import { getLocale, getSession } from '@/lib/session';
-import { can, homePathFor } from '@/lib/permissions';
+import { can, homePathFor, canManageShipments } from '@/lib/permissions';
 import { LocaleSwitch } from '@/components/LocaleSwitch';
 import { SHELL_PADDING_X, SHELL_WIDTH } from '@/components/ui';
 import { logoutAction } from '@/app/actions';
@@ -19,6 +19,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const t = translator(locale);
   const roleLabel = t(`role.${session.actor.role}`);
   const showVerifyQueue = can(session.actor, 'payment', 'read');
+  const showOps = canManageShipments(session.actor);
   const showCommand = session.actor.role === 'ceo' || session.actor.role === 'venture_manager';
   const home = homePathFor(session.actor);
 
@@ -106,6 +107,11 @@ export default async function AppLayout({ children }: { children: React.ReactNod
               {showVerifyQueue && (
                 <Link href="/finance/payments" className={NAV}>
                   {t('nav.verifyQueue')}
+                </Link>
+              )}
+              {showOps && (
+                <Link href="/ops/shipments" className={NAV}>
+                  Ops
                 </Link>
               )}
               <LocaleSwitch locale={locale} />

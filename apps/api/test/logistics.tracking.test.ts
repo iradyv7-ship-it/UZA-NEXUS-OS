@@ -17,8 +17,8 @@ const bookShipment = async () => {
     packageRefs: refs,
     container: 'MSKU-1',
     carrier: 'Maersk',
-    etd: '2026-08-01',
-    eta: '2026-09-15',
+    etdPlanned: '2026-08-01',
+    etaPlanned: '2026-09-15',
     partnerId: 'IMARI',
   });
   return shipment;
@@ -68,7 +68,7 @@ describe('CF-023 — delay fans out to five distinct parties', () => {
 
     const updated = await prisma.shipment.findUniqueOrThrow({ where: { ref: s.ref } });
     expect(updated.status).toBe('delayed');
-    expect(updated.eta).toBe('2026-10-01');
+    expect(updated.etaPlanned).toBe('2026-10-01');
 
     const events = await prisma.outboxEvent.findMany({ where: { name: 'shipment.delayed' } });
     expect(events).toHaveLength(1);

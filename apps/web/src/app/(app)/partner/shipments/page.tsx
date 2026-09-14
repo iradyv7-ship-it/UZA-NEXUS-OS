@@ -83,11 +83,11 @@ function ShipmentCard({ s, t, locale }: { s: ShipmentView; t: Translate; locale:
         <div className="mt-3 grid grid-cols-2 gap-2 rounded-lg bg-surface2 px-3 py-2 text-xs">
           <div>
             <p className="text-[11px] uppercase tracking-wide text-fgSubtle">{t('ship.etd')}</p>
-            <p className="font-medium text-fg">{s.etd}</p>
+            <p className="font-medium text-fg">{s.etdActual ?? s.etdPlanned}</p>
           </div>
           <div>
             <p className="text-[11px] uppercase tracking-wide text-fgSubtle">{t('ship.eta')}</p>
-            <p className="font-medium text-fg">{s.eta}</p>
+            <p className="font-medium text-fg">{s.etaActual ?? s.etaPlanned}</p>
           </div>
         </div>
 
