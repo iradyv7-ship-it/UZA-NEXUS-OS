@@ -114,6 +114,57 @@ describe('sourcing — purchase order issuance', () => {
     ).toHaveLength(1);
   });
 
+  it('a PO issued against an FOB quote copies basis + inlandSeparable=false onto the PO', async () => {
+    const supplier = await suppliers.register(cecilia, {
+      nameEn: 'Anhui Freight Co',
+      nameZh: '安徽货运',
+    });
+    const quote = await rfqs.addQuote(cecilia, {
+      supplierRef: supplier.ref,
+      projectRef: PROJECT_REF,
+      unitCostMinor: UNIT_COST,
+      moq: 50,
+      leadTimeDays: 20,
+      unitCbm: 0.05,
+      unitKg: 12,
+      basis: 'FOB',
+    });
+
+    const po = await pos.create(cecilia, {
+      supplierRef: supplier.ref,
+      orderRef: ORDER_REF,
+      quoteRef: quote.ref,
+      qty: 10,
+      unitCostMinor: UNIT_COST,
+      unitCbm: 0.05,
+      unitKg: 12,
+    });
+
+    expect(po.basis).toBe('FOB');
+    expect(po.inlandSeparable).toBe(false);
+
+    const read = await pos.read(cecilia, po.ref);
+    expect(read.freightNote).toMatch(/UZA books the ocean leg/);
+  });
+
+  it('a PO with no quoteRef defaults to EXW / inlandSeparable=true, never trusting a stray caller flag to lie about it', async () => {
+    const { po } = await suppliedPo();
+    expect(po.basis).toBe('EXW');
+    expect(po.inlandSeparable).toBe(true);
+  });
+
+  it('assigns an origin sea-freight forwarder to a PO regardless of basis (UZA always books its own ocean leg)', async () => {
+    const { po } = await suppliedPo({ basis: 'FOB' });
+    const updated = await pos.assignOriginForwarder(cecilia, po.ref, {
+      forwarderName: 'Ningbo Sea Star Freight Co.',
+    });
+    expect(updated.originForwarderName).toBe('Ningbo Sea Star Freight Co.');
+
+    const read = await pos.read(cecilia, po.ref);
+    expect(read.originForwarderName).toBe('Ningbo Sea Star Freight Co.');
+    expect(read.freightNote).toMatch(/UZA books the ocean leg/);
+  });
+
   it('denies a sales agent from creating a purchase order (audited)', async () => {
     const { supplier } = await suppliedPo();
     await expect(

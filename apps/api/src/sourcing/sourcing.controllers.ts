@@ -8,6 +8,7 @@ import {
   IsObject,
   IsOptional,
   IsString,
+  Min,
   MinLength,
 } from 'class-validator';
 import { Prisma } from '@prisma/client';
@@ -16,6 +17,8 @@ import { CurrentActor } from '../platform/auth/current-actor.decorator';
 import { SupplierService } from './supplier/supplier.service';
 import { RfqService } from './quote/rfq.service';
 import { PurchaseOrderService } from './po/purchase-order.service';
+import { SupplierOfferService, type OfferAttachmentKind } from './offer/supplier-offer.service';
+import { SupplierDealService } from './deal/supplier-deal.service';
 
 const SUPPLIER_LIFECYCLES: readonly SupplierLifecycle[] = [
   'Discovered',
@@ -85,6 +88,65 @@ class CreatePurchaseOrderDto {
   @ApiProperty() @IsInt() unitCostMinor!: number;
   @ApiProperty() @IsNumber() unitCbm!: number;
   @ApiProperty() @IsNumber() unitKg!: number;
+  @ApiProperty({ required: false, enum: QUOTE_BASES }) @IsOptional() @IsIn(QUOTE_BASES) basis?:
+    'EXW' | 'FOB';
+  @ApiProperty({ required: false }) @IsOptional() @IsString() clientRequestId?: string;
+}
+
+class AssignOriginForwarderDto {
+  @ApiProperty({ required: false }) @IsOptional() @IsString() forwarderRef?: string;
+  @ApiProperty() @IsString() @MinLength(1) forwarderName!: string;
+}
+
+const OFFER_ATTACHMENT_KINDS = ['image', 'inspection_report', 'battery_health_certificate'] as const;
+
+class SubmitOfferDto {
+  @ApiProperty() @IsString() supplierRef!: string;
+  @ApiProperty({ required: false }) @IsOptional() @IsString() projectRef?: string;
+  @ApiProperty() @IsInt() unitCostMinor!: number;
+  @ApiProperty() @IsInt() qty!: number;
+  @ApiProperty() @IsInt() moq!: number;
+  @ApiProperty() @IsInt() leadTimeDays!: number;
+  @ApiProperty() @IsNumber() unitCbm!: number;
+  @ApiProperty() @IsNumber() unitKg!: number;
+  @ApiProperty({ required: false, enum: QUOTE_BASES }) @IsOptional() @IsIn(QUOTE_BASES) basis?:
+    'EXW' | 'FOB';
+  @ApiProperty({ required: false }) @IsOptional() @IsString() supplierContact?: string;
+  @ApiProperty({ required: false }) @IsOptional() @IsString() clientRequestId?: string;
+}
+
+class AddOfferAttachmentDto {
+  @ApiProperty({ enum: OFFER_ATTACHMENT_KINDS }) @IsIn(OFFER_ATTACHMENT_KINDS) kind!:
+    OfferAttachmentKind;
+  @ApiProperty() @IsString() uri!: string;
+  @ApiProperty({ required: false }) @IsOptional() @IsString() note?: string;
+  @ApiProperty({ required: false }) @IsOptional() @IsString() clientRequestId?: string;
+}
+
+class DecideOfferDto {
+  @ApiProperty() @IsString() @MinLength(1) decidedBy!: string;
+}
+
+class ReserveDealDto {
+  @ApiProperty() @IsString() offerRef!: string;
+  @ApiProperty() @IsString() @MinLength(1) confirmedBy!: string;
+  @ApiProperty({ required: false }) @IsOptional() @IsString() clientRequestId?: string;
+}
+
+class RecordDealInspectionDto {
+  @ApiProperty() @IsInt() @Min(0) critical!: number;
+  @ApiProperty() @IsInt() @Min(0) major!: number;
+  @ApiProperty() @IsInt() @Min(0) minor!: number;
+  @ApiProperty({ required: false }) @IsOptional() @IsString() inspectionRef?: string;
+  @ApiProperty({ required: false }) @IsOptional() @IsString() clientRequestId?: string;
+}
+
+class MarkBalanceDueDto {
+  @ApiProperty({ required: false }) @IsOptional() @IsString() clientRequestId?: string;
+}
+
+class ConfirmBalancePaidDto {
+  @ApiProperty() @IsString() @MinLength(1) confirmedBy!: string;
   @ApiProperty({ required: false }) @IsOptional() @IsString() clientRequestId?: string;
 }
 
@@ -181,6 +243,134 @@ export class PurchaseOrderController {
   read(@CurrentActor() actor: Actor, @Param('ref') ref: string) {
     return this.purchaseOrders.read(actor, ref);
   }
+
+  @Patch(':ref/origin-forwarder')
+  @ApiOperation({
+    summary:
+      'Record who books the sea leg for this PO — UZA always arranges its own ocean ' +
+      'freight regardless of basis (po:update)',
+  })
+  assignOriginForwarder(
+    @CurrentActor() actor: Actor,
+    @Param('ref') ref: string,
+    @Body() dto: AssignOriginForwarderDto,
+  ) {
+    return this.purchaseOrders.assignOriginForwarder(actor, ref, dto);
+  }
 }
 
-export const SOURCING_CONTROLLERS = [SupplierController, RfqController, PurchaseOrderController];
+@ApiTags('sourcing: supplier self-service (staff-relayed)')
+@ApiBearerAuth()
+@Controller('supplier-offers')
+export class SupplierOfferController {
+  constructor(private readonly offers: SupplierOfferService) {}
+
+  @Post()
+  @ApiOperation({
+    summary:
+      'Staff-relayed submission of a supplier-proposed deal, not in response to an RFQ ' +
+      '(supplierQuote:create). A full supplier login is a pending contract request.',
+  })
+  submit(@CurrentActor() actor: Actor, @Body() dto: SubmitOfferDto) {
+    return this.offers.submit(actor, { ...dto, unitCostMinor: dto.unitCostMinor as Minor });
+  }
+
+  @Post(':ref/attachments')
+  @ApiOperation({
+    summary:
+      'Attach evidence (image / inspection report / battery-health certificate) to an ' +
+      'offer (supplierQuote:update)',
+  })
+  addAttachment(
+    @CurrentActor() actor: Actor,
+    @Param('ref') ref: string,
+    @Body() dto: AddOfferAttachmentDto,
+  ) {
+    return this.offers.addAttachment(actor, ref, dto);
+  }
+
+  @Post(':ref/accept')
+  @ApiOperation({ summary: 'Accept an offer (supplierQuote:update)' })
+  accept(@CurrentActor() actor: Actor, @Param('ref') ref: string, @Body() dto: DecideOfferDto) {
+    return this.offers.accept(actor, ref, dto.decidedBy);
+  }
+
+  @Post(':ref/decline')
+  @ApiOperation({ summary: 'Decline an offer (supplierQuote:update)' })
+  decline(@CurrentActor() actor: Actor, @Param('ref') ref: string, @Body() dto: DecideOfferDto) {
+    return this.offers.decline(actor, ref, dto.decidedBy);
+  }
+
+  @Get(':ref')
+  @ApiOperation({ summary: 'Read an offer + attachments (supplierQuote:read, cost masked)' })
+  read(@CurrentActor() actor: Actor, @Param('ref') ref: string) {
+    return this.offers.read(actor, ref);
+  }
+}
+
+@ApiTags('sourcing: supplier deals (two-stage payment)')
+@ApiBearerAuth()
+@Controller('supplier-deals')
+export class SupplierDealController {
+  constructor(private readonly deals: SupplierDealService) {}
+
+  @Post()
+  @ApiOperation({
+    summary:
+      'Reserve a unit against an accepted offer; confirms the booking fee was paid — ' +
+      'human-only (po:approve)',
+  })
+  reserve(@CurrentActor() actor: Actor, @Body() dto: ReserveDealDto) {
+    return this.deals.reserve(actor, dto);
+  }
+
+  @Post(':ref/inspection')
+  @ApiOperation({
+    summary:
+      'Record the deal inspection outcome, graded by the shared threshold (critical>0 ' +
+      'fails); gates whether the balance step is reachable (po:update)',
+  })
+  recordInspection(
+    @CurrentActor() actor: Actor,
+    @Param('ref') ref: string,
+    @Body() dto: RecordDealInspectionDto,
+  ) {
+    return this.deals.recordInspectionResult(actor, ref, dto);
+  }
+
+  @Post(':ref/balance-due')
+  @ApiOperation({
+    summary: 'Open the balance step; requires a passing inspection — human-only (po:approve)',
+  })
+  markBalanceDue(
+    @CurrentActor() actor: Actor,
+    @Param('ref') ref: string,
+    @Body() dto: MarkBalanceDueDto,
+  ) {
+    return this.deals.markBalanceDue(actor, ref, dto.clientRequestId);
+  }
+
+  @Post(':ref/balance-paid')
+  @ApiOperation({ summary: 'Confirm the balance was paid — human-only (po:approve)' })
+  confirmBalancePaid(
+    @CurrentActor() actor: Actor,
+    @Param('ref') ref: string,
+    @Body() dto: ConfirmBalancePaidDto,
+  ) {
+    return this.deals.confirmBalancePaid(actor, ref, dto.confirmedBy, dto.clientRequestId);
+  }
+
+  @Get(':ref')
+  @ApiOperation({ summary: 'Read a deal + transition log (po:read, money masked)' })
+  read(@CurrentActor() actor: Actor, @Param('ref') ref: string) {
+    return this.deals.read(actor, ref);
+  }
+}
+
+export const SOURCING_CONTROLLERS = [
+  SupplierController,
+  RfqController,
+  PurchaseOrderController,
+  SupplierOfferController,
+  SupplierDealController,
+];

@@ -470,6 +470,7 @@ model Supplier {
   scoreEvents    SupplierScoreEvent[]
   priceHistory   SupplierPricePoint[]
   qualityHistory SupplierQualityRecord[]
+  offers         SupplierOffer[]
 
   @@index([lifecycle])
 }
@@ -592,20 +593,32 @@ model SupplierQuote {
 /// A purchase order to a supplier for a confirmed order. `declaredCbm`/`declaredKg`
 /// are what the FACTORY says — the first of the three volumetric numbers (declared,
 /// measured, billed). Publishing `po.issued` is owned here.
+///
+/// `basis`/`inlandSeparable` are copied from the linked SupplierQuote at issuance (never
+/// trusted from the caller when a quote exists — same discipline as RfqService.addQuote) so
+/// the cost basis survives past the quote. Regardless of basis, a SupplierQuote/PO price
+/// NEVER includes ocean freight (QuoteBasis has no CIF/DAP rung) — UZA (or a freight company
+/// it engages) always books the sea leg itself. `originForwarderRef`/`originForwarderName`
+/// record who does that; see docs/contract-requests/2026-09-14-supplier-deal-ids-policy-and-masking.md
+/// for the open question of whether this deserves its own contract-level field.
 model PurchaseOrder {
-  ref             String   @id
-  supplierRef     String
-  orderRef        String
-  quoteRef        String?
-  qty             Int
-  unitCostMinor   Int
-  poTotalMinor    Int
-  declaredCbm     Float
-  declaredKg      Float
-  status          PoStatus @default(issued)
-  clientRequestId String?  @unique
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  ref                 String     @id
+  supplierRef         String
+  orderRef            String
+  quoteRef            String?
+  qty                 Int
+  unitCostMinor       Int
+  poTotalMinor        Int
+  declaredCbm         Float
+  declaredKg          Float
+  status              PoStatus   @default(issued)
+  basis               QuoteBasis @default(EXW)
+  inlandSeparable     Boolean    @default(true)
+  originForwarderRef  String?
+  originForwarderName String?
+  clientRequestId     String?    @unique
+  createdAt           DateTime   @default(now())
+  updatedAt           DateTime   @updatedAt
 
   visits      Visit[]
   inspections Inspection[]
@@ -704,6 +717,156 @@ model Capa {
 
   @@index([supplierRef])
   @@index([inspectionRef])
+}
+
+// ---------------------------------------------------------------------------
+// Supplier self-service channel (2026-09-14 founder request).
+//
+// Suppliers have NO login role today (docs/contract-requests/2026-09-14-supplier-
+// self-service-role.md is pending contracts-guardian). Until that lands, a supplier's
+// proactive deal is STAFF-RELAYED: china_sourcing submits it on the supplier's behalf
+// (`channel = staff_relay`), recording who relayed it and, in free text, who at the
+// supplier proposed it — real supplier identity capture without a login. `SupplierOffer`
+// is deliberately separate from `SupplierQuote` (an RFQ response): an offer is proactive,
+// carries EV-heavy attachments (photos, inspection report, battery-health certificate),
+// and is reviewed (accept/decline) before any money moves.
+//
+// An ACCEPTED offer can be reserved into a `SupplierDeal` — the two-stage-payment state
+// machine (reserved -> inspected -> balance_due -> paid, or inspection_failed) modelled on
+// CLAUDE.md rule 1 ("payment gates procurement", never by AI) applied one level earlier, at
+// the supplier deposit. `SupplierDealEvent` is an append-only per-transition log keyed by
+// `clientRequestId`, the same offline-replay idiom as the rest of this module — François or
+// China-sourcing staff can retry a transition over a bad connection without double-applying
+// it, mirroring `sync.ts::findByClientRequestId` but for STATE TRANSITIONS on an existing
+// row rather than new-row creation.
+// ---------------------------------------------------------------------------
+
+enum OfferStatus {
+  submitted
+  accepted
+  declined
+}
+
+enum OfferAttachmentKind {
+  image
+  inspection_report
+  battery_health_certificate
+}
+
+enum DealStatus {
+  reserved
+  inspected
+  inspection_failed
+  balance_due
+  paid
+  cancelled
+}
+
+/// A supplier-initiated deal/offer, submitted proactively (not in response to an RFQ).
+/// `channel` is always `staff_relay` today; `supplier_portal` is reserved for when the
+/// pending `supplier` role lands. `basis`/`inlandSeparable` follow the same FOB-buries-
+/// inland discipline as SupplierQuote.
+model SupplierOffer {
+  id              String      @id @default(uuid())
+  ref             String      @unique
+  supplierRef     String
+  projectRef      String?
+  unitCostMinor   Int
+  qty             Int
+  moq             Int
+  leadTimeDays    Int
+  unitCbm         Float
+  unitKg          Float
+  basis           QuoteBasis  @default(EXW)
+  inlandSeparable Boolean     @default(true)
+  channel         String      @default("staff_relay")
+  relayedBy       String
+  supplierContact String?
+  status          OfferStatus @default(submitted)
+  decidedBy       String?
+  clientRequestId String?     @unique
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  supplier    Supplier                  @relation(fields: [supplierRef], references: [ref], onDelete: Cascade)
+  attachments SupplierOfferAttachment[]
+  deals       SupplierDeal[]
+
+  @@index([supplierRef])
+  @@index([status])
+}
+
+/// Evidence attached to a supplier offer: images, an inspection report, and (this
+/// sourcing channel is EV-heavy) a battery-health certificate. Proper typed relations,
+/// not one opaque blob — mirrors InspectionEvidence's discipline of binding evidence to
+/// the record it documents.
+model SupplierOfferAttachment {
+  id              String              @id @default(uuid())
+  offerRef        String
+  kind            OfferAttachmentKind
+  uri             String
+  note            String?
+  clientRequestId String?             @unique
+  capturedAt      DateTime            @default(now())
+
+  offer SupplierOffer @relation(fields: [offerRef], references: [ref], onDelete: Cascade)
+
+  @@index([offerRef])
+}
+
+/// A confirmed supplier deal: the two-stage payment state machine. `bookingFeeMinor`
+/// reserves the unit (never AI-set: `bookingFeeConfirmedBy` is a human actor id); the
+/// `balanceMinor` step is reachable ONLY once `recordInspectionResult` stores a passing
+/// `inspectionResult` — see SupplierDealService for the transition guards. `inspectionRef`
+/// is a loose (non-FK) ref: it may point at a real quality-module Inspection.ref when the
+/// standard visit/inspection pipeline was used, or stand alone for a deal that predates any
+/// PurchaseOrder/customer order.
+model SupplierDeal {
+  ref                   String            @id
+  offerRef              String
+  supplierRef           String
+  qty                   Int
+  unitCostMinor         Int
+  totalMinor            Int
+  bookingFeeMinor       Int
+  bookingFeePaidAt      DateTime?
+  bookingFeeConfirmedBy String?
+  balanceMinor          Int
+  balancePaidAt         DateTime?
+  balanceConfirmedBy    String?
+  status                DealStatus        @default(reserved)
+  inspectionRef         String?
+  inspectionResult      InspectionResult?
+  basis                 QuoteBasis
+  inlandSeparable       Boolean
+  clientRequestId       String?           @unique
+  createdAt             DateTime          @default(now())
+  updatedAt             DateTime          @updatedAt
+
+  offer  SupplierOffer       @relation(fields: [offerRef], references: [ref])
+  events SupplierDealEvent[]
+
+  @@index([supplierRef])
+  @@index([offerRef])
+  @@index([status])
+}
+
+/// APPEND-ONLY per-transition log on a SupplierDeal, keyed by `clientRequestId` — the
+/// offline-replay guard for STATE TRANSITIONS (reserve / recordInspectionResult /
+/// markBalanceDue / confirmBalancePaid), as opposed to `sync.ts` which guards new-row
+/// creation. A retried transition with the same `clientRequestId` is a no-op that returns
+/// the deal's current state rather than re-applying the transition.
+model SupplierDealEvent {
+  id              String   @id @default(uuid())
+  dealRef         String
+  kind            String
+  detail          Json?
+  clientRequestId String?  @unique
+  createdAt       DateTime @default(now())
+
+  deal SupplierDeal @relation(fields: [dealRef], references: [ref], onDelete: Cascade)
+
+  @@index([dealRef])
 }
 
 // ===========================================================================
@@ -1044,27 +1207,41 @@ model WarehouseReceipt {
 /// `varianceHold` are DELIBERATELY separate booleans (CF-014): releasing QC must not
 /// clear a commercial hold, and clearing a hold must not release QC.
 model Package {
-  ref          String        @id
-  orderRef     String
-  customerRef  String
-  poRef        String
-  lotRef       String
-  kg           Float
-  cbm          Float
-  destination  Destination?
-  zone         WarehouseZone @default(AWAITING_INSPECTION)
-  qcReleased   Boolean       @default(false)
-  varianceHold Boolean       @default(false)
-  shipmentRef  String?
-  delivered    Boolean       @default(false)
-  createdAt    DateTime      @default(now())
-  updatedAt    DateTime      @updatedAt
+  ref              String        @id
+  orderRef         String
+  customerRef      String
+  poRef            String
+  lotRef           String
+  kg               Float
+  cbm              Float
+  destination      Destination?
+  zone             WarehouseZone @default(AWAITING_INSPECTION)
+  qcReleased       Boolean       @default(false)
+  varianceHold     Boolean       @default(false)
+  shipmentRef      String?
+  delivered        Boolean       @default(false)
+  /// The receiving party for THIS package's communications, independent of any default
+  /// carried by its shipment. Loose (non-FK) ref to Consignee — same "independently
+  /// writable and truncatable" convention as orderRef/poRef on this model.
+  consigneeRef     String?
+  /// LOOSE-cargo customer-facing sellable line (2026-09-14 gap-closure audit, item 3):
+  /// CONSOLIDATED is priced through the quotation/order chain; LOOSE is sold directly at
+  /// `pricePerCbmMinor * cbm` and requires a positive price before release
+  /// (ReleaseService.setCargoDetails). Deliberately separate from FreightService's
+  /// cost-allocation revenueTon math — this is what the customer is SOLD, not UZA's cost.
+  cargoType        CargoType     @default(CONSOLIDATED)
+  pricePerCbmMinor Int?
+  photoUrl         String?
+  goodsDescription String?
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
 
   receipt WarehouseReceipt @relation(fields: [lotRef], references: [lotRef], onDelete: Cascade)
 
   @@index([orderRef])
   @@index([lotRef])
   @@index([shipmentRef])
+  @@index([consigneeRef])
 }
 
 /// A shipment == a booked container. Containers are destination-PURE (CF-018): one
@@ -1077,8 +1254,26 @@ model Shipment {
   container                   String
   carrier                     String
   destination                 Destination
-  etd                         String
-  eta                         String
+  /// Planned departure/arrival — NEVER overwritten by the actual dates once known (same
+  /// planned-vs-actual discipline as declared/measured/billed CBM). `etdActual`/`etaActual`
+  /// are set later via ShipmentDetailsService once the carrier confirms; TrackingService's
+  /// delay flow revises `etaPlanned` only, never `etaActual`.
+  etdPlanned                  String
+  etaPlanned                  String
+  etdActual                   String?
+  etaActual                   String?
+  vesselName                  String?
+  voyageNumber                String?
+  /// The ocean port of entry (Mombasa/Dar es Salaam) — distinct from `destination` (the
+  /// final Rwanda/DRC delivery city).
+  entryPort                   EntryPort?
+  /// Free-string venture tag (BULK/MOBILITY/...), same convention as the Command Center
+  /// register — deliberately NOT a shared enum (no cross-venture shipment enum exists in
+  /// @uza/contracts today; see docs/contract-requests/2026-09-14-logistics-coordinator-role.md).
+  ventureCode                 String?
+  /// Default receiving party for packages on this shipment that don't carry their own.
+  /// Loose (non-FK) ref to Consignee.
+  consigneeRef                String?
   status                      ShipmentStatus @default(planned)
   partnerId                   String?
   billedRevenueTon            Float?
@@ -1091,6 +1286,20 @@ model Shipment {
   allocations FreightAllocation[]
 
   @@index([partnerId])
+  @@index([ventureCode])
+  @@index([consigneeRef])
+}
+
+/// The two real East African entry ports for this corridor.
+enum EntryPort {
+  MOMBASA
+  DAR_ES_SALAAM
+}
+
+/// LOOSE-cargo vs CONSOLIDATED (whole-container, priced through the quotation/order chain).
+enum CargoType {
+  CONSOLIDATED
+  LOOSE
 }
 
 /// Per-container freight P&L. Freight allocates PRO-RATA by revenue ton, `max(cbm,
@@ -1122,6 +1331,40 @@ model TrackingEvent {
   createdAt   DateTime       @default(now())
 
   @@index([shipmentRef])
+}
+
+/// The receiving party for a Package/Shipment's communications — distinct from (and often
+/// different to) the ordering `Customer` (2026-09-14 gap-closure audit, item 2). No `ref`
+/// pattern exists yet in @uza/contracts ID_PATTERNS — rendered locally as `CNE-{seq:5}`
+/// pending docs/contract-requests/2026-09-14-consignee-id.md.
+model Consignee {
+  ref       String   @id
+  name      String
+  phone     String
+  address   String
+  tinNumber String?
+  email     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+/// Append-only freight-PARTNER (forwarder) rate log — "current" is simply "most recent",
+/// never a mutated field (2026-09-14 gap-closure audit, item 7). Distinct from sourcing's
+/// SupplierPricePoint (that is factory/supplier pricing, owned by sourcing-quality; this is
+/// the logistics-owned equivalent for freight forwarders). No shared ref pattern needed
+/// (not customer/partner-facing) — rendered locally as `PRC-{year}-{seq:4}`.
+model PartnerRateCard {
+  ref                    String     @id
+  partnerId              String
+  destination            Destination
+  entryPort              EntryPort?
+  ratePerRevenueTonMinor Int
+  note                   String?
+  recordedBy             String
+  observedAt             DateTime   @default(now())
+
+  @@index([partnerId])
+  @@index([partnerId, destination])
 }
 
 /// Proof-of-delivery record. Created only after the release gate passes: goods release

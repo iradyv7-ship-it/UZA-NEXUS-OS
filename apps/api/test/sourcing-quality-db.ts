@@ -9,6 +9,7 @@ export async function resetSourcingQualityDb(): Promise<void> {
   await prisma.$executeRawUnsafe(
     'TRUNCATE TABLE ' +
       '"InspectionEvidence","Capa","Inspection","Visit","PurchaseOrder",' +
+      '"SupplierDealEvent","SupplierDeal","SupplierOfferAttachment","SupplierOffer",' +
       '"SupplierQuote","Rfq","SupplierQualityRecord","SupplierPricePoint",' +
       '"SupplierScoreEvent","SupplierCertification","Supplier",' +
       '"OutboxEvent","ProcessedEvent","AuditLog","Notification" ' +
