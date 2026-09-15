@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { AuditService } from '../platform/audit/audit.service';
+import { IntakeModule } from '../intake/intake.module';
 import { PlanningAccessService } from './planning-authz.service';
 import { InitiativeService } from './initiative/initiative.service';
 import { DecisionService } from './decision/decision.service';
@@ -9,6 +10,8 @@ import { EstateService } from './estate/estate.service';
 import { MemoService } from './memo/memo.service';
 import { FundingService } from './funding/funding.service';
 import { AdvisorService } from './advisor/advisor.service';
+import { VentureOverviewService } from './venture-overview/venture-overview.service';
+import { PlanningVentureOverviewController } from './venture-overview/venture-overview.controller';
 import {
   PlanningInitiativeController,
   PlanningDecisionController,
@@ -38,6 +41,7 @@ import {
  * and audited into the shared append-only log. PrismaService is global.
  */
 @Module({
+  imports: [IntakeModule],
   providers: [
     AuditService,
     PlanningAccessService,
@@ -49,6 +53,7 @@ import {
     FundingService,
     ReviewService,
     AdvisorService,
+    VentureOverviewService,
   ],
   controllers: [
     PlanningInitiativeController,
@@ -58,6 +63,7 @@ import {
     PlanningMemoController,
     PlanningFundingController,
     PlanningReviewController,
+    PlanningVentureOverviewController,
   ],
   exports: [
     PlanningAccessService,
