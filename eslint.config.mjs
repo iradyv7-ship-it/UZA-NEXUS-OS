@@ -22,6 +22,14 @@ export default tseslint.config(
       '**/coverage/**',
       'apps/api/prisma/migrations/**',
       'eslint.config.mjs',
+      // Captured Lovable apps, each its own TanStack Start project with its own
+      // tsconfig and tooling — sweeping them into this shared type-aware config is
+      // what produces the "multiple candidate TSConfigRootDirs" parse failure, since
+      // typescript-eslint's type-aware parsing needs one coherent tsconfig project,
+      // not several independent apps' worth at once. Lint each of these on its own,
+      // inside its own directory, with its own config — not from here.
+      'apps/empower-academy/**',
+      'apps/uza-move/**',
     ],
   },
   eslint.configs.recommended,
