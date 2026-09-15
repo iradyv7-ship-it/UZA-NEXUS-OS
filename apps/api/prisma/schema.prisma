@@ -1408,7 +1408,7 @@ model InspectionOutcome {
 }
 
 // ===========================================================================
-// Nexas Command Center (v1) — the structured foundation of the business-
+// Nexus Command Center (v1) — the structured foundation of the business-
 // management brain. Owns: Departments + light org (EmployeeProfile links an
 // internal User to a department + optional manager), management Tasks (distinct
 // from trade's RACI project Task), and the Grant pipeline. Authorisation is a
@@ -1526,7 +1526,7 @@ model Grant {
 }
 
 // ===========================================================================
-// Nexas Planning & Reviews (v1) — the OKR-style cascading-plan + weekly-rhythm
+// Nexus Planning & Reviews (v1) — the OKR-style cascading-plan + weekly-rhythm
 // + KPI backbone that lets the CEO run the company ON PURPOSE and track growth.
 // Owns: Initiatives (the portfolio unit — the mother company + each project,
 // internal OR client), Plans (the quarter→month→week cascade of objectives),

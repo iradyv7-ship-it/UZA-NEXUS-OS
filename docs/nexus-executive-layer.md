@@ -1,10 +1,14 @@
-# Nexas — the Executive Layer (architecture & phased roadmap)
+# UZA Nexus — the Executive Layer (architecture & phased roadmap)
 
 **Status:** planning / vision doc. Nothing here is built yet.
-**Relationship to UZA Nexus:** UZA Nexus is the *operational backbone* (orders, quotations,
-shipments, payments — the system of record for the business). **Nexas is the founder's
-executive layer on top of it**: calendar, documents, legal, governance, memory, hiring. It is
-a distinct, larger, multi-phase product. UZA Nexus is one of the data sources Nexas reads.
+**Relationship to the rest of UZA Nexus:** UZA Nexus already has an *operational backbone*
+(orders, quotations, shipments, payments — the system of record for the business, live and
+proven). **This document describes UZA Nexus's next layer, built on top of that backbone**:
+calendar, documents, legal, governance, memory, hiring. Renamed from "Nexas" to "UZA Nexus" on
+2026-09-15 — this was always meant to be one system, not two products, and the founder's own
+direction ("UZA Nexus OS needs to start being the brain of the company") confirms that: the
+operational backbone and the executive/intelligence layer are the same system now, at different
+layers, not a separate product reading UZA Nexus as an external source.
 
 > Honest framing up front: this is a multi-year vision, comparable to a funded startup's whole
 > roadmap. It becomes real only in grounded slices, on real data, through real integrations —
@@ -23,7 +27,10 @@ nothing (weekly auto-planner, contract reviewer, corporate DNA) works well until
    edges are typed relationships (`document —belongs_to→ contract`, `meeting —produced→ decision`,
    `employee —signed→ NDA`). This graph is what makes the vision more than a folder of files.
 2. **The Secure Ingestion Layer** — pulls the founder's *real* reality in: documents, emails,
-   meeting notes, calendar. Without it the AI reasons over demo data, not the company.
+   meeting notes, calendar, and every UZA repo's own commit activity (the `GitActivitySource`
+   intake, already built — see `apps/api/src/intake/sources/git-activity.source.ts`; it just
+   needs `UZA_GIT_REPOS` configured with the real repo list). Without real ingestion the AI
+   reasons over demo data, not the company.
 3. **The Integration Spine** — Google Calendar, Gmail, Contacts, Google Maps (travel/traffic),
    messaging/SMS, and document sources (OneDrive/Drive). Each is a real OAuth integration the
    founder provisions (credentials are theirs, like the Google sign-in we already built).
@@ -37,21 +44,25 @@ features before the spine reproduces the exact isolated-modules failure the prin
 
 ```
 ┌───────────────────────────────────────────────────────────────┐
-│  EXPERIENCE   Web/PWA + conversational ("Nexa, hire a PM")     │
+│  EXPERIENCE   Web/PWA + conversational ("Nexus, hire a PM")    │
 ├───────────────────────────────────────────────────────────────┤
 │  INTELLIGENCE  AI reasoning over the graph (RAG) + LLM + tools │
 │               proactive engine (anticipates: briefs, nudges)  │
 │               HUMAN-IN-LOOP gate for legal/high-stakes actions │
 ├───────────────────────────────────────────────────────────────┤
 │  DOMAIN       Calendar engine · Vault · Governance · Hiring ·  │
-│               Corporate DNA (memory)                           │
+│               Corporate DNA (memory) · per-department views   │
 ├───────────────────────────────────────────────────────────────┤
 │  GRAPH        Connected Entity Graph (nodes + typed edges)     │
 ├───────────────────────────────────────────────────────────────┤
-│  INGESTION    docs · email · meetings · calendar · UZA Nexus   │
+│  INGESTION    docs · email · meetings · calendar · git activity│
+│               across every UZA repo (Command Center register) │
 ├───────────────────────────────────────────────────────────────┤
 │  INTEGRATIONS Google Calendar/Gmail/Contacts/Maps · messaging  │
-│               · Drive/OneDrive · UZA Nexus API                 │
+│               · Drive/OneDrive                                 │
+├───────────────────────────────────────────────────────────────┤
+│  OPERATIONAL  UZA Nexus's existing backbone: orders, quotations│
+│  BACKBONE     shipments, payments, commissions — live, proven │
 ├───────────────────────────────────────────────────────────────┤
 │  SECURITY     encryption, access control, approval rules,      │
 │               audit — the whole thing is a sensitive-data vault│
@@ -68,16 +79,20 @@ features before the spine reproduces the exact isolated-modules failure the prin
 
 ## 3. Security & privacy — designed in from day one, not bolted on
 
-Nexas concentrates the company's most sensitive data (legal, financial, HR, strategic, the
-founder's inbox and calendar) in one place. That is the single biggest responsibility of the
-project. Non-negotiables:
+UZA Nexus at this layer concentrates the company's most sensitive data (legal, financial, HR,
+strategic, the founder's inbox and calendar) in one place. That is the single biggest
+responsibility of the project. Non-negotiables:
 
 - **Encryption at rest + in transit**; secrets in a proper vault, never in code.
 - **Least-privilege access + full audit** (reuse UZA Nexus's authorize()/audit patterns).
 - **Approval rules** for any outbound action or high-stakes decision (the user asked for this).
 - **Employee-facing boundary:** *operational visibility* (who owns which task, SLA/KPIs) is fine;
   *surveillance of people* is a legal (labour + data-protection law, Rwanda/DRC), ethical, and
-  trust matter — only with legitimate purpose, transparency, and legal footing.
+  trust matter — only with legitimate purpose, transparency, and legal footing. This applies
+  directly to the founder's 2026-09-15 ask that the system eventually help judge "which
+  employees to employ and those to leave" — that is exactly the kind of high-stakes,
+  legally-sensitive output that must be evidence-based, transparent to the employee, and
+  human-decided, never an opaque automated score. See §10.
 - **Data residency & consent** for ingested email/documents/contacts.
 
 ---
@@ -136,6 +151,9 @@ governance brain. This module *is* where the connected-entity graph earns its ke
 7. **Corporate DNA (memory)** — RAG over meetings, emails, approvals, decisions, documents so the
    company can answer "why did we choose this supplier / reject this proposal / change strategy?"
    Institutional knowledge survives employee departures. (Fidelity scales with what's ingested.)
+   This is the direct answer to the "Second Brain" idea the founder fed in from an external
+   reference on 2026-09-15 — see §10: same concept, built as a company-wide graph rather than a
+   personal Notion folder, so it survives any one person leaving.
 8. **AI Hiring** — "hire a Procurement Manager" orchestrates: offer letter, contract, NDA, IP
    assignment, employee file, onboarding checklist, calendar, training plan, first-week tasks,
    probation schedule, KPIs, review schedule — spanning the Vault + Calendar + graph (docs still
@@ -160,7 +178,8 @@ can *anticipate* (surface a renewal, a conflict, a follow-up) because it can see
 ## 7. Phased roadmap (realistic)
 
 - **Phase 0 — Foundations (the spine).** Entity-graph data model; secure storage + access/audit;
-  the first integration (Google Calendar/Gmail via OAuth, reusing our Google work); the AI
+  the first integration (Google Calendar/Gmail via OAuth, reusing our Google work); real git
+  activity ingestion across every UZA repo (turn on `UZA_GIT_REPOS`, already built); the AI
   retrieval+reasoning harness with the human-in-loop approval gate. *Nothing user-facing yet, but
   everything later depends on it.*
 - **Phase 1 — Flagship slice (pick ONE, end-to-end on real data):**
@@ -170,9 +189,11 @@ can *anticipate* (surface a renewal, a conflict, a follow-up) because it can see
     Highest strategic value; the foundation the legal/governance modules hang off.
 - **Phase 2 — Extend the chosen flagship** (meeting intelligence *or* document/contract review as
   assistant-with-lawyer-review).
-- **Phase 3 — Governance module** (records + renewals) and **Corporate DNA** (memory).
+- **Phase 3 — Governance module** (records + renewals), **Corporate DNA** (memory), and
+  **department-customized views** (§10) once the graph has enough real signal per department.
 - **Phase 4 — AI Hiring** and cross-module orchestration; deepen "proactive."
-- **Ongoing — hardening, more integrations, and pulling UZA Nexus operational data into the graph.**
+- **Ongoing — hardening, more integrations, and pulling the operational backbone's own data
+  deeper into the graph.**
 
 ---
 
@@ -188,10 +209,43 @@ can *anticipate* (surface a renewal, a conflict, a follow-up) because it can see
 
 ---
 
-## 9. Where UZA Nexus plugs in
+## 9. How the operational backbone feeds the executive layer
 
-UZA Nexus is a first-class data source for the graph and the assistant: orders, payments,
-shipments, supplier scores, commissions become nodes/edges Nexas can reason over ("which
+The backbone (orders, payments, shipments, supplier scores, commissions) is a first-class data
+source for the graph and the assistant, not an external system being read — it's the same
+product, one layer down. It becomes nodes/edges the executive layer can reason over ("which
 customers are overdue?", "which suppliers scored low this quarter?"), and the Calendar/Vault can
 link a meeting or contract to the specific order/supplier it concerns. The ops backbone is done
-and proven; Nexas is the intelligence built on top of it.
+and proven; this document is the intelligence built on top of it, in the same system.
+
+---
+
+## 10. Department-customized views and the hiring/performance ambition (added 2026-09-15)
+
+The founder wants this eventually customized per department — sales, sourcing, IT, customer
+care, logistics, and fundraising/management each getting more relevant, department-specific
+information rather than one undifferentiated feed — and, further out, wants the system to help
+identify "which employees to employ and those to leave."
+
+**How this fits the architecture already above, not a new module:**
+- Department-customized views are a **read-scoping problem over the same graph** (§1's Connected
+  Entity Graph), not a separate system per department. A sales view and a logistics view over
+  the same underlying nodes/edges, filtered and weighted differently — exactly the discipline
+  `authorize()` already applies elsewhere in UZA Nexus, extended to "what this graph surfaces
+  to you," not just "what you may read."
+- The two external references the founder fed in on 2026-09-15 (a "Life Dashboard" concept —
+  one page pulling calendar/tasks/tools into a daily briefing; a "Second Brain" concept — one
+  place holding every document, note, and reference material, queryable) map directly onto
+  Module 1 (Calendar) and Module 2 §7 (Corporate DNA) above, not new ideas — the department
+  views are those same two concepts, scoped per department instead of CEO-only.
+- **The hiring/performance ambition is real, and the risk is real too** — see §3's employee-facing
+  boundary. "Which employees to leave" as an automated output is exactly the kind of opaque
+  people-analytics that Rwanda/DRC labour law, basic fairness, and trust all require extreme care
+  around. The honest, buildable version: **operational visibility and evidence** (task completion
+  rates, SLA adherence, real output tied to real records already in the graph) surfaced
+  transparently to both the manager and the employee — never a black-box score, never an
+  automated "fire this person" recommendation. A human always makes that call, informed by real
+  data the employee can also see and contest. This is a Phase 3+ concern, dependent on the
+  Corporate DNA graph having enough real, fairly-collected signal to say anything meaningful at
+  all — building it before the graph exists would mean guessing, which is worse than not
+  building it yet.

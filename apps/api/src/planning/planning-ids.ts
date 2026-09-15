@@ -1,5 +1,5 @@
 /**
- * Readable-id helpers for Nexas Planning & Reviews.
+ * Readable-id helpers for Nexus Planning & Reviews.
  *
  * Same discipline as `command-ids.ts`: these id kinds are NOT in `@uza/contracts`
  * `ID_PATTERNS` — that kernel models the UZA Bulk record chain, not the executive

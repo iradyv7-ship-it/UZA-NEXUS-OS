@@ -1,6 +1,6 @@
-# Handoff — Nexas Command Center (v1)
+# Handoff — Nexus Command Center (v1)
 
-The first slice of the **Nexas executive layer** (`docs/nexas-executive-layer.md`): the
+The first slice of the **Nexus executive layer** (`docs/nexus-executive-layer.md`): the
 *structured* management brain. Cross-department **tasks**, the **grants** pipeline, a light
 **org/department** graph, and the CEO **overview** ("what needs my attention"). Built as a new
 module `apps/api/src/command/` on the existing app; the conversational/proactive AI PA layer

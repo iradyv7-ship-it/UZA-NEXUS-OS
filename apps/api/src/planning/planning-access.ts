@@ -1,7 +1,7 @@
 import type { Role } from '@uza/contracts';
 
 /**
- * Nexas Planning & Reviews — the MODULE-LOCAL access policy.
+ * Nexus Planning & Reviews — the MODULE-LOCAL access policy.
  *
  * Like the Command Center, `@uza/contracts` `ROLE_GRANTS` (the UZA Nexus kernel) does not
  * model planning resources (plans, weekly reports, KPIs, initiatives, the CEO review). Rather

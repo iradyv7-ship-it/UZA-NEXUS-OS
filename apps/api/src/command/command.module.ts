@@ -12,7 +12,7 @@ import {
 } from './command.controllers';
 
 /**
- * Nexas Command Center — the executive-layer management brain (v1): cross-department tasks,
+ * Nexus Command Center — the executive-layer management brain (v1): cross-department tasks,
  * the grants pipeline, a light org/department graph, and the CEO overview. Authorisation is
  * the module-local `COMMAND_ACCESS` policy enforced at the service layer, audited into the
  * SAME append-only platform audit log via `AuditService`. PrismaService is global.

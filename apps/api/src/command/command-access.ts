@@ -1,7 +1,7 @@
 import type { Role } from '@uza/contracts';
 
 /**
- * Nexas Command Center — the MODULE-LOCAL access policy.
+ * Nexus Command Center — the MODULE-LOCAL access policy.
  *
  * `@uza/contracts` `ROLE_GRANTS` is the UZA Nexus kernel; it deliberately does not model
  * Command Center resources (tasks, grants, the CEO overview). Rather than pollute the

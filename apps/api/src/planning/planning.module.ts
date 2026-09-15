@@ -20,7 +20,7 @@ import {
 } from './planning.controllers';
 
 /**
- * Nexas Planning & Reviews — the register.
+ * Nexus Planning & Reviews — the register.
  *
  * Five things, and nothing more: what UZA is running (Initiative), who said it moved
  * (InitiativeCheckin), what is waiting on the CEO (ExecDecision), who is permanently on

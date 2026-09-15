@@ -290,7 +290,7 @@ async function seedLogisticsDemo(prisma: PrismaClient): Promise<void> {
 }
 
 /**
- * Nexas Command Center demo: 2 departments, 3 tasks (one due soon, one OVERDUE, one BLOCKED)
+ * Nexus Command Center demo: 2 departments, 3 tasks (one due soon, one OVERDUE, one BLOCKED)
  * and 2 grants (one near deadline) so the CEO overview shows real data on a fresh DB.
  * Idempotent — guarded by the first task ref.
  */
