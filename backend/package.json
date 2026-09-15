@@ -1,5 +1,5 @@
 {
-  "name": "uza-nexus",
+  "name": "uza-nexus-backend",
   "version": "0.1.0",
   "private": true,
   "packageManager": "pnpm@11.17.0",
@@ -7,20 +7,19 @@
     "node": ">=20"
   },
   "scripts": {
-    "dev": "pnpm --filter @uza/api --filter @uza/web --parallel dev",
+    "dev": "pnpm --filter @uza/api dev",
     "typecheck": "pnpm -r typecheck",
-    "lint": "eslint backend frontend --max-warnings=0",
-    "lint:fix": "eslint backend frontend --fix",
+    "lint": "eslint . --max-warnings=0",
+    "lint:fix": "eslint . --fix",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "test": "pnpm -r test",
-    "test:contracts": "node --experimental-strip-types backend/conformance/contracts.test.ts",
+    "test:contracts": "node --experimental-strip-types conformance/contracts.test.ts",
     "verify": "pnpm typecheck && pnpm lint && pnpm test:contracts && pnpm -r test"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
     "eslint": "^10.9.1",
-    "eslint-plugin-react-hooks": "^7.1.1",
     "globals": "^17.11.0",
     "prettier": "^3.9.6",
     "typescript-eslint": "^8.68.0"

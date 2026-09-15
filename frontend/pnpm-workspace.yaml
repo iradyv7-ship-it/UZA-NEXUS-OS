@@ -1,0 +1,10 @@
+packages:
+  - web
+  - uza-move
+  - empower-academy
+
+# Postinstall scripts are opt-in. These are the only packages allowed to run them.
+allowBuilds:
+  esbuild: true
+  core-js: false
+  sharp: false

@@ -1,6 +1,7 @@
 node_modules
 dist
 .next
+.output
 coverage
 pnpm-lock.yaml
-backend/api/prisma/migrations
+**/routeTree.gen.ts

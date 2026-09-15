@@ -1,25 +1,3 @@
-# Line endings are normalised to LF in the repository, on every platform.
-#
-# Without this, a checkout on Windows converts every file to CRLF, prettier reports
-# "Delete ␍" on every line, and `npm run lint` returns tens of thousands of errors
-# that are not errors. That noise is worse than no linter: it trains the team to run
-# the command, see a wall of red, and stop running it.
-#
-# `text=auto eol=lf` means git stores LF and checks out LF everywhere. Developers on
-# Windows are unaffected — every editor in use handles LF — and diffs stop showing
-# whole files as changed when someone saves on a different machine.
+# Line endings are LF in the repository, on every platform. backend/ and frontend/ carry
+# their own copy of the full rule set; this covers the two files that live at the root.
 * text=auto eol=lf
-
-# Binary: never touched.
-*.png binary
-*.jpg binary
-*.jpeg binary
-*.gif binary
-*.ico binary
-*.pdf binary
-*.woff binary
-*.woff2 binary
-
-# Lockfiles are generated. Collapse them in review so a dependency bump does not
-# show as a two-thousand-line diff nobody reads.
-pnpm-lock.yaml    linguist-generated=true -diff

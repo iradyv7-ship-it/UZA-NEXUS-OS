@@ -1,11 +1,10 @@
 // @ts-check
 import eslint from '@eslint/js';
-import reactHooks from 'eslint-plugin-react-hooks';
 import globals from 'globals';
 import tseslint from 'typescript-eslint';
 
 /**
- * One ESLint configuration for the whole repository. Sub-projects do not carry their own.
+ * One ESLint configuration for the backend. Sub-projects do not carry their own.
  *
  * This is deliberately the type-aware ruleset, not a style pack. The rules below are the
  * ones that catch bugs — a dropped promise, an unchecked `any` crossing a trust boundary —
@@ -17,11 +16,8 @@ export default tseslint.config(
     ignores: [
       '**/node_modules/**',
       '**/dist/**',
-      '**/.next/**',
-      '**/.output/**',
       '**/coverage/**',
-      '**/routeTree.gen.ts',
-      'backend/api/prisma/migrations/**',
+      'api/prisma/migrations/**',
       'eslint.config.mjs',
     ],
   },
@@ -49,16 +45,6 @@ export default tseslint.config(
           ignoreRestSiblings: true,
         },
       ],
-    },
-  },
-  {
-    // Browser code: React components and hooks in every frontend app.
-    files: ['frontend/**/*.{ts,tsx}'],
-    plugins: { 'react-hooks': reactHooks },
-    languageOptions: { globals: { ...globals.node, ...globals.browser } },
-    rules: {
-      'react-hooks/rules-of-hooks': 'error',
-      'react-hooks/exhaustive-deps': 'error',
     },
   },
   {

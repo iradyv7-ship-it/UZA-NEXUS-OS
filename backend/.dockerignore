@@ -1,8 +1,9 @@
 **/node_modules
-**/.next
 **/dist
 **/.git
 **/.env
 **/*.log
-backend/conformance
-backend/tools
+conformance
+tools
+backups
+supabase
