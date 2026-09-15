@@ -4,6 +4,5 @@
 **/.git
 **/.env
 **/*.log
-.claude
-reference
-tests
+backend/conformance
+backend/tools

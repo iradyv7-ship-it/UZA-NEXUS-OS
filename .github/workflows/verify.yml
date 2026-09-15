@@ -63,6 +63,7 @@ jobs:
       # were strict and the suite passed, but nothing enforced anything below the
       # type level.
       - run: pnpm lint
+      - run: pnpm test:contracts
       - run: pnpm -r test
 
       # The build is a separate check because only the bundler sees some errors — a

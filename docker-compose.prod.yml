@@ -54,7 +54,7 @@ services:
   api:
     build:
       context: .
-      dockerfile: apps/api/Dockerfile
+      dockerfile: backend/api/Dockerfile
     restart: unless-stopped
     depends_on:
       postgres:
@@ -85,13 +85,13 @@ services:
 
   # The outbox publisher. Without this container, OutboxEvent rows sit `pending` in
   # Postgres forever — the API's EventConsumer only reads from BullMQ, it never drains
-  # the outbox itself (see apps/worker/src/main.ts's own doc comment). That means no
+  # the outbox itself (see backend/worker/src/main.ts's own doc comment). That means no
   # commission accrual, no invoice-from-order.created, no notification ever fires without
   # this running alongside `api`. It shares api's database and Redis; it has no HTTP port.
   worker:
     build:
       context: .
-      dockerfile: apps/worker/Dockerfile
+      dockerfile: backend/worker/Dockerfile
     restart: unless-stopped
     depends_on:
       postgres:
@@ -108,7 +108,7 @@ services:
   web:
     build:
       context: .
-      dockerfile: apps/web/Dockerfile
+      dockerfile: frontend/web/Dockerfile
       args:
         # Baked at build time — next.config.mjs inlines it rather than reading at runtime.
         UZA_API_URL: http://api:3000

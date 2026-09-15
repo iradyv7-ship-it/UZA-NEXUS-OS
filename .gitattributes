@@ -22,6 +22,4 @@
 
 # Lockfiles are generated. Collapse them in review so a dependency bump does not
 # show as a two-thousand-line diff nobody reads.
-package-lock.json linguist-generated=true -diff
 pnpm-lock.yaml    linguist-generated=true -diff
-bun.lock          linguist-generated=true -diff

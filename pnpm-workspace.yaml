@@ -1,15 +1,15 @@
 packages:
-  - 'packages/*'
-  - 'apps/*'
+  - 'backend/*'
+  - 'frontend/*'
 
+# Postinstall scripts are opt-in. These are the only packages allowed to run them.
 allowBuilds:
+  '@nestjs/core': true
+  '@prisma/client': true
+  '@prisma/engines': true
+  '@swc/core': true
+  prisma: true
+  esbuild: true
+  msgpackr-extract: true
   sharp: false
-
-onlyBuiltDependencies:
-  - '@prisma/client'
-  - '@prisma/engines'
-  - '@nestjs/core'
-  - '@swc/core'
-  - prisma
-  - esbuild
-  - msgpackr-extract
+  core-js: false

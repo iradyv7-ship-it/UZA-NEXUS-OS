@@ -1,6 +1,6 @@
 # Local infrastructure for UZA Nexus OS.
 # Bring up:   docker compose up -d
-# Postgres 16 and Redis 7 — the same major versions used in production (see docs/TOOLING.md).
+# Postgres 16 and Redis 7 — the same major versions used in production.
 services:
   postgres:
     image: postgres:16-alpine

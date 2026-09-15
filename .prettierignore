@@ -3,4 +3,4 @@ dist
 .next
 coverage
 pnpm-lock.yaml
-apps/api/prisma/migrations
+backend/api/prisma/migrations

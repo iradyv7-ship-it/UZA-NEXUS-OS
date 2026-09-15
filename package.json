@@ -7,18 +7,20 @@
     "node": ">=20"
   },
   "scripts": {
+    "dev": "pnpm --filter @uza/api --filter @uza/web --parallel dev",
     "typecheck": "pnpm -r typecheck",
-    "test": "pnpm -r test",
-    "contracts:typecheck": "pnpm --filter @uza/contracts typecheck",
-    "verify": "pnpm typecheck && pnpm lint && pnpm -r test",
-    "lint": "eslint apps packages --max-warnings=0",
-    "lint:fix": "eslint apps packages --fix",
+    "lint": "eslint backend frontend --max-warnings=0",
+    "lint:fix": "eslint backend frontend --fix",
     "format": "prettier --write .",
-    "format:check": "prettier --check ."
+    "format:check": "prettier --check .",
+    "test": "pnpm -r test",
+    "test:contracts": "node --experimental-strip-types backend/conformance/contracts.test.ts",
+    "verify": "pnpm typecheck && pnpm lint && pnpm test:contracts && pnpm -r test"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
     "eslint": "^10.9.1",
+    "eslint-plugin-react-hooks": "^7.1.1",
     "globals": "^17.11.0",
     "prettier": "^3.9.6",
     "typescript-eslint": "^8.68.0"
