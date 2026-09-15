@@ -1,0 +1,55 @@
+# Render Blueprint: the Nexus backend on Render's free tier.
+#
+# One always-on-ish web service runs the API with the outbox publisher in-process
+# (RUN_OUTBOX_PUBLISHER=1), because free Render has no background workers. Redis is a
+# free Render Key Value instance (in-memory: the queue is lost on restart, the outbox in
+# Postgres is not). Postgres is external and durable — set DATABASE_URL when applying.
+#
+# Free web services spin down after 15 minutes without traffic and take ~1 minute to
+# wake; events written while asleep are published on the next wake. Fine for a preview,
+# not for production — docker-compose.prod.yml in backend/ is the production stack.
+#
+# Apply: Render dashboard → New → Blueprint → this repository.
+
+services:
+  - type: web
+    name: uza-nexus-api
+    runtime: docker
+    plan: free
+    region: frankfurt
+    rootDir: backend
+    dockerfilePath: ./api/Dockerfile
+    dockerContext: .
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        sync: false
+      - key: REDIS_URL
+        fromService:
+          type: keyvalue
+          name: uza-nexus-redis
+          property: connectionString
+      - key: RUN_OUTBOX_PUBLISHER
+        value: '1'
+      - key: JWT_SECRET
+        generateValue: true
+      - key: UZA_ID_PEPPER
+        generateValue: true
+      - key: MFA_ENCRYPTION_KEY
+        generateValue: true
+      - key: WEB_ORIGIN
+        value: https://uza-nexus-web.vercel.app
+      - key: GOOGLE_CALLBACK_URL
+        value: https://uza-nexus-web.vercel.app/auth/google/return
+      - key: GOOGLE_CLIENT_ID
+        value: 937295586061-8hn5qj6dbb85roatb8k6baj2egbhbvde.apps.googleusercontent.com
+      - key: GOOGLE_CLIENT_SECRET
+        sync: false
+
+  - type: keyvalue
+    name: uza-nexus-redis
+    plan: free
+    region: frankfurt
+    ipAllowList: []
