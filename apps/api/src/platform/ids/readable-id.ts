@@ -30,7 +30,9 @@ export function formatId(kind: IdKind, parts: IdParts): string {
 /** A RegExp that validates a rendered id of this kind (used by the CF-001 test). */
 export function idRegex(kind: IdKind): RegExp {
   const pattern: string = ID_PATTERNS[kind];
-  const body = pattern.replace(/[.*+?^${}()|[\]\\]/g, (c) => (c === '{' || c === '}' ? c : `\\${c}`));
+  const body = pattern.replace(/[.*+?^${}()|[\]\\]/g, (c) =>
+    c === '{' || c === '}' ? c : `\\${c}`,
+  );
   const src = body.replace(TOKEN, (_m, name: string, width?: string) => {
     if (name === 'year') return '\\d{4}';
     if (name === 'seq' || width) return `\\d{${width ?? '1,'}}`;

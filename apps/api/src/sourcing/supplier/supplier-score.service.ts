@@ -91,11 +91,22 @@ export class SupplierScoreService {
         delta,
         cause: SCORE_CAUSE.declaredVsMeasuredVariance,
         causeRef: orderRef,
-        detail: { poRef, orderRef, variance, declaredCbm: envelope.payload.declaredCbm, measuredCbm: envelope.payload.measuredCbm },
+        detail: {
+          poRef,
+          orderRef,
+          variance,
+          declaredCbm: envelope.payload.declaredCbm,
+          measuredCbm: envelope.payload.measuredCbm,
+        },
         sourceEventId: envelope.eventId,
       });
 
-      return { status: 'scored' as const, supplierRef: po.supplierRef, delta, newScore: updated.score };
+      return {
+        status: 'scored' as const,
+        supplierRef: po.supplierRef,
+        delta,
+        newScore: updated.score,
+      };
     });
   }
 }

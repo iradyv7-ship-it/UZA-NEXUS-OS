@@ -11,6 +11,9 @@ import { FreightService } from './logistics/freight.service';
 import { TrackingService } from './logistics/tracking.service';
 import { DeliveryService } from './logistics/delivery.service';
 import { PartnerPortalService } from './logistics/partner-portal.service';
+import { ShipmentDetailsService } from './logistics/shipment-details.service';
+import { ConsigneeService } from './logistics/consignee.service';
+import { PartnerRateService } from './logistics/partner-rate.service';
 import { LOGISTICS_CONTROLLERS } from './logistics.controllers';
 
 /**
@@ -38,6 +41,9 @@ import { LOGISTICS_CONTROLLERS } from './logistics.controllers';
     TrackingService,
     DeliveryService,
     PartnerPortalService,
+    ShipmentDetailsService,
+    ConsigneeService,
+    PartnerRateService,
   ],
   exports: [
     ReceivingService,
@@ -49,6 +55,9 @@ import { LOGISTICS_CONTROLLERS } from './logistics.controllers';
     TrackingService,
     DeliveryService,
     PartnerPortalService,
+    ShipmentDetailsService,
+    ConsigneeService,
+    PartnerRateService,
   ],
 })
 export class LogisticsModule {}

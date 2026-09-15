@@ -42,6 +42,9 @@ enum UserKind {
   partner
 }
 
+/// 'customer' deliberately excluded (removed 30 Aug 2026, zero accounts held it) — Nexus is
+/// the internal operating layer, a customer never authenticates into it. Customer-facing
+/// access belongs on uzabulk.com, reading Nexus as its source of truth.
 enum RoleName {
   ceo
   venture_manager
@@ -50,7 +53,6 @@ enum RoleName {
   front_office
   finance
   sales_agent
-  customer
   logistics_partner
 }
 
@@ -62,6 +64,12 @@ model User {
   id           String   @id @default(uuid())
   ref          String   @unique // readable id, e.g. AGT-GOM-0021 (ID_PATTERNS)
   email        String   @unique
+  /// Additional emails that authenticate this SAME account — a company domain and a personal
+  /// Gmail both routing to one person is the common case Google sign-in needs to support.
+  /// Password login still uses `email` only; Google sign-in matches either. Not unique at the
+  /// DB level (SQLite/Postgres can't enforce uniqueness across array elements) — enforced in
+  /// application code instead, see AuthService.loginWithGoogle.
+  alternateEmails String[] @default([])
   passwordHash String
   role         RoleName
   kind         UserKind @default(employee)
@@ -75,6 +83,9 @@ model User {
   // MFA-ready. No secret material is required to exist; the columns are present so
   // enabling TOTP later is a data change, not a migration.
   mfaEnabled Boolean @default(false)
+  /// Encrypted at rest (AES-256-GCM, keyed by MFA_ENCRYPTION_KEY — see platform/auth/mfa.ts).
+  /// Never the plaintext TOTP secret. Set on startMfaEnrollment, before mfaEnabled flips —
+  /// see AuthService for why those two are separate steps.
   mfaSecret  String?
 
   // Partner/customer accounts expire; internal employees leave expiresAt null.
@@ -459,6 +470,7 @@ model Supplier {
   scoreEvents    SupplierScoreEvent[]
   priceHistory   SupplierPricePoint[]
   qualityHistory SupplierQualityRecord[]
+  offers         SupplierOffer[]
 
   @@index([lifecycle])
 }
@@ -581,20 +593,32 @@ model SupplierQuote {
 /// A purchase order to a supplier for a confirmed order. `declaredCbm`/`declaredKg`
 /// are what the FACTORY says — the first of the three volumetric numbers (declared,
 /// measured, billed). Publishing `po.issued` is owned here.
+///
+/// `basis`/`inlandSeparable` are copied from the linked SupplierQuote at issuance (never
+/// trusted from the caller when a quote exists — same discipline as RfqService.addQuote) so
+/// the cost basis survives past the quote. Regardless of basis, a SupplierQuote/PO price
+/// NEVER includes ocean freight (QuoteBasis has no CIF/DAP rung) — UZA (or a freight company
+/// it engages) always books the sea leg itself. `originForwarderRef`/`originForwarderName`
+/// record who does that; see docs/contract-requests/2026-09-14-supplier-deal-ids-policy-and-masking.md
+/// for the open question of whether this deserves its own contract-level field.
 model PurchaseOrder {
-  ref             String   @id
-  supplierRef     String
-  orderRef        String
-  quoteRef        String?
-  qty             Int
-  unitCostMinor   Int
-  poTotalMinor    Int
-  declaredCbm     Float
-  declaredKg      Float
-  status          PoStatus @default(issued)
-  clientRequestId String?  @unique
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  ref                 String     @id
+  supplierRef         String
+  orderRef            String
+  quoteRef            String?
+  qty                 Int
+  unitCostMinor       Int
+  poTotalMinor        Int
+  declaredCbm         Float
+  declaredKg          Float
+  status              PoStatus   @default(issued)
+  basis               QuoteBasis @default(EXW)
+  inlandSeparable     Boolean    @default(true)
+  originForwarderRef  String?
+  originForwarderName String?
+  clientRequestId     String?    @unique
+  createdAt           DateTime   @default(now())
+  updatedAt           DateTime   @updatedAt
 
   visits      Visit[]
   inspections Inspection[]
@@ -693,6 +717,156 @@ model Capa {
 
   @@index([supplierRef])
   @@index([inspectionRef])
+}
+
+// ---------------------------------------------------------------------------
+// Supplier self-service channel (2026-09-14 founder request).
+//
+// Suppliers have NO login role today (docs/contract-requests/2026-09-14-supplier-
+// self-service-role.md is pending contracts-guardian). Until that lands, a supplier's
+// proactive deal is STAFF-RELAYED: china_sourcing submits it on the supplier's behalf
+// (`channel = staff_relay`), recording who relayed it and, in free text, who at the
+// supplier proposed it — real supplier identity capture without a login. `SupplierOffer`
+// is deliberately separate from `SupplierQuote` (an RFQ response): an offer is proactive,
+// carries EV-heavy attachments (photos, inspection report, battery-health certificate),
+// and is reviewed (accept/decline) before any money moves.
+//
+// An ACCEPTED offer can be reserved into a `SupplierDeal` — the two-stage-payment state
+// machine (reserved -> inspected -> balance_due -> paid, or inspection_failed) modelled on
+// CLAUDE.md rule 1 ("payment gates procurement", never by AI) applied one level earlier, at
+// the supplier deposit. `SupplierDealEvent` is an append-only per-transition log keyed by
+// `clientRequestId`, the same offline-replay idiom as the rest of this module — François or
+// China-sourcing staff can retry a transition over a bad connection without double-applying
+// it, mirroring `sync.ts::findByClientRequestId` but for STATE TRANSITIONS on an existing
+// row rather than new-row creation.
+// ---------------------------------------------------------------------------
+
+enum OfferStatus {
+  submitted
+  accepted
+  declined
+}
+
+enum OfferAttachmentKind {
+  image
+  inspection_report
+  battery_health_certificate
+}
+
+enum DealStatus {
+  reserved
+  inspected
+  inspection_failed
+  balance_due
+  paid
+  cancelled
+}
+
+/// A supplier-initiated deal/offer, submitted proactively (not in response to an RFQ).
+/// `channel` is always `staff_relay` today; `supplier_portal` is reserved for when the
+/// pending `supplier` role lands. `basis`/`inlandSeparable` follow the same FOB-buries-
+/// inland discipline as SupplierQuote.
+model SupplierOffer {
+  id              String      @id @default(uuid())
+  ref             String      @unique
+  supplierRef     String
+  projectRef      String?
+  unitCostMinor   Int
+  qty             Int
+  moq             Int
+  leadTimeDays    Int
+  unitCbm         Float
+  unitKg          Float
+  basis           QuoteBasis  @default(EXW)
+  inlandSeparable Boolean     @default(true)
+  channel         String      @default("staff_relay")
+  relayedBy       String
+  supplierContact String?
+  status          OfferStatus @default(submitted)
+  decidedBy       String?
+  clientRequestId String?     @unique
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  supplier    Supplier                  @relation(fields: [supplierRef], references: [ref], onDelete: Cascade)
+  attachments SupplierOfferAttachment[]
+  deals       SupplierDeal[]
+
+  @@index([supplierRef])
+  @@index([status])
+}
+
+/// Evidence attached to a supplier offer: images, an inspection report, and (this
+/// sourcing channel is EV-heavy) a battery-health certificate. Proper typed relations,
+/// not one opaque blob — mirrors InspectionEvidence's discipline of binding evidence to
+/// the record it documents.
+model SupplierOfferAttachment {
+  id              String              @id @default(uuid())
+  offerRef        String
+  kind            OfferAttachmentKind
+  uri             String
+  note            String?
+  clientRequestId String?             @unique
+  capturedAt      DateTime            @default(now())
+
+  offer SupplierOffer @relation(fields: [offerRef], references: [ref], onDelete: Cascade)
+
+  @@index([offerRef])
+}
+
+/// A confirmed supplier deal: the two-stage payment state machine. `bookingFeeMinor`
+/// reserves the unit (never AI-set: `bookingFeeConfirmedBy` is a human actor id); the
+/// `balanceMinor` step is reachable ONLY once `recordInspectionResult` stores a passing
+/// `inspectionResult` — see SupplierDealService for the transition guards. `inspectionRef`
+/// is a loose (non-FK) ref: it may point at a real quality-module Inspection.ref when the
+/// standard visit/inspection pipeline was used, or stand alone for a deal that predates any
+/// PurchaseOrder/customer order.
+model SupplierDeal {
+  ref                   String            @id
+  offerRef              String
+  supplierRef           String
+  qty                   Int
+  unitCostMinor         Int
+  totalMinor            Int
+  bookingFeeMinor       Int
+  bookingFeePaidAt      DateTime?
+  bookingFeeConfirmedBy String?
+  balanceMinor          Int
+  balancePaidAt         DateTime?
+  balanceConfirmedBy    String?
+  status                DealStatus        @default(reserved)
+  inspectionRef         String?
+  inspectionResult      InspectionResult?
+  basis                 QuoteBasis
+  inlandSeparable       Boolean
+  clientRequestId       String?           @unique
+  createdAt             DateTime          @default(now())
+  updatedAt             DateTime          @updatedAt
+
+  offer  SupplierOffer       @relation(fields: [offerRef], references: [ref])
+  events SupplierDealEvent[]
+
+  @@index([supplierRef])
+  @@index([offerRef])
+  @@index([status])
+}
+
+/// APPEND-ONLY per-transition log on a SupplierDeal, keyed by `clientRequestId` — the
+/// offline-replay guard for STATE TRANSITIONS (reserve / recordInspectionResult /
+/// markBalanceDue / confirmBalancePaid), as opposed to `sync.ts` which guards new-row
+/// creation. A retried transition with the same `clientRequestId` is a no-op that returns
+/// the deal's current state rather than re-applying the transition.
+model SupplierDealEvent {
+  id              String   @id @default(uuid())
+  dealRef         String
+  kind            String
+  detail          Json?
+  clientRequestId String?  @unique
+  createdAt       DateTime @default(now())
+
+  deal SupplierDeal @relation(fields: [dealRef], references: [ref], onDelete: Cascade)
+
+  @@index([dealRef])
 }
 
 // ===========================================================================
@@ -1033,27 +1207,41 @@ model WarehouseReceipt {
 /// `varianceHold` are DELIBERATELY separate booleans (CF-014): releasing QC must not
 /// clear a commercial hold, and clearing a hold must not release QC.
 model Package {
-  ref          String        @id
-  orderRef     String
-  customerRef  String
-  poRef        String
-  lotRef       String
-  kg           Float
-  cbm          Float
-  destination  Destination?
-  zone         WarehouseZone @default(AWAITING_INSPECTION)
-  qcReleased   Boolean       @default(false)
-  varianceHold Boolean       @default(false)
-  shipmentRef  String?
-  delivered    Boolean       @default(false)
-  createdAt    DateTime      @default(now())
-  updatedAt    DateTime      @updatedAt
+  ref              String        @id
+  orderRef         String
+  customerRef      String
+  poRef            String
+  lotRef           String
+  kg               Float
+  cbm              Float
+  destination      Destination?
+  zone             WarehouseZone @default(AWAITING_INSPECTION)
+  qcReleased       Boolean       @default(false)
+  varianceHold     Boolean       @default(false)
+  shipmentRef      String?
+  delivered        Boolean       @default(false)
+  /// The receiving party for THIS package's communications, independent of any default
+  /// carried by its shipment. Loose (non-FK) ref to Consignee — same "independently
+  /// writable and truncatable" convention as orderRef/poRef on this model.
+  consigneeRef     String?
+  /// LOOSE-cargo customer-facing sellable line (2026-09-14 gap-closure audit, item 3):
+  /// CONSOLIDATED is priced through the quotation/order chain; LOOSE is sold directly at
+  /// `pricePerCbmMinor * cbm` and requires a positive price before release
+  /// (ReleaseService.setCargoDetails). Deliberately separate from FreightService's
+  /// cost-allocation revenueTon math — this is what the customer is SOLD, not UZA's cost.
+  cargoType        CargoType     @default(CONSOLIDATED)
+  pricePerCbmMinor Int?
+  photoUrl         String?
+  goodsDescription String?
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
 
   receipt WarehouseReceipt @relation(fields: [lotRef], references: [lotRef], onDelete: Cascade)
 
   @@index([orderRef])
   @@index([lotRef])
   @@index([shipmentRef])
+  @@index([consigneeRef])
 }
 
 /// A shipment == a booked container. Containers are destination-PURE (CF-018): one
@@ -1066,8 +1254,26 @@ model Shipment {
   container                   String
   carrier                     String
   destination                 Destination
-  etd                         String
-  eta                         String
+  /// Planned departure/arrival — NEVER overwritten by the actual dates once known (same
+  /// planned-vs-actual discipline as declared/measured/billed CBM). `etdActual`/`etaActual`
+  /// are set later via ShipmentDetailsService once the carrier confirms; TrackingService's
+  /// delay flow revises `etaPlanned` only, never `etaActual`.
+  etdPlanned                  String
+  etaPlanned                  String
+  etdActual                   String?
+  etaActual                   String?
+  vesselName                  String?
+  voyageNumber                String?
+  /// The ocean port of entry (Mombasa/Dar es Salaam) — distinct from `destination` (the
+  /// final Rwanda/DRC delivery city).
+  entryPort                   EntryPort?
+  /// Free-string venture tag (BULK/MOBILITY/...), same convention as the Command Center
+  /// register — deliberately NOT a shared enum (no cross-venture shipment enum exists in
+  /// @uza/contracts today; see docs/contract-requests/2026-09-14-logistics-coordinator-role.md).
+  ventureCode                 String?
+  /// Default receiving party for packages on this shipment that don't carry their own.
+  /// Loose (non-FK) ref to Consignee.
+  consigneeRef                String?
   status                      ShipmentStatus @default(planned)
   partnerId                   String?
   billedRevenueTon            Float?
@@ -1080,6 +1286,20 @@ model Shipment {
   allocations FreightAllocation[]
 
   @@index([partnerId])
+  @@index([ventureCode])
+  @@index([consigneeRef])
+}
+
+/// The two real East African entry ports for this corridor.
+enum EntryPort {
+  MOMBASA
+  DAR_ES_SALAAM
+}
+
+/// LOOSE-cargo vs CONSOLIDATED (whole-container, priced through the quotation/order chain).
+enum CargoType {
+  CONSOLIDATED
+  LOOSE
 }
 
 /// Per-container freight P&L. Freight allocates PRO-RATA by revenue ton, `max(cbm,
@@ -1111,6 +1331,40 @@ model TrackingEvent {
   createdAt   DateTime       @default(now())
 
   @@index([shipmentRef])
+}
+
+/// The receiving party for a Package/Shipment's communications — distinct from (and often
+/// different to) the ordering `Customer` (2026-09-14 gap-closure audit, item 2). No `ref`
+/// pattern exists yet in @uza/contracts ID_PATTERNS — rendered locally as `CNE-{seq:5}`
+/// pending docs/contract-requests/2026-09-14-consignee-id.md.
+model Consignee {
+  ref       String   @id
+  name      String
+  phone     String
+  address   String
+  tinNumber String?
+  email     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+/// Append-only freight-PARTNER (forwarder) rate log — "current" is simply "most recent",
+/// never a mutated field (2026-09-14 gap-closure audit, item 7). Distinct from sourcing's
+/// SupplierPricePoint (that is factory/supplier pricing, owned by sourcing-quality; this is
+/// the logistics-owned equivalent for freight forwarders). No shared ref pattern needed
+/// (not customer/partner-facing) — rendered locally as `PRC-{year}-{seq:4}`.
+model PartnerRateCard {
+  ref                    String     @id
+  partnerId              String
+  destination            Destination
+  entryPort              EntryPort?
+  ratePerRevenueTonMinor Int
+  note                   String?
+  recordedBy             String
+  observedAt             DateTime   @default(now())
+
+  @@index([partnerId])
+  @@index([partnerId, destination])
 }
 
 /// Proof-of-delivery record. Created only after the release gate passes: goods release
@@ -1151,4 +1405,1071 @@ model InspectionOutcome {
   major          Int      @default(0)
   minor          Int      @default(0)
   updatedAt      DateTime @updatedAt
+}
+
+// ===========================================================================
+// Nexas Command Center (v1) — the structured foundation of the business-
+// management brain. Owns: Departments + light org (EmployeeProfile links an
+// internal User to a department + optional manager), management Tasks (distinct
+// from trade's RACI project Task), and the Grant pipeline. Authorisation is a
+// MODULE-LOCAL policy (command-access.ts) enforced at the service layer, audited
+// on denial — @uza/contracts ROLE_GRANTS does not cover these resources.
+//
+// Money (grant amounts) is integer MINOR units, never a Float. Cross-module
+// links (linkedRef) are free readable-ref strings, mirroring the rest of the app.
+// ===========================================================================
+
+enum CommandTaskPriority {
+  low
+  medium
+  high
+  urgent
+}
+
+enum CommandTaskStatus {
+  todo
+  in_progress
+  blocked
+  done
+  cancelled
+}
+
+enum GrantStatus {
+  identified
+  preparing
+  submitted
+  awarded
+  rejected
+  closed
+}
+
+/// A department in the org (e.g. Trade, Sourcing, Finance). Lightweight: name + a
+/// unique short code. Gives management visibility of who sits where.
+model Department {
+  id        String   @id @default(uuid())
+  ref       String   @unique // readable id, e.g. DPT-TRADE
+  code      String   @unique // short code, e.g. TRADE
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  members EmployeeProfile[]
+}
+
+/// Links an internal User (by their readable `ref`, the Actor.userId) to a department
+/// and an optional manager (also a User ref). Additive to the platform User — no column
+/// was added to User, keeping identity's schema pristine. One profile per user.
+model EmployeeProfile {
+  id           String   @id @default(uuid())
+  userId       String   @unique // User.ref / Actor.userId
+  departmentId String?
+  managerId    String? // manager's User.ref / Actor.userId
+  title        String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  department Department? @relation(fields: [departmentId], references: [id])
+
+  @@index([departmentId])
+  @@index([managerId])
+}
+
+/// A management task — the executive-layer unit of "what needs doing". Distinct from
+/// trade's RACI project Task: this one carries a single assignee, cross-department reach,
+/// priority/status, an optional due date, an optional free `linkedRef` to any UZA Nexus
+/// record (order/supplier/…), and optional subtasks via `parentTaskId`.
+model CommandTask {
+  ref          String              @id // readable id, e.g. CTSK-2026-0001
+  title        String
+  description  String?
+  assigneeId   String // User.ref of the assignee (may be anyone, cross-department)
+  departmentId String?
+  priority     CommandTaskPriority @default(medium)
+  status       CommandTaskStatus   @default(todo)
+  dueAt        DateTime?
+  createdById  String // User.ref of the creator
+  linkedRef    String? // free ref to any UZA Nexus record (order/supplier/etc.)
+  parentTaskId String? // parent CommandTask.ref for subtasks
+  completedAt  DateTime?
+  createdAt    DateTime            @default(now())
+  updatedAt    DateTime            @updatedAt
+
+  @@index([assigneeId])
+  @@index([departmentId])
+  @@index([createdById])
+  @@index([status])
+  @@index([parentTaskId])
+}
+
+/// A grant-pipeline opportunity with deadline awareness. `amountMinor` is integer minor
+/// units of `currency`. `requirements` is a JSON checklist ([{item, done}]). `ownerId` is
+/// the assigned owner's User.ref — an owner may see/update their own grant even without
+/// the ceo/venture_manager role.
+model Grant {
+  ref          String      @id // readable id, e.g. GRNT-2026-0001
+  name         String
+  funder       String
+  amountMinor  Int
+  currency     String // e.g. USD, RWF
+  deadlineAt   DateTime?
+  status       GrantStatus @default(identified)
+  fitNotes     String?
+  nextAction   String?
+  ownerId      String? // assigned owner's User.ref
+  requirements Json     @default("[]") // [{ item: string, done: boolean }]
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+
+  @@index([status])
+  @@index([ownerId])
+  @@index([deadlineAt])
+}
+
+// ===========================================================================
+// Nexas Planning & Reviews (v1) — the OKR-style cascading-plan + weekly-rhythm
+// + KPI backbone that lets the CEO run the company ON PURPOSE and track growth.
+// Owns: Initiatives (the portfolio unit — the mother company + each project,
+// internal OR client), Plans (the quarter→month→week cascade of objectives),
+// WeeklyReports (the operating rhythm), and KPIs + their time-series values.
+// Authorisation is a MODULE-LOCAL policy (planning-access.ts) enforced at the
+// service layer and audited on denial — @uza/contracts ROLE_GRANTS does not
+// model these resources. Object-scope (own vs department vs all) mirrors the
+// Command Center: separate from the role gate, mirrored between read and list.
+//
+// KPI values are GENERIC floats (a KPI may be a count, a %, a rating, or money;
+// if it represents money the unit string is the caller's — no minor-unit
+// discipline is imposed on a free metric). Cross-module links (initiativeRef,
+// planRef, parentPlanRef) are free readable-ref strings like the rest of the app.
+// ===========================================================================
+
+enum InitiativeKind {
+  internal
+  client
+  /// A line of business in its own right — charging, the garage, Tunga Taxi. Neither an
+  /// internal project nor a single client engagement, and it needs to be countable
+  /// separately or the register cannot tell a venture from a to-do. (added 2026-08-21)
+  venture
+}
+
+enum InitiativeStatus {
+  active
+  paused
+  done
+  cancelled
+}
+
+enum PlanLevel {
+  quarter
+  month
+  week
+}
+
+enum PlanStatus {
+  draft
+  active
+  done
+}
+
+enum KpiDirection {
+  up_good
+  down_good
+}
+
+/// A portfolio unit: the UZA mother company or a single project (internal OR a
+/// client engagement). Plans, KPIs and (management) tasks can reference an
+/// initiative by its readable `ref`. `ownerId` is the accountable User.ref;
+/// `departmentId` optionally anchors it in the org for department-scoped reads.
+model Initiative {
+  ref          String           @id // readable id, e.g. INIT-2026-0001
+  name         String
+  kind         InitiativeKind
+  clientName   String? // set when kind = client
+  ownerId      String // accountable User.ref
+  departmentId String?
+  status       InitiativeStatus @default(active)
+  startedAt    DateTime?
+  targetDate   DateTime?
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+
+  // --- the register (added 2026-08-21) -------------------------------------
+  // `status` is LIFECYCLE (is this thing alive?). `attention` is ALLOCATION
+  // (is it getting weekly time?). They are genuinely different: an initiative
+  // can be active and on hold at the same time, and conflating them is how a
+  // register stops telling the truth.
+  attention   AttentionState @default(holds)
+  ventureCode String? // GROUP | BULK | MOBILITY | EMPOWER | CLOUD | NEXUS
+
+  /// One line. An initiative without a next action is a wish — the service
+  /// refuses to set attention=runs while this is empty, and the index below
+  /// makes "which initiatives have no next action" a one-query report.
+  nextAction String?
+
+  /// When a held initiative is looked at again. On that date it is started or
+  /// the date moves; it is never simply forgotten. Null while attention=runs.
+  reviewAt DateTime?
+
+  artifactUrl String? // the published document that settles this initiative
+
+  /// Set when status moves to done or cancelled. Kept separate from updatedAt so
+  /// "when did we stop" survives later edits to the record.
+  closedAt DateTime?
+
+  decisions ExecDecision[]
+  checkins  InitiativeCheckin[]
+
+  @@index([kind])
+  @@index([status])
+  @@index([ownerId])
+  @@index([departmentId])
+  @@index([attention])
+  @@index([reviewAt])
+  @@index([ventureCode, attention])
+}
+
+/// A plan in the cascade. An employee (`ownerId`) owns a `quarter`, `month` or
+/// `week` plan for a `periodKey` (e.g. 2026-Q3 / 2026-08 / 2026-W32). A week
+/// plan may name its month plan as `parentPlanRef`, a month plan its quarter
+/// plan — the cascade is validated (same owner, correct parent level) when the
+/// parent is supplied. `objectives` is a JSON list of { text, status } where
+/// status ∈ not_started | in_progress | done | dropped.
+model Plan {
+  ref           String     @id // readable id, e.g. PLAN-2026-0001
+  ownerId       String // the employee's User.ref
+  level         PlanLevel
+  periodKey     String // e.g. 2026-Q3, 2026-08, 2026-W32
+  parentPlanRef String? // week → month → quarter Plan.ref
+  initiativeRef String? // optional Initiative.ref this plan advances
+  objectives    Json       @default("[]") // [{ text: string, status: ObjectiveStatus }]
+  status        PlanStatus @default(draft)
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+
+  weeklyReport WeeklyReport?
+
+  @@unique([ownerId, level, periodKey]) // one plan per owner/level/period
+  @@index([ownerId])
+  @@index([level])
+  @@index([periodKey])
+  @@index([parentPlanRef])
+  @@index([initiativeRef])
+  @@index([status])
+}
+
+/// The weekly operating rhythm: exactly one report per week Plan. Captures what
+/// happened (`highlights`), what is stuck (`blockers`) and the intent for next
+/// week (`nextWeek`). `planRef` is unique so a week has a single report.
+model WeeklyReport {
+  ref         String   @id // readable id, e.g. WRPT-2026-0001
+  planRef     String   @unique // the week Plan.ref
+  ownerId     String // the employee's User.ref (mirrors the plan owner)
+  periodKey   String // the week key, e.g. 2026-W32
+  highlights  String
+  blockers    String?
+  nextWeek    String?
+  /// What this person needs FROM someone else this week. Free text, deliberately separate
+  /// from `blockers`: a blocker is something in the way, an ask is a trade. The ask is the
+  /// field that turns a status meeting into one people want to attend, so it is captured
+  /// even when nothing is blocked.
+  asking      String?
+  submittedAt DateTime @default(now())
+
+  plan     Plan      @relation(fields: [planRef], references: [ref], onDelete: Cascade)
+  raised   Blocker[]
+
+  @@index([ownerId])
+  @@index([periodKey])
+}
+
+/// A tracked metric. `direction` says which way is good (up_good | down_good).
+/// `target` is an optional threshold. Values are GENERIC floats (see the module
+/// header). `ownerId`/`departmentId`/`initiativeRef` anchor it for scoped reads.
+model Kpi {
+  ref           String       @id // readable id, e.g. KPI-2026-0001
+  name          String
+  unit          String // e.g. "USD", "%", "orders", "rating"
+  direction     KpiDirection @default(up_good)
+  target        Float?
+  ownerId       String?
+  departmentId  String?
+  initiativeRef String?
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  values KpiValue[]
+
+  @@index([ownerId])
+  @@index([departmentId])
+  @@index([initiativeRef])
+}
+
+/// One point in a KPI's time series: the metric's `value` (a generic Float) for
+/// a `periodKey`. Ordered by `recordedAt` to read the trend.
+model KpiValue {
+  ref        String   @id // readable id, e.g. KVAL-2026-00001
+  kpiRef     String
+  periodKey  String // e.g. 2026-08, 2026-Q3, 2026-W32
+  value      Float
+  recordedAt DateTime @default(now())
+
+  kpi Kpi @relation(fields: [kpiRef], references: [ref], onDelete: Cascade)
+
+  @@unique([kpiRef, periodKey]) // one value per KPI per period
+  @@index([kpiRef])
+  @@index([periodKey])
+}
+
+
+// ===========================================================================
+// The register's two additions (2026-08-21)
+//
+// Planning already models Initiative, Plan, WeeklyReport and KPIs. Two things
+// the operating model needs were missing, and both are added here rather than
+// in a competing module:
+//
+//   AttentionState — three initiatives run at a time; everything else HOLDS
+//                    with a named owner, a next action and a review date.
+//   ExecDecision   — what is waiting on the CEO. This table IS the bottleneck
+//                    metric, and nothing else in the system reports it honestly.
+// ===========================================================================
+
+/// A weekly line from the person accountable for an initiative.
+///
+/// The Planning module already has `WeeklyReport`, but that one hangs off a week `Plan`
+/// and cannot exist until a plan does. The register needs a check-in per initiative with
+/// no such precondition — otherwise the honest answer to "did anything move?" is blocked
+/// behind paperwork. Both are readable by the CEO review.
+///
+/// Unique on [initiativeRef, weekOf]: two filings in the same week collide and the second
+/// updates the first, rather than both landing and the register showing double progress.
+model InitiativeCheckin {
+  ref           String   @id // readable id, e.g. CHK-2026-0001
+  initiativeRef String
+  ownerId       String // User.ref of whoever filed it
+  weekOf        DateTime // the Monday of that week, UTC midnight
+
+  /// What actually moved. Required — a check-in that says nothing is not a check-in.
+  moved String
+
+  blocked      String?
+  /// What this owner needs from the CEO. When set, the review surfaces it next to the
+  /// decision queue, because a blocker nobody escalated is the same as no blocker.
+  needsFromCeo String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  initiative Initiative @relation(fields: [initiativeRef], references: [ref], onDelete: Cascade)
+
+  @@unique([initiativeRef, weekOf])
+  @@index([weekOf])
+  @@index([ownerId])
+}
+
+/// Something that arrived from outside the register and might belong in it.
+///
+/// Intake watches the places ideas actually appear — Claude Code transcripts, published
+/// artifacts, email — and files each one here. A Signal is NEVER an initiative. It is a
+/// candidate, and a person promotes it. The advisor may propose; only a human writes to
+/// the register, and the same rule governs everything that flows through this table.
+///
+/// `externalId` is the source's own identifier (a message id, a transcript uuid + offset,
+/// an artifact url). Unique with `source` so a sweep that re-reads the same mailbox or the
+/// same transcript file does not file the same thing twice — sweeps are expected to
+/// overlap, and idempotence is what makes "run it again" safe.
+model Signal {
+  ref        String       @id // readable id, e.g. SIG-2026-0001
+  source     SignalSource
+  externalId String // the source's own id, whatever shape it takes
+  lane       SignalLane   @default(shared)
+
+  title      String
+  /// The raw text as captured. Never shown outside the lane it was classified into.
+  body       String
+  /// A redacted one-paragraph summary. Phone numbers and national IDs are stripped before
+  /// this is written, because this is the field that appears in shared views.
+  summary    String?
+
+  /// Terms that triggered a compartmentalisation rule. Recorded even when the signal ends
+  /// up shared, so the reason a lane was chosen is auditable after the fact.
+  wallTags String[] @default([])
+
+  status SignalStatus @default(new)
+
+  /// What triage thinks this belongs to. A proposal, not a link — note there is no
+  /// relation and no foreign key: the register must not gain rows as a side effect of
+  /// something arriving in a mailbox.
+  proposedInitiativeRef String?
+  proposedAction        String?
+  /// Model confidence 0..1 from triage. Low confidence is a reason to read it yourself,
+  /// not a reason to hide it.
+  proposedConfidence    Float?
+
+  /// Set when a human acts on it. `promotedRef` is whatever was created — an initiative,
+  /// a decision, a task — recorded as a free ref so intake never has to know which.
+  promotedRef     String?
+  resolvedById    String?
+  resolvedAt      DateTime?
+  dismissedReason String?
+
+  occurredAt DateTime // when the thing actually happened at the source
+  capturedAt DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@unique([source, externalId])
+  @@index([status, occurredAt])
+  @@index([lane])
+  @@index([proposedInitiativeRef])
+}
+
+/// A standing duty that belongs to a person — not a task, not a project.
+///
+/// "Francois verifies documents on every shipment" is true continuously and is never
+/// finished. Modelling it as a task produces a hundred identical tasks; modelling it as an
+/// initiative produces an initiative that can never be closed. It is a third thing, and
+/// the register was missing it: the question "who does document verification, and what
+/// happens when they are away" had no answer anywhere in the system.
+///
+/// Two fields carry the weight:
+///
+///  - `backupId`. A duty with one name against it is a single point of failure that only
+///    reveals itself the week that person is unreachable.
+///  - `responseHours`. This is the clock. The observed failure at UZA is not that work is
+///    unassigned — it is that work sits waiting on an answer with no agreed time by which
+///    the answer is due. An approval without a response time is not a control, it is a
+///    queue, and the service refuses to create one.
+model Responsibility {
+  ref         String @id // readable id, e.g. RESP-2026-0001
+  name        String
+  ventureCode String? // GROUP | BULK | MOBILITY | EMPOWER | CLOUD | NEXUS
+
+  ownerId  String // User.ref of the person accountable
+  backupId String? // who covers when the owner is unreachable
+
+  kind    ResponsibilityKind
+  trigger ResponsibilityTrigger @default(ad_hoc)
+
+  /// Hours within which the owner must respond once triggered. Required when
+  /// kind = approval; optional elsewhere, where it reads as a service standard.
+  responseHours Int?
+
+  notes String?
+
+  /// Set when a duty does not start today — Francois's China verifications begin when he
+  /// lands in September. A future-dated duty is visible in the register now, which is the
+  /// point: it can be prepared for rather than discovered.
+  startsOn DateTime?
+  endsOn   DateTime?
+  active   Boolean   @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([ownerId])
+  @@index([backupId])
+  @@index([ventureCode, active])
+  @@index([kind])
+}
+
+enum ResponsibilityKind {
+  /// A continuous duty: run this, watch this, answer this.
+  standing
+  /// A check that must pass before work is allowed to proceed.
+  gate
+  /// Someone has to say yes. Always carries a response time.
+  approval
+}
+
+enum ResponsibilityTrigger {
+  per_shipment
+  per_deal
+  per_request
+  daily
+  weekly
+  monthly
+  ad_hoc
+}
+
+/// Every system UZA owns — a repository, a deployed app, a prototype.
+///
+/// The register says what the company is DOING; this says what it HAS. They are different
+/// questions and the second had no answer anywhere: seventeen repositories exist across
+/// two GitHub accounts, three of them duplicated, and the only record of which copy is
+/// canonical lived in one person's memory.
+///
+/// `initiativeRef` is a soft link with no foreign key on purpose. Most systems are not
+/// attached to a live initiative, and requiring one would either force fake initiatives
+/// into the register or keep real systems out of this table. Both are worse than a
+/// nullable string.
+model SystemRecord {
+  ref  String     @id // readable id, e.g. SYS-2026-0001
+  name String
+  kind SystemKind
+
+  ventureCode String? // GROUP | BULK | MOBILITY | EMPOWER | CLOUD | NEXUS
+  ownerId     String // User.ref of whoever answers for it
+  status      SystemStatus @default(building)
+
+  repoUrl String?
+  liveUrl String?
+  /// Whether the source is readable by the public. Recorded because it is a decision that
+  /// is almost always made by default rather than on purpose.
+  visibility SystemVisibility @default(unknown)
+
+  /// When someone last pushed to it. The single most honest signal of whether a system is
+  /// alive, and the only field here that cannot be talked up in a meeting.
+  lastPushAt DateTime?
+
+  /// The canonical copy, when the same system exists in more than one place. Set on the
+  /// duplicate, pointing at the one to keep.
+  supersededBy String?
+
+  initiativeRef String?
+  notes         String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  verifications SystemVerification[]
+
+  @@index([ventureCode, status])
+  @@index([ownerId])
+  @@index([status])
+}
+
+enum SystemKind {
+  repository
+  web_app
+  mobile_app
+  backend
+  admin_panel
+  prototype
+  document
+}
+
+enum SystemStatus {
+  live // in use by someone outside the team
+  building
+  prototype
+  dormant // nothing has happened for months and nobody is waiting on it
+  retired
+}
+
+enum SystemVisibility {
+  public
+  private
+  unknown
+}
+
+/// One occasion on which somebody actually RAN a system's checks, and what happened.
+///
+/// The estate says what UZA has and whether anyone still pushes to it. It does not say
+/// whether the thing currently works, and "is it ready?" was being answered in meetings
+/// from memory — which is how a system stays "nearly done" for two months.
+///
+/// Every field here is a measurement with a timestamp, never a judgement. "Ready" is a
+/// claim somebody can defend in a meeting; "149 tests passed at 11:42 on 30 August" is
+/// not, and it goes stale on its own without anyone having to admit anything.
+///
+/// Rows are append-only by convention: a verification is a historical fact about a
+/// moment, so a later run adds a row rather than editing this one. That gives the
+/// founder a trend — improving, stuck, or regressing — which a single mutable status
+/// field cannot.
+model SystemVerification {
+  ref       String @id // readable id, e.g. VER-2026-0001
+  systemRef String
+
+  /// When the checks were run, not when the row was written. A verification imported
+  /// later still belongs to the moment it measured.
+  verifiedAt DateTime
+
+  typecheck   CheckOutcome @default(not_run)
+  tests       CheckOutcome @default(not_run)
+  imageBuilds CheckOutcome @default(not_run)
+
+  /// Counts, where a suite ran. `testsPassed < testsTotal` with tests = pass would be a
+  /// contradiction, and the service refuses it rather than storing it.
+  testsPassed Int?
+  testsTotal  Int?
+
+  /// Endpoints, screens or features that exist but have nothing behind them yet.
+  /// Recorded because "builds clean" and "is finished" are different questions, and
+  /// only the first one is easy to measure.
+  gaps String?
+
+  /// Who or what ran it. A person's User.ref, or a pipeline name.
+  verifiedBy String
+
+  notes     String?
+  createdAt DateTime @default(now())
+
+  system SystemRecord @relation(fields: [systemRef], references: [ref], onDelete: Cascade)
+
+  @@index([systemRef, verifiedAt])
+  @@index([verifiedAt])
+}
+
+enum CheckOutcome {
+  pass
+  fail
+  /// The check does not apply — a document has no test suite, and recording that as a
+  /// failure would make the estate look broken when it is merely varied.
+  not_applicable
+  /// Nobody ran it. Distinct from not_applicable: this one is a gap in the evidence.
+  not_run
+}
+
+/// A message from the CEO or a project manager to the team, with proof it was read.
+///
+/// This is not chat, and it should not become chat. Chat is for conversation and UZA
+/// already has somewhere for that. A memo is for the thing chat is worst at: something
+/// that must reach specific people and be known to have reached them. The receipts are
+/// the entire point — an announcement nobody can show was read is a hope.
+model Memo {
+  ref     String @id // readable id, e.g. MEMO-2026-0001
+  subject String
+  body    String
+
+  fromId      String // User.ref of the sender
+  audience    MemoAudience
+  /// Set when audience = department.
+  departmentCode String?
+  /// Set when audience = person.
+  toId           String?
+  ventureCode    String?
+
+  /// When true the reader must acknowledge, not merely open it. Use for anything that
+  /// changes how someone works — a new rule, a threshold, a deadline.
+  needsAck Boolean @default(false)
+
+  /// A memo attached to an initiative or a decision, so the reason is one click away.
+  linkedRef String?
+
+  sentAt   DateTime @default(now())
+  receipts MemoReceipt[]
+
+  @@index([fromId])
+  @@index([sentAt])
+  @@index([audience])
+}
+
+model MemoReceipt {
+  id       String @id @default(uuid())
+  memoRef  String
+  userRef  String
+  readAt   DateTime?
+  ackedAt  DateTime?
+
+  memo Memo @relation(fields: [memoRef], references: [ref], onDelete: Cascade)
+
+  @@unique([memoRef, userRef])
+  @@index([userRef])
+}
+
+enum MemoAudience {
+  everyone
+  department
+  person
+}
+
+/// Money being raised, for one thing, from one counterparty.
+///
+/// The register says what UZA is doing and the estate says what it owns. Neither says what
+/// is being raised, from whom, and — the part that has never been written down anywhere —
+/// **what unblocks if it closes**.
+///
+/// That last field is the whole reason this model exists. The founder's strategy is that
+/// each venture must stand alone to a funder, and whichever closes first pushes the others
+/// forward. That only works if the push is written down before the money arrives, because
+/// afterwards everyone has an opinion about where it should go.
+///
+/// `Grant` already models a grant application and its requirement checklist. This does not
+/// replace it: when `instrument = grant`, `grantRef` points at that record and the two are
+/// read together. Debt, revolvers, facilities and equity had no home at all.
+model FundingTrack {
+  ref  String @id // readable id, e.g. FUND-2026-0001
+  name String
+
+  instrument  FundingInstrument
+  funder      String
+  ventureCode String? // which venture it belongs to — null means group-level
+
+  /// Whole currency units, not minor. These are facility-sized numbers where a cent is
+  /// noise, and storing 430,000,000 as 43,000,000,000 helps nobody read it.
+  amountSought Float
+  currency     String  @default("RWF")
+
+  stage   FundingStage @default(identified)
+  ownerId String
+
+  /// The initiative refs this money releases. Soft refs, no foreign key: a funding track
+  /// routinely unblocks work that has not been entered in the register yet, and refusing
+  /// to record the intent until it has is how the intent gets lost.
+  unlocks String[] @default([])
+
+  /// What UZA can actually evidence to this funder today. Written honestly or the track is
+  /// worthless — the gap between this and what they will ask for IS the work.
+  evidence String?
+  /// The single thing standing in the way right now.
+  blocker  String?
+
+  decisionBy DateTime? // when the funder is expected to decide
+  closedAt   DateTime?
+  grantRef   String? // set when instrument = grant
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([stage])
+  @@index([ventureCode, stage])
+  @@index([ownerId])
+}
+
+enum FundingInstrument {
+  grant
+  concessional // blended or below-market, e.g. a green facility
+  debt // a term loan
+  revolver // short-cycle working capital, repaid each turn
+  facility // a lender line the programme draws against, e.g. an LC line
+  equity
+  offtake // not money, but a commitment that makes money raisable
+}
+
+enum FundingStage {
+  identified
+  qualifying // finding out whether UZA is eligible at all
+  preparing
+  submitted
+  in_diligence
+  approved
+  closed // money available
+  declined
+  parked
+}
+
+enum SignalSource {
+  claude_code // a local Claude Code session transcript
+  artifact // a published artifact
+  email
+  manual // typed in by a person
+  /// A commit landed in one of the configured repositories. Deliberately tool-agnostic:
+  /// a commit built with Claude Code and one built in Lovable are indistinguishable here,
+  /// on purpose — this source answers "what shipped", not "which tool wrote it", which is
+  /// the harmonised, one-pipeline view across the estate that a per-tool source could not
+  /// give without adding a wall between two things that are the same kind of fact.
+  git_commit
+}
+
+enum SignalLane {
+  /// Visible to anyone holding intake:read.
+  shared
+  /// CEO only. Applied automatically by the compartmentalisation rules and never
+  /// downgraded except by an explicit executive act.
+  private
+}
+
+enum SignalStatus {
+  new // captured, not yet triaged
+  triaged // the advisor has proposed a home for it
+  promoted // a human turned it into something in the register
+  dismissed
+}
+
+enum AttentionState {
+  runs // gets weekly time and headcount
+  holds // named owner + next action + review date, no weekly time
+  parked // deliberately not now, written down so it stops taking up attention
+}
+
+enum DecisionStatus {
+  open
+  answered
+  deferred
+}
+
+/// Decisions waiting on the CEO. If rows sit open for more than a few days the
+/// founder is the constraint — measurably, not as an impression. Raised by
+/// anyone, answered only by ceo/venture_manager.
+model ExecDecision {
+  ref           String         @id // readable id, e.g. DEC-2026-0001
+  question      String // stated so it has a decidable answer
+  context       String?
+  initiativeRef String?
+  raisedById    String // User.ref
+  raisedAt      DateTime       @default(now())
+  status        DecisionStatus @default(open)
+
+  answer     String?
+  answeredById String?
+  answeredAt DateTime?
+
+  /// A decision may be postponed — but only to a date, never indefinitely.
+  deferredTo DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  initiative Initiative? @relation(fields: [initiativeRef], references: [ref])
+
+  @@index([status, raisedAt])
+  @@index([initiativeRef])
+  @@index([raisedById])
+}
+
+
+// ============================================================
+// UMURIMO — the people-and-work layer.
+//
+// A module INSIDE Nexus with a clean boundary, not a separate deployment: its own access
+// policy (`umurimo-access.ts`), its own readable ids (`umurimo-ids.ts`), no direct joins
+// across into planning beyond a ref. If it is ever split into its own service, the seam is
+// already cut and the move is a folder plus a connection string.
+//
+// Nexus answers "what is the company doing". Umurimo answers "who is doing it, and how are
+// they". These two models are the smallest thing that makes the second question answerable.
+// ============================================================
+
+/// One thing standing in someone's way, raised in a weekly review.
+///
+/// The whole point of this model is `ownerId` and `dueAt` being NULLABLE and SURFACED. A
+/// blocker with neither is a complaint; a blocker with both is work. `unowned()` returns the
+/// first kind, and the discipline is that none should survive the end of the meeting it was
+/// raised in. Storing blockers only as free text on the report — which is what the schema did
+/// before — makes that check impossible, which is why this table exists.
+model Blocker {
+  ref       String @id // readable id, e.g. BLK-2026-0001
+  reportRef String // the WeeklyReport it was raised in
+  raisedBy  String // User.ref
+  summary   String
+
+  /// Who will clear it. NULL is the finding, not an omission.
+  ownerId String?
+  /// By when. NULL is the finding, not an omission.
+  dueAt   DateTime?
+  /// Set when someone accepts it, so "raised on Monday, owned on Thursday" stays visible.
+  ownedAt DateTime?
+
+  clearedAt   DateTime?
+  clearedBy   String?
+  clearedNote String?
+
+  createdAt DateTime @default(now())
+
+  report WeeklyReport @relation(fields: [reportRef], references: [ref], onDelete: Cascade)
+
+  @@index([reportRef])
+  @@index([ownerId])
+  @@index([clearedAt])
+  @@index([dueAt])
+}
+
+/// Why a thing is the way it is, attached to the thing.
+///
+/// This is NOT chat. The test applied throughout the module: if the message would be
+/// meaningless without knowing which record it concerns, it belongs here; if it makes sense on
+/// its own, it belongs in WhatsApp. Polymorphic by (`subjectType`, `subjectRef`) so one table
+/// serves initiatives, decisions, reports, blockers and candidate files — but `subjectType` is
+/// validated against an allowlist in the service, because an unconstrained polymorphic key
+/// becomes a dumping ground within a month.
+model Comment {
+  ref         String      @id // readable id, e.g. CMT-2026-000123
+  subjectType String // validated allowlist — see COMMENT_SUBJECTS
+  subjectRef  String // the target record's readable ref
+  parentRef   String? // threading; NULL is a root comment
+  authorId    String // User.ref
+  body        String
+  kind        CommentKind @default(comment)
+
+  /// User.refs explicitly asked to look. Drives notification; does not grant access — a
+  /// mention never widens what someone may read.
+  mentions String[] @default([])
+
+  /// Only meaningful for `kind = request`: an open request is one the team still owes an
+  /// answer to, and that set is what the weekly digest surfaces.
+  resolvedAt   DateTime?
+  resolvedBy   String?
+  resolvedNote String?
+
+  createdAt DateTime  @default(now())
+  editedAt  DateTime?
+
+  parent  Comment?  @relation("CommentThread", fields: [parentRef], references: [ref], onDelete: Cascade)
+  replies Comment[] @relation("CommentThread")
+
+  @@index([subjectType, subjectRef, createdAt])
+  @@index([authorId])
+  @@index([parentRef])
+  @@index([kind, resolvedAt])
+}
+
+enum CommentKind {
+  /// An observation. Nobody owes a reply.
+  comment
+  /// An explicit request for the team to weigh in. Open until resolved, and surfaced in the
+  /// weekly digest until it is.
+  request
+}
+
+
+/// A task mirrored FROM the team workspace.
+///
+/// Nexus does not own this row and must never write a change back into it. The workspace is
+/// where work is done; this is a read-only shadow so that Nexus can answer questions a task
+/// board structurally cannot — did the week's commitments actually complete, who is silent,
+/// what recurs. Observing a system is a different thing from acting in it, and the second
+/// requires a decision nobody has made.
+///
+/// Pushed in rather than fetched out. Push needs no credentials stored in Nexus, works
+/// whether the workspace is a UZA build or a third-party product, and fails loudly instead of
+/// silently going stale the way a broken poller does.
+model WorkspaceTask {
+  /// The workspace's own id. Upserts key on this, so re-pushing is safe and idempotent.
+  externalId String @id
+
+  title       String
+  status      WorkspaceTaskStatus
+  project     String?
+  priority    String?
+  url         String?
+
+  /// Whose it is, as the workspace knows them. Kept verbatim even when it maps to nobody,
+  /// because an unmapped assignee is a finding to report, not a row to drop.
+  assigneeEmail String?
+  /// Resolved User.ref, when an active employee has that email. Null is normal and visible.
+  assigneeRef   String?
+
+  createdAtSource DateTime?
+  deadline        DateTime?
+  completedAt     DateTime?
+  /// What the person wrote when they finished it. The most useful field on the whole row.
+  completionNote  String?
+
+  /// When Nexus last heard about it. A task that stops being pushed goes stale and is
+  /// answerable as such, rather than quietly looking current forever.
+  syncedAt DateTime @default(now())
+
+  @@index([assigneeRef, status])
+  @@index([status, deadline])
+  @@index([project])
+  @@index([syncedAt])
+}
+
+enum WorkspaceTaskStatus {
+  todo
+  in_progress
+  done
+}
+
+// ─────────────────────────────────────────────────────────────────── The UZA ID
+//
+// One person, one identifier, used by every UZA system: the Mobility platform, the
+// candidate portal, the charging platform, the taxi app, the wallet, the battery
+// registry and Nexus itself.
+//
+// WHY THIS IS FEDERATION AND NOT A MERGE
+//
+// Each satellite system keeps its own user table and its own database. What changes is
+// that each one records the person's UZA ID alongside its local row, and Nexus holds the
+// map. That means:
+//
+//   · No destructive migration. Nothing is deleted, nothing is moved, and a system that
+//     has not adopted the ID yet simply has no link row — visible as a gap rather than
+//     as a wrong answer.
+//   · It is reversible. A merge is not.
+//   · It can be rolled out one system at a time, which is the only way it will actually
+//     happen while five other things are also being launched.
+//
+// WHY THERE IS NO PERSONAL DATA IN HERE
+//
+// Nexus holds NO national ID and NO phone number in clear. It holds a peppered hash of
+// each, used only to answer "are these two records the same person?", plus a display name
+// so a human can read the register. The real values stay in the system that legitimately
+// collects them, under the consent given there.
+//
+// This is not caution for its own sake. Nexus is the one system every employee can reach,
+// so it is the worst possible place to concentrate identity documents — and under Law
+// N° 058/2021 the obligation follows the data. Not holding it is the strongest control
+// available, and it costs nothing here because matching only ever needs equality.
+
+/// A natural person, known to UZA once, across every system.
+model Person {
+  id          String   @id @default(uuid())
+  ref         String   @unique /// the UZA ID, e.g. UZA-P-000123. Permanent.
+  displayName String /// for humans reading a register. Not used for matching.
+
+  /// SHA-256 of (normalised value + UZA_ID_PEPPER). Match keys, never identifiers.
+  /// The pepper is mandatory: a national ID has a small enough space that an unpeppered
+  /// hash is recoverable by brute force in minutes, which would make this table the
+  /// identity-document store it exists to avoid being.
+  phoneHash      String? @unique
+  nationalIdHash String? @unique
+
+  /// Consent to be included in aggregate impact reporting (Law N° 058/2021).
+  /// Revocable: withdrawing removes the person from FUTURE aggregates. It cannot rewrite
+  /// a report already issued, and intake says so out loud.
+  reportingConsent   Boolean   @default(false)
+  consentRecordedAt  DateTime?
+  consentWithdrawnAt DateTime?
+
+  mergedIntoRef String? /// set when this record was folded into another. Never deleted.
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  links PersonLink[]
+
+  @@index([mergedIntoRef])
+}
+
+/// One person as a given system knows them. The join that makes the UZA ID real.
+model PersonLink {
+  id         String   @id @default(uuid())
+  personRef  String /// Person.ref
+  system     String /// e.g. "mobility", "charge", "evfleet", "battery", "nexus", "taxi"
+  externalId String /// that system's own primary key or username for this person
+  note       String?
+  createdAt  DateTime @default(now())
+
+  person Person @relation(fields: [personRef], references: [ref], onDelete: Cascade)
+
+  /// A system may know a person exactly once. This is the constraint that stops the
+  /// fragmentation from re-forming: a second link for the same (system, externalId)
+  /// fails loudly rather than quietly creating a second identity.
+  @@unique([system, externalId])
+  @@index([personRef])
+}
+
+// ───────────────────────────────────────────────────── Lender disclosure
+//
+// Which lender may see which borrower, and whether that borrower agreed to it.
+//
+// Entitlement and consent are deliberately ONE record with two dates rather than two
+// tables. A lender is entitled because it has a loan with this person, and the consent it
+// holds is consent to THAT lender — the two facts are born together at origination and
+// they die together. Splitting them invites a row of one kind without the other, which is
+// exactly the state that produces an accidental disclosure.
+//
+// Under Law N° 058/2021 consent is specific. Agreeing that Unguka may see a file is not
+// agreeing that Equity may, so there is one row per (person, lender) and no global
+// "consents to lenders" flag anywhere.
+
+/// A lender's entitlement to one borrower's file, and that borrower's consent to it.
+model LenderBorrower {
+  id        String @id @default(uuid())
+  personRef String /// Person.ref — the UZA ID
+  lender    String /// normalised lender key, e.g. "unguka", "equity"
+  loanRef   String? /// the lender's OWN reference for the loan, for their reconciliation
+
+  /// Null means never given. Consent is affirmative — absence is refusal, not permission.
+  consentGivenAt     DateTime?
+  /// Set on withdrawal. Kept rather than clearing consentGivenAt, so the record shows that
+  /// consent existed and when it ended — which is what an audit or a complaint needs.
+  consentWithdrawnAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  /// A lender knows a person once. Two rows would mean two answers to "may they see this".
+  @@unique([personRef, lender])
+  @@index([lender])
 }

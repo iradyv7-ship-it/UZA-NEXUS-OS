@@ -11,11 +11,11 @@ import type { Actor } from '@uza/contracts';
  * a shipment the by-ref read would deny, and must never hide one it would admit. The unit
  * test `list agrees with inScope` pins the two together.
  *
- * A `Shipment` carries neither `customerRef` nor `agentId`, so the `customer` and
- * `sales_agent` branches of `inScope` (which key on those fields) can never match a
- * shipment ⇒ they admit nothing. Those roles also hold no relevant grant on the partner
- * portal, so `authorize()` denies before this predicate ever runs; the branches below keep
- * the mirror TOTAL and are exercised directly by the agreement test.
+ * A `Shipment` carries neither `customerRef` nor `agentId`, so `sales_agent`'s branch of
+ * `inScope` (which keys on those fields) can never match a shipment ⇒ it admits nothing.
+ * That role also holds no relevant grant on the partner portal, so `authorize()` denies
+ * before this predicate ever runs; the branch below keeps the mirror TOTAL and is
+ * exercised directly by the agreement test.
  *
  * Role grants are checked separately (via `AuthorizationService.authorize(actor,
  * 'shipment', 'read')` with no object) BEFORE this predicate runs — a role lacking the read
@@ -38,10 +38,6 @@ export const shipmentScopeWhere = (actor: Actor): ShipmentScopeWhere => {
     case 'china_warehouse':
     case 'front_office':
       return {};
-
-    // inScope keys on obj.customerId, which a Shipment does not carry ⇒ admits nothing.
-    case 'customer':
-      return MATCH_NONE;
 
     // inScope keys on obj.agentId / obj.customerId, neither of which a Shipment carries
     // ⇒ admits nothing.

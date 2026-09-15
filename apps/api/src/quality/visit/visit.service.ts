@@ -1,3 +1,4 @@
+import { nextSequence } from '../../platform/ids/next-sequence';
 import { Injectable, NotFoundException } from '@nestjs/common';
 import type { Actor } from '@uza/contracts';
 import { PrismaService } from '../../prisma/prisma.service';
@@ -34,7 +35,9 @@ export class VisitService {
     if (!po) throw new NotFoundException(`purchase order ${input.poRef} not found`);
 
     return this.prisma.$transaction(async (tx) => {
-      const seq = (await tx.visit.count()) + 1;
+      const seq = await nextSequence(tx.visit, (n) =>
+        makeRef('visit', { country: COUNTRY, year: currentYear(), seq: n }),
+      );
       const ref = makeRef('visit', { country: COUNTRY, year: currentYear(), seq });
       const visit = await tx.visit.create({
         data: {
@@ -59,7 +62,10 @@ export class VisitService {
 
   async read(actor: Actor, ref: string) {
     await this.authz.authorize(actor, 'visit', 'read');
-    const visit = await this.prisma.visit.findUnique({ where: { ref }, include: { inspections: true } });
+    const visit = await this.prisma.visit.findUnique({
+      where: { ref },
+      include: { inspections: true },
+    });
     if (!visit) throw new NotFoundException(`visit ${ref} not found`);
     return visit;
   }

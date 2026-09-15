@@ -19,3 +19,14 @@ export const makeRef = (kind: IdKind, parts: IdParts): string => formatId(kind, 
 export const supplierRef = (seq: number): string => formatId('supplier', { country: COUNTRY, seq });
 export const rfqRef = (seq: number): string => formatId('rfq', { year: currentYear(), seq });
 export const supplierQuoteRef = (seq: number): string => formatId('supplierQuote', { seq });
+
+/**
+ * `supplierOffer`/`supplierDeal` are NOT yet in @uza/contracts ID_PATTERNS — filed as
+ * docs/contract-requests/2026-09-14-supplier-deal-ids-policy-and-masking.md. Rendered
+ * locally, same convention `supplier`/`rfq`/`supplierQuote` used before their own
+ * ID_PATTERNS entries were accepted (docs/contract-requests/2026-07-25-supplier-scoring-
+ * and-ids.md). Delete these once the contract lands and re-point at formatId.
+ */
+const pad = (n: number, width: number): string => String(n).padStart(width, '0');
+export const supplierOfferRef = (seq: number): string => `OFF-${COUNTRY}-${currentYear()}-${pad(seq, 4)}`;
+export const supplierDealRef = (seq: number): string => `DEAL-${COUNTRY}-${currentYear()}-${pad(seq, 4)}`;

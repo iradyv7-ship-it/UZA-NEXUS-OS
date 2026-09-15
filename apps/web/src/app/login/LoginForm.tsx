@@ -19,7 +19,7 @@ function SubmitButton({ idle, busy }: { idle: string; busy: string }) {
     <button
       type="submit"
       disabled={pending}
-      className="w-full rounded-lg bg-brand px-4 py-3 text-base font-semibold text-white transition active:scale-[0.99] disabled:opacity-60"
+      className="w-full rounded-lg bg-primary px-4 py-3 text-base font-semibold text-surface transition active:scale-[0.99] disabled:opacity-60"
     >
       {pending ? busy : idle}
     </button>
@@ -32,7 +32,7 @@ export default function LoginForm({ labels }: { labels: Labels }) {
   return (
     <form action={formAction} className="space-y-4">
       <div>
-        <label htmlFor="email" className="mb-1 block text-sm font-medium text-slate-700">
+        <label htmlFor="email" className="mb-1 block text-sm font-medium text-fgMuted">
           {labels.email}
         </label>
         <input
@@ -42,11 +42,11 @@ export default function LoginForm({ labels }: { labels: Labels }) {
           required
           autoComplete="username"
           inputMode="email"
-          className="w-full rounded-lg border border-slate-300 px-3 py-3 text-base outline-none focus:border-brand focus:ring-2 focus:ring-brand/30"
+          className="w-full rounded-lg border border-border px-3 py-3 text-base outline-none focus:border-primary focus:ring-2 focus:ring-primary/30"
         />
       </div>
       <div>
-        <label htmlFor="password" className="mb-1 block text-sm font-medium text-slate-700">
+        <label htmlFor="password" className="mb-1 block text-sm font-medium text-fgMuted">
           {labels.password}
         </label>
         <input
@@ -55,12 +55,12 @@ export default function LoginForm({ labels }: { labels: Labels }) {
           type="password"
           required
           autoComplete="current-password"
-          className="w-full rounded-lg border border-slate-300 px-3 py-3 text-base outline-none focus:border-brand focus:ring-2 focus:ring-brand/30"
+          className="w-full rounded-lg border border-border px-3 py-3 text-base outline-none focus:border-primary focus:ring-2 focus:ring-primary/30"
         />
       </div>
 
       {state.error && (
-        <p role="alert" className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">
+        <p role="alert" className="rounded-lg bg-danger/10 px-3 py-2 text-sm text-danger">
           {state.error === 'network' ? labels.network : labels.invalid}
         </p>
       )}

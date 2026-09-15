@@ -14,9 +14,17 @@ export const TOKEN_COOKIE = 'uza_token';
 export const ACTOR_COOKIE = 'uza_actor';
 export const LOCALE_COOKIE = 'uza_locale';
 
+// 'customer' deliberately excluded — see packages/contracts/src/permissions.ts. Nexus is the
+// internal operating layer; customer-facing access belongs on uzabulk.com.
 export type Role =
-  | 'ceo' | 'venture_manager' | 'china_sourcing' | 'china_warehouse'
-  | 'front_office' | 'finance' | 'sales_agent' | 'customer' | 'logistics_partner';
+  | 'ceo'
+  | 'venture_manager'
+  | 'china_sourcing'
+  | 'china_warehouse'
+  | 'front_office'
+  | 'finance'
+  | 'sales_agent'
+  | 'logistics_partner';
 
 export interface Actor {
   userId: string;

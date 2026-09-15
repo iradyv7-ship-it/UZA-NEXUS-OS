@@ -15,7 +15,10 @@ export async function approveQuotationAction(formData: FormData): Promise<void> 
 
 export async function createOrderAction(formData: FormData): Promise<void> {
   const ref = String(formData.get('ref') ?? '');
-  const res = await authedCall<{ ref: string }>('/orders', { method: 'POST', body: { quotationRef: ref } });
+  const res = await authedCall<{ ref: string }>('/orders', {
+    method: 'POST',
+    body: { quotationRef: ref },
+  });
   if (res.kind === 'unauthorized') redirect('/login');
   if (res.kind !== 'ok') redirect(`/quotations/${ref}?err=order`);
   const orderRef = res.kind === 'ok' ? res.data.ref : '';

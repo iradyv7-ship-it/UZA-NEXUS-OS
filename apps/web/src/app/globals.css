@@ -2,13 +2,88 @@
 @tailwind components;
 @tailwind utilities;
 
+/*
+ * UZA Build branding project — design tokens (Claude Design canvas).
+ * Same brand book as before (dark navy + cyber orange): this formalises it into semantic
+ * HSL custom properties with real light/dark support, rather than a rebrand.
+ *
+ * Three-state pattern:
+ *  1. Bare `:root`            — the complete light palette (also the fallback for browsers
+ *                                that ignore prefers-color-scheme).
+ *  2. `prefers-color-scheme`  — guarded by `:not([data-theme="light"])` so a future manual
+ *                                override can still force light even on a dark OS.
+ *  3. `[data-theme="dark"]`   — repeated so a future explicit toggle (not built yet — there
+ *                                is no UI control for it in this pass) works the same way.
+ */
 :root {
-  color-scheme: light;
+  --primary: 212 35% 21%; /* #233448 — existing brand navy, unchanged */
+  --primary-soft: 212 30% 32%; /* one step lighter, same hue — hover/active */
+  --accent: 35 96% 62%; /* #FBAF43 — existing brand cyber orange, unchanged */
+  --accent-strong: 35 82% 42%; /* AA-safe accent for text/icons on a light surface */
+
+  --bg: 240 6% 97%;
+  --surface: 0 0% 100%;
+  --surface-2: 240 5% 94%;
+  --border: 240 5% 87%;
+  --fg: 212 35% 13%;
+  --fg-muted: 212 12% 38%;
+  --fg-subtle: 212 9% 52%;
+
+  --ok: 155 42% 27%;
+  --warn: 33 72% 32%;
+  --danger: 4 58% 41%;
+  --info: 212 35% 33%;
+
+  color-scheme: light dark;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    --primary: 210 18% 94%; /* navy inverts to near-white; dark mode doesn't fill with navy */
+    --primary-soft: 210 14% 76%;
+    --accent: 35 92% 60%;
+    --accent-strong: 35 92% 66%; /* brighter, for AA against the darker surface */
+
+    --bg: 212 24% 8%;
+    --surface: 212 22% 11%;
+    --surface-2: 212 18% 15%;
+    --border: 212 14% 20%;
+    --fg: 210 16% 95%;
+    --fg-muted: 212 11% 70%;
+    --fg-subtle: 212 9% 56%;
+
+    --ok: 152 45% 62%;
+    --warn: 38 85% 64%;
+    --danger: 4 76% 68%;
+    --info: 206 70% 70%;
+  }
+}
+
+:root[data-theme='dark'] {
+  --primary: 210 18% 94%;
+  --primary-soft: 210 14% 76%;
+  --accent: 35 92% 60%;
+  --accent-strong: 35 92% 66%;
+
+  --bg: 212 24% 8%;
+  --surface: 212 22% 11%;
+  --surface-2: 212 18% 15%;
+  --border: 212 14% 20%;
+  --fg: 210 16% 95%;
+  --fg-muted: 212 11% 70%;
+  --fg-subtle: 212 9% 56%;
+
+  --ok: 152 45% 62%;
+  --warn: 38 85% 64%;
+  --danger: 4 76% 68%;
+  --info: 206 70% 70%;
 }
 
 html,
 body {
-  @apply bg-slate-50 text-slate-900 antialiased;
+  background: hsl(var(--bg));
+  color: hsl(var(--fg));
+  @apply antialiased;
 }
 
 /* Tap targets never smaller than 44px — one-handed use on a phone (charter). */

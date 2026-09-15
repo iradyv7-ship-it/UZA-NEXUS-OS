@@ -1,9 +1,4 @@
-import {
-  ArgumentsHost,
-  Catch,
-  ExceptionFilter,
-  HttpStatus,
-} from '@nestjs/common';
+import { ArgumentsHost, Catch, ExceptionFilter, HttpStatus } from '@nestjs/common';
 import { UzaError, type UzaErrorCode } from '@uza/contracts';
 
 /** Minimal shape of the underlying HTTP response — avoids a hard dependency on express types. */

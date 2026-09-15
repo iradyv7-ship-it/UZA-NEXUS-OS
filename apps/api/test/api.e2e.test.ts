@@ -65,7 +65,13 @@ beforeAll(async () => {
   const org = await identity.createOrganisation(ceoActor, 'UZA Solutions Ltd');
   const off = await identity.createOffice(ceoActor, org.id, 'GOM', 'Goma HQ');
   const seed = (ref: string, email: string, role: string) =>
-    identity.createEmployee(ceoActor, { ref, email, password: 'password1', role: role as never, officeId: off.id });
+    identity.createEmployee(ceoActor, {
+      ref,
+      email,
+      password: 'password1',
+      role: role as never,
+      officeId: off.id,
+    });
   await seed('CEO-RW-0001', 'ceo@uza.rw', 'ceo');
   await seed('AGT-GOM-0021', 'agent@uza.rw', 'sales_agent');
   await seed('VM-RW-0001', 'vm@uza.rw', 'venture_manager');
@@ -79,9 +85,35 @@ beforeAll(async () => {
     env: { ...process.env, PORT: String(PORT) },
   });
   await new Promise<void>((resolve, reject) => {
-    const timer = setTimeout(() => reject(new Error('API did not start in time')), 45_000);
+    // BOOT_TIMEOUT is generous on purpose, and the reason is worth knowing before you
+    // shrink it again.
+    //
+    // This spawns the real API under @swc-node/register, which compiles the whole
+    // application on the fly. With a COLD swc cache that is slow — slower than the 45s
+    // this used to allow — so the suite failed here on a first run and passed on a retry,
+    // which looked like flakiness and was really a cold cache. It is not CPU contention:
+    // vitest runs these files serially (fileParallelism: false, singleFork).
+    //
+    // It must also stay comfortably below the hook timeout below, or vitest kills the hook
+    // first and you get a timeout with no output instead of the message built here.
+    const BOOT_TIMEOUT = 100_000;
+    let outBuf = '';
+    const timer = setTimeout(
+      () =>
+        reject(
+          new Error(
+            `API did not start within ${BOOT_TIMEOUT / 1000}s.
+` +
+              `stdout: ${outBuf.slice(-800) || '(nothing)'}
+` +
+              `stderr: ${errBuf.slice(-800) || '(nothing)'}`,
+          ),
+        ),
+      BOOT_TIMEOUT,
+    );
     let errBuf = '';
     server.stdout.on('data', (d: Buffer) => {
+      outBuf += d.toString();
       if (d.toString().includes('listening on')) {
         clearTimeout(timer);
         resolve();
@@ -101,7 +133,7 @@ beforeAll(async () => {
   tokens.agent = await login('agent@uza.rw', 'password1');
   tokens.finance = await login('finance@uza.rw', 'password1');
   tokens.front = await login('front@uza.rw', 'password1');
-}, 60_000);
+}, 150_000);
 
 afterAll(async () => {
   server?.kill('SIGTERM');
@@ -138,7 +170,13 @@ describe('permission denial surfaces as 403', () => {
   it('a sales_agent cannot build a quotation (ACCESS_DENIED_ROLE)', async () => {
     const res = await api('POST', '/quotations', {
       token: tokens.agent,
-      body: { projectRef: 'PRJ-X', supplierUnitCostMinor: 1000, estCostsMinor: { exw: 1000 }, qty: 1, requiredMargin: 0.2 },
+      body: {
+        projectRef: 'PRJ-X',
+        supplierUnitCostMinor: 1000,
+        estCostsMinor: { exw: 1000 },
+        qty: 1,
+        requiredMargin: 0.2,
+      },
     });
     expect(res.status).toBe(403);
     const error = res.body.error as Json;
@@ -183,7 +221,13 @@ describe('masking is enforced at the API boundary (trade happy path)', () => {
 
     const quotation = await api('POST', '/quotations', {
       token: tokens.ceo,
-      body: { projectRef, supplierUnitCostMinor: 10_000, estCostsMinor: { exw: 10_000, ocean: 2_000 }, qty: 50, requiredMargin: 0.2 },
+      body: {
+        projectRef,
+        supplierUnitCostMinor: 10_000,
+        estCostsMinor: { exw: 10_000, ocean: 2_000 },
+        qty: 50,
+        requiredMargin: 0.2,
+      },
     });
     expect(quotation.status).toBe(201);
     quotationRef = quotation.body.ref as string;
@@ -223,7 +267,14 @@ describe('quality happy path', () => {
 
     const po = await api('POST', '/purchase-orders', {
       token: tokens.ceo,
-      body: { supplierRef, orderRef: 'ORD-BULK-2026-0001', qty: 50, unitCostMinor: 10_000, unitCbm: 0.3, unitKg: 100 },
+      body: {
+        supplierRef,
+        orderRef: 'ORD-BULK-2026-0001',
+        qty: 50,
+        unitCostMinor: 10_000,
+        unitCbm: 0.3,
+        unitKg: 100,
+      },
     });
     expect(po.status).toBe(201);
     const poRef = po.body.ref as string;

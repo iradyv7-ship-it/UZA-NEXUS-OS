@@ -34,7 +34,9 @@ const scheduleParts = (): Array<{ trigger: string; pct: number; amountMinor: num
   let allocated = 0;
   return SCHEDULE.map(([trigger, pct], i) => {
     const amountMinor =
-      i === SCHEDULE.length - 1 ? ORDER_TOTAL_MINOR - allocated : Math.round(ORDER_TOTAL_MINOR * pct);
+      i === SCHEDULE.length - 1
+        ? ORDER_TOTAL_MINOR - allocated
+        : Math.round(ORDER_TOTAL_MINOR * pct);
     allocated += amountMinor;
     return { trigger, pct, amountMinor };
   });
@@ -108,12 +110,12 @@ async function seedCommercialDemo(prisma: PrismaClient): Promise<void> {
   // QuotationService.build produces it — a partial/mis-keyed ladder crashes dapMargin over
   // the full LADDER. Per-unit estimates ($ minor): shows the CIF (~19%) vs DAP (~3%) gap.
   const demoLadder = emptyLadder();
-  demoLadder.exw.estMinor = 18_000;        // supplier cost $180/unit
-  demoLadder.ocean.estMinor = 2_000;       // CIF rung
-  demoLadder.insurance.estMinor = 200;     // CIF rung
-  demoLadder.destCharges.estMinor = 900;   // DAP rung
-  demoLadder.dutyVat.estMinor = 2_500;     // DAP rung
-  demoLadder.inlandDest.estMinor = 600;    // DAP rung
+  demoLadder.exw.estMinor = 18_000; // supplier cost $180/unit
+  demoLadder.ocean.estMinor = 2_000; // CIF rung
+  demoLadder.insurance.estMinor = 200; // CIF rung
+  demoLadder.destCharges.estMinor = 900; // DAP rung
+  demoLadder.dutyVat.estMinor = 2_500; // DAP rung
+  demoLadder.inlandDest.estMinor = 600; // DAP rung
 
   await prisma.quotation.upsert({
     where: { ref: DEMO_QUOTATION_REF },
@@ -127,10 +129,10 @@ async function seedCommercialDemo(prisma: PrismaClient): Promise<void> {
       sellIncoterm: 'CIF',
       ladder: demoLadder as unknown as object,
       supplierUnitCostMinor: 18_000,
-      targetPriceMinor: 16_560,   // 18_000 × TARGET_PRICE_FACTOR (0.92)
+      targetPriceMinor: 16_560, // 18_000 × TARGET_PRICE_FACTOR (0.92)
       walkawayPriceMinor: 18_900, // 18_000 × WALKAWAY_FACTOR (1.05)
       customerUnitPriceMinor: 25_000, // $250.00/unit → $50,000 order
-      marginPct: 0.192,           // quoted margin at CIF
+      marginPct: 0.192, // quoted margin at CIF
       status: 'approved',
     },
   });
@@ -185,7 +187,9 @@ async function seedCommercialDemo(prisma: PrismaClient): Promise<void> {
     },
   });
 
-  console.log(`created  commercial demo (customer ${DEMO_CUSTOMER_REF} → order ${DEMO_ORDER_REF} + invoice ${DEMO_INVOICE_REF})`);
+  console.log(
+    `created  commercial demo (customer ${DEMO_CUSTOMER_REF} → order ${DEMO_ORDER_REF} + invoice ${DEMO_INVOICE_REF})`,
+  );
 }
 
 /**
@@ -280,7 +284,91 @@ async function seedLogisticsDemo(prisma: PrismaClient): Promise<void> {
     },
   });
 
-  console.log(`created  logistics demo (shipment ${DEMO_SHIPMENT_REF} + ${packages.length} packages + delivery ${DEMO_DELIVERY_REF})`);
+  console.log(
+    `created  logistics demo (shipment ${DEMO_SHIPMENT_REF} + ${packages.length} packages + delivery ${DEMO_DELIVERY_REF})`,
+  );
+}
+
+/**
+ * Nexas Command Center demo: 2 departments, 3 tasks (one due soon, one OVERDUE, one BLOCKED)
+ * and 2 grants (one near deadline) so the CEO overview shows real data on a fresh DB.
+ * Idempotent — guarded by the first task ref.
+ */
+async function seedCommandDemo(prisma: PrismaClient): Promise<void> {
+  if (await prisma.commandTask.findUnique({ where: { ref: 'CTSK-WEB-0001' } })) {
+    console.log('exists   command demo (tasks + grants)');
+    return;
+  }
+  const now = Date.now();
+  const day = 86_400_000;
+  for (const [ref, code, name] of [
+    ['DPT-OPS', 'OPS', 'Operations'],
+    ['DPT-FIN', 'FIN', 'Finance'],
+  ] as const) {
+    await prisma.department.upsert({ where: { ref }, update: {}, create: { ref, code, name } });
+  }
+  const tasks = [
+    {
+      ref: 'CTSK-WEB-0001',
+      title: 'Prepare Q3 supplier review',
+      assigneeId: 'VM-RW-0001',
+      priority: 'high',
+      status: 'todo',
+      dueAt: new Date(now + 3 * day),
+    },
+    {
+      ref: 'CTSK-WEB-0002',
+      title: 'Reconcile July petty cash',
+      assigneeId: 'FIN-RW-0001',
+      priority: 'medium',
+      status: 'todo',
+      dueAt: new Date(now - 2 * day),
+    }, // OVERDUE
+    {
+      ref: 'CTSK-WEB-0003',
+      title: 'Resolve customs delay on SHP-WEB-2026-0001',
+      assigneeId: 'VM-RW-0001',
+      priority: 'urgent',
+      status: 'blocked',
+      dueAt: new Date(now + day),
+      linkedRef: 'SHP-WEB-2026-0001',
+    }, // BLOCKED
+  ] as const;
+  for (const t of tasks) {
+    await prisma.commandTask.create({ data: { ...t, createdById: 'CEO-RW-0001' } });
+  }
+  const grants = [
+    {
+      ref: 'GRNT-WEB-0001',
+      name: 'AfDB Trade Facilitation Grant',
+      funder: 'African Development Bank',
+      amountMinor: 25_000_000,
+      currency: 'USD',
+      deadlineAt: new Date(now + 5 * day),
+      status: 'preparing',
+      nextAction: 'Draft concept note',
+      requirements: [
+        { item: 'Concept note', done: false },
+        { item: 'Company registration', done: true },
+      ],
+    },
+    {
+      ref: 'GRNT-WEB-0002',
+      name: 'Rwanda Green Fund window',
+      funder: 'FONERWA',
+      amountMinor: 15_000_000,
+      currency: 'USD',
+      deadlineAt: new Date(now + 30 * day),
+      status: 'identified',
+      requirements: [],
+    },
+  ] as const;
+  for (const g of grants) {
+    await prisma.grant.create({
+      data: { ...g, ownerId: 'CEO-RW-0001', requirements: g.requirements as unknown as object },
+    });
+  }
+  console.log('created  command demo (2 departments, 3 tasks incl. overdue+blocked, 2 grants)');
 }
 
 async function main() {
@@ -322,6 +410,7 @@ async function main() {
   // Demo data must exist BEFORE the portal users that scope onto it.
   await seedCommercialDemo(prisma);
   await seedLogisticsDemo(prisma);
+  await seedCommandDemo(prisma);
 
   // Customer portal user — scoped to the demo customer (sees their order + invoice, can pay).
   const customerEmail = 'customer@uza.rw';
@@ -357,7 +446,9 @@ async function main() {
       },
       new Date('2030-01-01T00:00:00.000Z'),
     );
-    console.log(`created  ${partnerEmail} (logistics_partner, scope.shipmentRefs=[${DEMO_SHIPMENT_REF}])`);
+    console.log(
+      `created  ${partnerEmail} (logistics_partner, scope.shipmentRefs=[${DEMO_SHIPMENT_REF}])`,
+    );
   }
 
   await prisma.$disconnect();

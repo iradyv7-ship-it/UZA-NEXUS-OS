@@ -1,3 +1,4 @@
+import { nextSequence } from '../../platform/ids/next-sequence';
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import type { Prisma, PaymentStatus } from '@prisma/client';
 import {
@@ -69,7 +70,7 @@ export class PaymentService {
     });
 
     return this.outbox.emit(actor.userId, async (tx, emit) => {
-      const seq = (await tx.payment.count()) + 1;
+      const seq = await nextSequence(tx.payment, (n) => paymentRef(n));
       const ref = paymentRef(seq);
       const payment = await tx.payment.create({
         data: {
@@ -90,7 +91,11 @@ export class PaymentService {
       // Finance is told a proof is waiting for a human decision.
       await this.notify.dispatch(
         ref,
-        { audience: 'finance', recipientId: 'finance', body: `Payment proof ${ref} awaiting verification` },
+        {
+          audience: 'finance',
+          recipientId: 'finance',
+          body: `Payment proof ${ref} awaiting verification`,
+        },
         tx,
       );
       return payment;
@@ -183,9 +188,17 @@ export class PaymentService {
       let accruedMinor = 0;
       if (isConfirmation && invoice.agentId && !invoice.commissionAccrued) {
         const amountMinor = CommissionService.accrualFor(invoice.totalMinor as Minor);
-        await this.commission.accrue(tx, { agentId: invoice.agentId, orderRef: invoice.orderRef, amountMinor });
+        await this.commission.accrue(tx, {
+          agentId: invoice.agentId,
+          orderRef: invoice.orderRef,
+          amountMinor,
+        });
         await tx.invoice.update({ where: { ref: invoice.ref }, data: { commissionAccrued: true } });
-        await emit('commission.accrued', { agentId: invoice.agentId, orderRef: invoice.orderRef, amountMinor });
+        await emit('commission.accrued', {
+          agentId: invoice.agentId,
+          orderRef: invoice.orderRef,
+          amountMinor,
+        });
         await this.notify.dispatch(
           invoice.orderRef,
           {

@@ -33,8 +33,11 @@ describe('identity + auth', () => {
   it('creates an employee and logs them in (JWT + Actor)', async () => {
     const off = await office();
     await identity.createEmployee(ceo, {
-      ref: 'AGT-RW-0001', email: 'kagabo@uza.rw', password: 'sup3rsecret',
-      role: 'finance', officeId: off.id,
+      ref: 'AGT-RW-0001',
+      email: 'kagabo@uza.rw',
+      password: 'sup3rsecret',
+      role: 'finance',
+      officeId: off.id,
     });
 
     const result = await auth.login('kagabo@uza.rw', 'sup3rsecret');
@@ -44,14 +47,20 @@ describe('identity + auth', () => {
     expect(result.actor.userId).toBe('AGT-RW-0001');
     expect(result.actor.office).toBe('RW'); // resolved to office code
 
-    const login = await prisma.auditLog.findFirst({ where: { action: 'login', decision: 'allow' } });
+    const login = await prisma.auditLog.findFirst({
+      where: { action: 'login', decision: 'allow' },
+    });
     expect(login).not.toBeNull();
   });
 
   it('rejects a wrong password', async () => {
     const off = await office();
     await identity.createEmployee(ceo, {
-      ref: 'AGT-RW-0002', email: 'x@uza.rw', password: 'correcthorse', role: 'front_office', officeId: off.id,
+      ref: 'AGT-RW-0002',
+      email: 'x@uza.rw',
+      password: 'correcthorse',
+      role: 'front_office',
+      officeId: off.id,
     });
     await expect(auth.login('x@uza.rw', 'wrong')).rejects.toThrow();
   });
@@ -63,7 +72,13 @@ describe('identity + auth', () => {
     await expect(
       identity.createPartnerAccount(
         ceo,
-        { ref: 'PRT-1', email: 'p1@forwarder.cn', password: 'password1', role: 'logistics_partner', officeId: off.id },
+        {
+          ref: 'PRT-1',
+          email: 'p1@forwarder.cn',
+          password: 'password1',
+          role: 'logistics_partner',
+          officeId: off.id,
+        },
         new Date(Date.now() - 1000),
       ),
     ).rejects.toThrow();
@@ -71,8 +86,14 @@ describe('identity + auth', () => {
     // A valid partner is created with a future expiry and can log in.
     await identity.createPartnerAccount(
       ceo,
-      { ref: 'PRT-2', email: 'p2@forwarder.cn', password: 'password1', role: 'logistics_partner',
-        officeId: off.id, scopeShipmentRefs: ['SHP-2026-0001'] },
+      {
+        ref: 'PRT-2',
+        email: 'p2@forwarder.cn',
+        password: 'password1',
+        role: 'logistics_partner',
+        officeId: off.id,
+        scopeShipmentRefs: ['SHP-2026-0001'],
+      },
       new Date(Date.now() + 86_400_000),
     );
     const ok = await auth.login('p2@forwarder.cn', 'password1');
@@ -80,7 +101,10 @@ describe('identity + auth', () => {
     expect(ok.actor.scope.shipmentRefs).toEqual(['SHP-2026-0001']);
 
     // Force expiry into the past and prove login is now refused + audited as a denial.
-    await prisma.user.update({ where: { email: 'p2@forwarder.cn' }, data: { expiresAt: new Date(Date.now() - 1000) } });
+    await prisma.user.update({
+      where: { email: 'p2@forwarder.cn' },
+      data: { expiresAt: new Date(Date.now() - 1000) },
+    });
     await expect(auth.login('p2@forwarder.cn', 'password1')).rejects.toThrow('Account expired');
     const denial = await prisma.auditLog.findFirst({
       where: { action: 'login', decision: 'deny', reason: 'ACCOUNT_EXPIRED' },
@@ -91,7 +115,11 @@ describe('identity + auth', () => {
   it('role assignment keeps append-only history and updates the active role', async () => {
     const off = await office();
     const user = await identity.createEmployee(ceo, {
-      ref: 'EMP-1', email: 'promote@uza.rw', password: 'password1', role: 'front_office', officeId: off.id,
+      ref: 'EMP-1',
+      email: 'promote@uza.rw',
+      password: 'password1',
+      role: 'front_office',
+      officeId: off.id,
     });
 
     await identity.assignRole(ceo, user.id, 'venture_manager', 'promotion');
@@ -100,7 +128,10 @@ describe('identity + auth', () => {
     const active = await prisma.user.findUnique({ where: { id: user.id } });
     expect(active!.role).toBe('finance');
 
-    const history = await prisma.roleAssignment.findMany({ where: { userId: user.id }, orderBy: { assignedAt: 'asc' } });
+    const history = await prisma.roleAssignment.findMany({
+      where: { userId: user.id },
+      orderBy: { assignedAt: 'asc' },
+    });
     expect(history).toHaveLength(2);
     expect(history[0]!.revokedAt).not.toBeNull(); // first assignment closed
     expect(history[1]!.revokedAt).toBeNull(); // current one open

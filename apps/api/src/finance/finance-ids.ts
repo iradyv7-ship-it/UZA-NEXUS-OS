@@ -28,8 +28,7 @@ export const paymentRef = (seq: number): string =>
 export const installmentRef = (order: string, trigger: string): string =>
   formatId('installment', { order, trigger });
 
-export const claimRef = (seq: number): string =>
-  formatId('claim', { year: currentYear(), seq });
+export const claimRef = (seq: number): string => formatId('claim', { year: currentYear(), seq });
 
 export const pettyCashRef = (office: string, seq: number): string =>
   formatId('pettyCash', { office, year: currentYear(), seq });

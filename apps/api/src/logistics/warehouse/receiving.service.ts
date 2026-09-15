@@ -1,3 +1,4 @@
+import { nextSequence } from '../../platform/ids/next-sequence';
 import { Injectable } from '@nestjs/common';
 import {
   CBM_TOLERANCE,
@@ -29,7 +30,11 @@ export interface ReceiveInput {
   readonly clientRequestId?: string;
 }
 
-const VARIANCE_DECISIONS: readonly VarianceDecision[] = ['client_pays', 'uza_absorbs', 'reduce_qty'];
+const VARIANCE_DECISIONS: readonly VarianceDecision[] = [
+  'client_pays',
+  'uza_absorbs',
+  'reduce_qty',
+];
 
 /**
  * Warehouse receiving — the first of the three volumetric numbers made real.
@@ -89,7 +94,7 @@ export class ReceivingService {
     const hardStop = variance > CBM_HARD_STOP;
 
     return this.outbox.emit(actor.userId, async (tx, emit) => {
-      const lotSeq = (await tx.warehouseReceipt.count()) + 1;
+      const lotSeq = await nextSequence(tx.warehouseReceipt, (n) => lotRef(input.orderRef, n));
       const lot = lotRef(input.orderRef, lotSeq);
 
       const receipt = await tx.warehouseReceipt.create({
@@ -168,7 +173,9 @@ export class ReceivingService {
       });
     }
 
-    const receipt = await this.prisma.warehouseReceipt.findUnique({ where: { lotRef: lotRefValue } });
+    const receipt = await this.prisma.warehouseReceipt.findUnique({
+      where: { lotRef: lotRefValue },
+    });
     if (!receipt) {
       throw new UzaError({
         code: 'GATE_VARIANCE_UNRESOLVED',
@@ -183,7 +190,10 @@ export class ReceivingService {
         data: { decision, decidedBy: actor.userId, decidedNote: note, decidedAt: new Date() },
       });
       // Clear the commercial hold ONLY. qcReleased is untouched.
-      await tx.package.updateMany({ where: { lotRef: lotRefValue }, data: { varianceHold: false } });
+      await tx.package.updateMany({
+        where: { lotRef: lotRefValue },
+        data: { varianceHold: false },
+      });
 
       await emit('warehouse.varianceResolved', {
         orderRef: receipt.orderRef,

@@ -47,7 +47,10 @@ export async function apiCall<T>(path: string, opts: CallOpts = {}): Promise<Api
 }
 
 /** Authenticated call: pulls the JWT from the session cookie. */
-export async function authedCall<T>(path: string, opts: Omit<CallOpts, 'token'> = {}): Promise<ApiResult<T>> {
+export async function authedCall<T>(
+  path: string,
+  opts: Omit<CallOpts, 'token'> = {},
+): Promise<ApiResult<T>> {
   const session = await getSession();
   if (!session) return { kind: 'unauthorized' };
   return apiCall<T>(path, { ...opts, token: session.token });
@@ -64,7 +67,8 @@ function safeJson(text: string): unknown {
 function errorCode(body: unknown): string | undefined {
   if (body && typeof body === 'object' && 'error' in body) {
     const err = (body as { error?: unknown }).error;
-    if (err && typeof err === 'object' && 'code' in err) return String((err as { code: unknown }).code);
+    if (err && typeof err === 'object' && 'code' in err)
+      return String((err as { code: unknown }).code);
   }
   return undefined;
 }
@@ -74,7 +78,8 @@ function errorMessage(body: unknown): string | undefined {
     if ('message' in body) return String((body as { message: unknown }).message);
     if ('error' in body) {
       const err = (body as { error?: unknown }).error;
-      if (err && typeof err === 'object' && 'message' in err) return String((err as { message: unknown }).message);
+      if (err && typeof err === 'object' && 'message' in err)
+        return String((err as { message: unknown }).message);
     }
   }
   return undefined;

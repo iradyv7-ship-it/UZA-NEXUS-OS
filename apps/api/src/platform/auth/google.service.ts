@@ -56,7 +56,10 @@ export class GoogleAuthService {
 
   /** Sign a short-lived, single-purpose state token for CSRF protection. */
   createState(): Promise<string> {
-    return this.jwt.signAsync({ purpose: STATE_PURPOSE, nonce: randomUUID() }, { expiresIn: '10m' });
+    return this.jwt.signAsync(
+      { purpose: STATE_PURPOSE, nonce: randomUUID() },
+      { expiresIn: '10m' },
+    );
   }
 
   /** Throw if the returned state is missing, forged, expired or not our state purpose. */

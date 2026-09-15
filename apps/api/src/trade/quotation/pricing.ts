@@ -59,7 +59,10 @@ export function priceQuotation(input: PricingInputs): PricedQuotation {
 
   const ladder = emptyLadder();
   ladder.exw.estMinor = input.supplierUnitCostMinor;
-  for (const [rung, val] of Object.entries(input.estCostsMinor) as [CostRung, Minor | undefined][]) {
+  for (const [rung, val] of Object.entries(input.estCostsMinor) as [
+    CostRung,
+    Minor | undefined,
+  ][]) {
     if (val !== undefined) ladder[rung].estMinor = val;
   }
 

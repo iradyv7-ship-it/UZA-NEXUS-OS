@@ -22,7 +22,9 @@ export class OrderPaymentService {
 
   async handlePaymentVerified(envelope: EventEnvelope<'payment.verified'>) {
     const already = await this.prisma.processedEvent.findUnique({
-      where: { eventId_consumer: { eventId: envelope.eventId, consumer: PAYMENT_VERIFIED_CONSUMER } },
+      where: {
+        eventId_consumer: { eventId: envelope.eventId, consumer: PAYMENT_VERIFIED_CONSUMER },
+      },
     });
     if (already) return { status: 'duplicate' as const, orderRef: envelope.payload.orderRef };
 
@@ -69,7 +71,9 @@ export class OrderPaymentService {
       orderRef,
       fullyPaid,
       paidFraction,
-      outstandingFraction: fullyPaid ? 0 : Math.round((FULLY_PAID_FRACTION - paidFraction) * 10000) / 10000,
+      outstandingFraction: fullyPaid
+        ? 0
+        : Math.round((FULLY_PAID_FRACTION - paidFraction) * 10000) / 10000,
       paidTriggers: state?.paidTriggers ?? [],
     };
   }

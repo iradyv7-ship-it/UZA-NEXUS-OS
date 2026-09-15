@@ -20,7 +20,10 @@ import { CapaService } from './capa/capa.service';
 import type { InspectionStage } from './inspection/inspection.types';
 
 const STAGES: readonly InspectionStage[] = [
-  'pre_production', 'during_production', 'pre_shipment', 'warehouse',
+  'pre_production',
+  'during_production',
+  'pre_shipment',
+  'warehouse',
 ];
 const EVIDENCE_KINDS = ['photo', 'video', 'measurement'] as const;
 
@@ -31,7 +34,8 @@ class AssignVisitDto {
 }
 
 class EvidenceDto {
-  @ApiProperty({ enum: EVIDENCE_KINDS }) @IsIn(EVIDENCE_KINDS) kind!: 'photo' | 'video' | 'measurement';
+  @ApiProperty({ enum: EVIDENCE_KINDS }) @IsIn(EVIDENCE_KINDS) kind!:
+    'photo' | 'video' | 'measurement';
   @ApiProperty() @IsString() uri!: string;
   @ApiProperty({ required: false }) @IsOptional() @IsString() lotRef?: string;
   @ApiProperty({ required: false }) @IsOptional() @IsString() packageRef?: string;
@@ -89,13 +93,17 @@ export class InspectionController {
   constructor(private readonly inspections: InspectionService) {}
 
   @Post()
-  @ApiOperation({ summary: 'Record an inspection; a critical defect fails + opens a CAPA (inspection:create)' })
+  @ApiOperation({
+    summary: 'Record an inspection; a critical defect fails + opens a CAPA (inspection:create)',
+  })
   record(@CurrentActor() actor: Actor, @Body() dto: RecordInspectionDto) {
     return this.inspections.record(actor, dto);
   }
 
   @Get('po/:poRef/releasable')
-  @ApiOperation({ summary: 'QC release gate: throws GATE_QC_NOT_RELEASED if any CAPA is open (inspection:read)' })
+  @ApiOperation({
+    summary: 'QC release gate: throws GATE_QC_NOT_RELEASED if any CAPA is open (inspection:read)',
+  })
   async releasable(@CurrentActor() actor: Actor, @Param('poRef') poRef: string) {
     await this.inspections.assertReleasable(actor, poRef);
     return { poRef, releasable: true };
@@ -121,7 +129,9 @@ export class CapaController {
   }
 
   @Post(':ref/close')
-  @ApiOperation({ summary: 'Close a CAPA against a passing reinspection; human-only (capa:approve)' })
+  @ApiOperation({
+    summary: 'Close a CAPA against a passing reinspection; human-only (capa:approve)',
+  })
   close(@CurrentActor() actor: Actor, @Param('ref') ref: string, @Body() dto: CloseCapaDto) {
     return this.capas.close(actor, ref, dto.reinspectionRef);
   }

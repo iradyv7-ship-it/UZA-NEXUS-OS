@@ -1,5 +1,11 @@
 import { Body, Controller, Get, Param, Post, Query } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiProperty, ApiPropertyOptional, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiOperation,
+  ApiProperty,
+  ApiPropertyOptional,
+  ApiTags,
+} from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import {
   IsIn,
@@ -61,7 +67,9 @@ class PricingDto {
   @IsObject()
   estCostsMinor!: Record<string, number>;
   @ApiProperty() @IsInt() qty!: number;
-  @ApiProperty({ description: 'Required margin as a fraction, e.g. 0.2' }) @IsNumber() requiredMargin!: number;
+  @ApiProperty({ description: 'Required margin as a fraction, e.g. 0.2' })
+  @IsNumber()
+  requiredMargin!: number;
   @ApiProperty({ required: false, enum: INCOTERMS })
   @IsOptional()
   @IsIn(INCOTERMS)
@@ -92,16 +100,27 @@ class CancelOrderDto {
 
 const QUOTATION_STATUSES = ['draft', 'approved', 'superseded'] as const;
 const ORDER_STATUSES = [
-  'awaiting_payment', 'procurement_active', 'in_transit', 'delivered', 'cancelled',
+  'awaiting_payment',
+  'procurement_active',
+  'in_transit',
+  'delivered',
+  'cancelled',
 ] as const;
 
 class ListQueryDto {
   @ApiPropertyOptional({ minimum: 1, maximum: 100, default: 20 })
-  @IsOptional() @Type(() => Number) @IsInt() @Min(1) @Max(100)
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @Max(100)
   limit = 20;
 
   @ApiPropertyOptional({ minimum: 0, default: 0 })
-  @IsOptional() @Type(() => Number) @IsInt() @Min(0)
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(0)
   offset = 0;
 }
 
@@ -113,13 +132,17 @@ class ListProjectsQueryDto extends ListQueryDto {
 class ListQuotationsQueryDto extends ListQueryDto {
   @ApiPropertyOptional() @IsOptional() @IsString() projectRef?: string;
   @ApiPropertyOptional({ enum: QUOTATION_STATUSES })
-  @IsOptional() @IsIn(QUOTATION_STATUSES) status?: QuotationStatus;
+  @IsOptional()
+  @IsIn(QUOTATION_STATUSES)
+  status?: QuotationStatus;
 }
 
 class ListOrdersQueryDto extends ListQueryDto {
   @ApiPropertyOptional() @IsOptional() @IsString() customerRef?: string;
   @ApiPropertyOptional({ enum: ORDER_STATUSES })
-  @IsOptional() @IsIn(ORDER_STATUSES) status?: OrderStatus;
+  @IsOptional()
+  @IsIn(ORDER_STATUSES)
+  status?: OrderStatus;
 }
 
 const asPricing = (dto: PricingDto): QuotationPricingInput => ({
@@ -168,7 +191,11 @@ export class IntakeController {
 
   @Post(':ref/clarify')
   @ApiOperation({ summary: 'Human confirmation → structured Request (request:create)' })
-  clarifyLead(@CurrentActor() actor: Actor, @Param('ref') ref: string, @Body() dto: ClarifyLeadDto) {
+  clarifyLead(
+    @CurrentActor() actor: Actor,
+    @Param('ref') ref: string,
+    @Body() dto: ClarifyLeadDto,
+  ) {
     return this.intake.clarifyLead(actor, { leadRef: ref, spec: dto.spec });
   }
 }
@@ -221,7 +248,10 @@ export class QuotationController {
   }
 
   @Get()
-  @ApiOperation({ summary: 'List in-scope quotations (quotation:read, scoped; cost/margins masked; updatedAt desc)' })
+  @ApiOperation({
+    summary:
+      'List in-scope quotations (quotation:read, scoped; cost/margins masked; updatedAt desc)',
+  })
   list(@CurrentActor() actor: Actor, @Query() q: ListQuotationsQueryDto) {
     return this.quotations.list(
       actor,
@@ -231,7 +261,9 @@ export class QuotationController {
   }
 
   @Post(':ref/revise')
-  @ApiOperation({ summary: 'Revise a quotation → new version, supersedes predecessor (quotation:create)' })
+  @ApiOperation({
+    summary: 'Revise a quotation → new version, supersedes predecessor (quotation:create)',
+  })
   revise(@CurrentActor() actor: Actor, @Param('ref') ref: string, @Body() dto: PricingDto) {
     return this.quotations.revise(actor, ref, asPricing(dto));
   }
@@ -245,7 +277,11 @@ export class QuotationController {
   @Post(':ref/close-costs')
   @ApiOperation({ summary: 'Land actuals and recompute realized margin (margin:read)' })
   closeCosts(@CurrentActor() actor: Actor, @Param('ref') ref: string, @Body() dto: CloseCostsDto) {
-    return this.quotations.closeCosts(actor, ref, dto.actualsMinor as Partial<Record<CostRung, Minor>>);
+    return this.quotations.closeCosts(
+      actor,
+      ref,
+      dto.actualsMinor as Partial<Record<CostRung, Minor>>,
+    );
   }
 
   @Get(':ref')

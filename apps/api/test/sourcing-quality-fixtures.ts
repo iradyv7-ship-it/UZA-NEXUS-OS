@@ -12,6 +12,8 @@ import { PurchaseOrderService } from '../src/sourcing/po/purchase-order.service'
 import { VisitService } from '../src/quality/visit/visit.service';
 import { InspectionService } from '../src/quality/inspection/inspection.service';
 import { CapaService } from '../src/quality/capa/capa.service';
+import { SupplierOfferService } from '../src/sourcing/offer/supplier-offer.service';
+import { SupplierDealService } from '../src/sourcing/deal/supplier-deal.service';
 
 // Services instantiated directly — the platform handoff is explicit that Vitest tests do
 // not use the DI container. A raw PrismaClient stands in for PrismaService (same surface).
@@ -27,11 +29,23 @@ export const pos = new PurchaseOrderService(prisma as never, authz, outbox);
 export const visits = new VisitService(prisma as never, authz, notifications);
 export const inspections = new InspectionService(prisma as never, authz, outbox);
 export const capas = new CapaService(prisma as never, authz, outbox);
+export const offers = new SupplierOfferService(prisma as never, authz);
+export const deals = new SupplierDealService(prisma as never, authz);
 
 // ---- actors ----------------------------------------------------------------
 export const cecilia: Actor = { userId: 'CEC-1', role: 'china_sourcing', office: 'CN', scope: {} };
-export const francois: Actor = { userId: 'FRA-1', role: 'china_warehouse', office: 'CN', scope: {} };
-export const agent: Actor = { userId: 'AGT-GOM-0021', role: 'sales_agent', office: 'GOM', scope: { customerIds: [] } };
+export const francois: Actor = {
+  userId: 'FRA-1',
+  role: 'china_warehouse',
+  office: 'CN',
+  scope: {},
+};
+export const agent: Actor = {
+  userId: 'AGT-GOM-0021',
+  role: 'sales_agent',
+  office: 'GOM',
+  scope: { customerIds: [] },
+};
 export const ceo: Actor = { userId: 'CEO', role: 'ceo', office: 'RW', scope: {} };
 
 export const UNIT_COST: Minor = minor(41.0);
@@ -42,7 +56,10 @@ export const PROJECT_REF = 'PRJ-BULK-2026-0001';
 export async function suppliedPo(
   opts: { basis?: 'EXW' | 'FOB'; qty?: number; unitCbm?: number; unitKg?: number } = {},
 ) {
-  const supplier = await suppliers.register(cecilia, { nameEn: 'Ningbo Solar Co', nameZh: '宁波太阳能有限公司' });
+  const supplier = await suppliers.register(cecilia, {
+    nameEn: 'Ningbo Solar Co',
+    nameZh: '宁波太阳能有限公司',
+  });
   const rfq = await rfqs.createRfq(cecilia, { projectRef: PROJECT_REF });
   const unitCbm = opts.unitCbm ?? 0.05;
   const unitKg = opts.unitKg ?? 12;
@@ -76,10 +93,49 @@ export async function assignedVisit(opts: Parameters<typeof suppliedPo>[0] = {})
   return { ...base, visit };
 }
 
+/** A staff-relayed, ACCEPTED supplier offer — the precondition for reserving a deal. */
+export async function acceptedOffer(
+  opts: { basis?: 'EXW' | 'FOB'; qty?: number; unitCbm?: number; unitKg?: number } = {},
+) {
+  const supplier = await suppliers.register(cecilia, {
+    nameEn: 'Ningbo EV Traders',
+    nameZh: '宁波电动车贸易',
+  });
+  const offer = await offers.submit(cecilia, {
+    supplierRef: supplier.ref,
+    unitCostMinor: UNIT_COST,
+    qty: opts.qty ?? 5,
+    moq: 1,
+    leadTimeDays: 14,
+    unitCbm: opts.unitCbm ?? 2.0,
+    unitKg: opts.unitKg ?? 180,
+    basis: opts.basis,
+    supplierContact: 'WeChat: ningbo_ev_li',
+  });
+  const accepted = await offers.accept(cecilia, offer.ref, cecilia.userId);
+  return { supplier, offer: accepted };
+}
+
+/** A reserved deal (booking fee confirmed) on an accepted offer. */
+export async function reservedDeal(opts: Parameters<typeof acceptedOffer>[0] = {}) {
+  const base = await acceptedOffer(opts);
+  const deal = await deals.reserve(cecilia, {
+    offerRef: base.offer.ref,
+    confirmedBy: cecilia.userId,
+  });
+  return { ...base, deal };
+}
+
 /** Build a synthetic warehouse.receiptRecorded envelope (warehouse is Sprint 3). */
 export function receiptEnvelope(
   poRef: string,
-  opts: { variance: number; discrepancy: boolean; hardStop?: boolean; eventId?: string; orderRef?: string },
+  opts: {
+    variance: number;
+    discrepancy: boolean;
+    hardStop?: boolean;
+    eventId?: string;
+    orderRef?: string;
+  },
 ) {
   return {
     eventId: opts.eventId ?? randomUUID(),

@@ -48,14 +48,36 @@ export class AuditService {
 
   allow(actor: Actor, resource: string, action: string, targetRef?: string, db?: Db) {
     return this.record(
-      { actorId: actor.userId, actorRole: actor.role, resource, action, decision: 'allow', targetRef },
+      {
+        actorId: actor.userId,
+        actorRole: actor.role,
+        resource,
+        action,
+        decision: 'allow',
+        targetRef,
+      },
       db,
     );
   }
 
-  deny(actor: Actor, resource: string, action: string, reason: string, targetRef?: string, db?: Db) {
+  deny(
+    actor: Actor,
+    resource: string,
+    action: string,
+    reason: string,
+    targetRef?: string,
+    db?: Db,
+  ) {
     return this.record(
-      { actorId: actor.userId, actorRole: actor.role, resource, action, decision: 'deny', reason, targetRef },
+      {
+        actorId: actor.userId,
+        actorRole: actor.role,
+        resource,
+        action,
+        decision: 'deny',
+        reason,
+        targetRef,
+      },
       db,
     );
   }

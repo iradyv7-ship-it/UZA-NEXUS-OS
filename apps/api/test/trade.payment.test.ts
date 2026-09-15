@@ -39,7 +39,9 @@ describe('consume payment.verified — installment marking + procurement activat
     const row = await prisma.order.findUniqueOrThrow({ where: { ref: order.ref } });
     expect(row.status).toBe('procurement_active');
 
-    const conf = await prisma.installment.findFirstOrThrow({ where: { orderRef: order.ref, trigger: 'confirmation' } });
+    const conf = await prisma.installment.findFirstOrThrow({
+      where: { orderRef: order.ref, trigger: 'confirmation' },
+    });
     expect(conf.status).toBe('paid');
   });
 
@@ -59,7 +61,9 @@ describe('consume payment.verified — installment marking + procurement activat
       where: { eventId: envelope.eventId, consumer: 'trade.payment-verified' },
     });
     expect(processed).toHaveLength(1);
-    const paidCount = await prisma.installment.count({ where: { orderRef: order.ref, status: 'paid' } });
+    const paidCount = await prisma.installment.count({
+      where: { orderRef: order.ref, status: 'paid' },
+    });
     expect(paidCount).toBe(1);
   });
 
@@ -70,7 +74,9 @@ describe('consume payment.verified — installment marking + procurement activat
     await orders.handlePaymentVerified(verified(order.ref, 'confirmation'));
     await orders.handlePaymentVerified(verified(order.ref, 'pre_loading'));
 
-    const preLoading = await prisma.installment.findFirstOrThrow({ where: { orderRef: order.ref, trigger: 'pre_loading' } });
+    const preLoading = await prisma.installment.findFirstOrThrow({
+      where: { orderRef: order.ref, trigger: 'pre_loading' },
+    });
     expect(preLoading.status).toBe('paid');
     const row = await prisma.order.findUniqueOrThrow({ where: { ref: order.ref } });
     expect(row.status).toBe('procurement_active'); // activated by confirmation, unchanged by pre_loading
@@ -79,6 +85,8 @@ describe('consume payment.verified — installment marking + procurement activat
   it('throws when no due installment matches the trigger', async () => {
     const { quotation } = await approvedChain({ completedOrders: 0 }); // new: no pre_release installment
     const order = await orders.create(vm, quotation.ref);
-    await expect(orders.handlePaymentVerified(verified(order.ref, 'pre_release'))).rejects.toThrow(/no due installment/);
+    await expect(orders.handlePaymentVerified(verified(order.ref, 'pre_release'))).rejects.toThrow(
+      /no due installment/,
+    );
   });
 });

@@ -49,7 +49,7 @@ still runs. Placeholders are in `apps/api/.env.example`. **Never commit real sec
 ```
 GOOGLE_CLIENT_ID="your-client-id.apps.googleusercontent.com"
 GOOGLE_CLIENT_SECRET="your-client-secret"
-GOOGLE_CALLBACK_URL="http://localhost:3000/auth/google/callback"
+GOOGLE_CALLBACK_URL="http://localhost:3100/auth/google/return"   # web app's return route (Option A, as shipped)
 WEB_ORIGIN="http://localhost:3100"   # web app origin (see integration below)
 ```
 
@@ -63,8 +63,8 @@ WEB_ORIGIN="http://localhost:3100"   # web app origin (see integration below)
    *Testing*, add each Gmail that may sign in (e.g. `iradyv7@gmail.com`) as a **Test user**,
    or **Publish** the app to allow any Google account.
 3. **Credentials → Create Credentials → OAuth client ID → Web application**.
-   - **Authorized redirect URIs**: add the **exact** `GOOGLE_CALLBACK_URL`, e.g.
-     `http://localhost:3000/auth/google/callback` (and the production callback later). It must
+   - **Authorized redirect URIs**: add the **exact** `GOOGLE_CALLBACK_URL`, i.e.
+     `http://localhost:3100/auth/google/return` (and the production callback later). It must
      match byte-for-byte — Google rejects mismatches.
    - (Authorized JavaScript origins are not required for this server-side flow.)
 4. Copy the generated **Client ID** and **Client secret** into `apps/api/.env` as

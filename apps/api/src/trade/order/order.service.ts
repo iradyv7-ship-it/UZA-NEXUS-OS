@@ -1,3 +1,4 @@
+import { nextSequence } from '../../platform/ids/next-sequence';
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import type { Prisma, OrderStatus } from '@prisma/client';
 import {
@@ -44,7 +45,9 @@ export class OrderService {
     const q = await this.prisma.quotation.findUnique({ where: { ref: quotationRef } });
     if (!q) throw new NotFoundException(`quotation ${quotationRef} not found`);
     if (q.status !== 'approved') {
-      throw new BadRequestException(`order requires an approved quotation; ${quotationRef} is ${q.status}`);
+      throw new BadRequestException(
+        `order requires an approved quotation; ${quotationRef} is ${q.status}`,
+      );
     }
 
     const customer = await this.prisma.customer.findUnique({ where: { ref: q.customerRef } });
@@ -62,7 +65,9 @@ export class OrderService {
     const parts = splitInstallments(totalMinor, schedule);
 
     return this.outbox.emit(actor.userId, async (tx, emit) => {
-      const seq = (await tx.order.count()) + 1;
+      const seq = await nextSequence(tx.order, (n) =>
+        makeRef('order', { venture: VENTURE, year: currentYear(), seq: n }),
+      );
       const ref = makeRef('order', { venture: VENTURE, year: currentYear(), seq });
       const order = await tx.order.create({
         data: {
@@ -167,7 +172,9 @@ export class OrderService {
    */
   async handlePaymentVerified(envelope: EventEnvelope<'payment.verified'>) {
     const already = await this.prisma.processedEvent.findUnique({
-      where: { eventId_consumer: { eventId: envelope.eventId, consumer: PAYMENT_VERIFIED_CONSUMER } },
+      where: {
+        eventId_consumer: { eventId: envelope.eventId, consumer: PAYMENT_VERIFIED_CONSUMER },
+      },
     });
     if (already) return { status: 'duplicate' as const, orderRef: envelope.payload.orderRef };
 
@@ -183,9 +190,13 @@ export class OrderService {
       });
       if (!order) throw new NotFoundException(`order ${orderRef} not found`);
 
-      const installment = order.installments.find((i) => i.trigger === trigger && i.status === 'due');
+      const installment = order.installments.find(
+        (i) => i.trigger === trigger && i.status === 'due',
+      );
       if (!installment) {
-        throw new BadRequestException(`no due installment with trigger ${trigger} on order ${orderRef}`);
+        throw new BadRequestException(
+          `no due installment with trigger ${trigger} on order ${orderRef}`,
+        );
       }
 
       await tx.installment.update({

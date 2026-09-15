@@ -36,10 +36,6 @@ export const tradeScopeWhere = (actor: Actor): TradeScopeWhere => {
     case 'front_office':
       return {};
 
-    // inScope → !!obj.customerId && obj.customerId === actor.scope.customerId
-    case 'customer':
-      return actor.scope.customerId ? { customerRef: actor.scope.customerId } : MATCH_NONE;
-
     // inScope → obj.agentId === actor.userId
     //        || (!!obj.customerId && (actor.scope.customerIds ?? []).includes(obj.customerId))
     case 'sales_agent':

@@ -59,11 +59,19 @@ export class OutboxService {
     actorId: string,
     work: (
       tx: Prisma.TransactionClient,
-      emit: <T extends UzaEventName>(name: T, payload: UzaEvents[T], eventId?: string) => Promise<void>,
+      emit: <T extends UzaEventName>(
+        name: T,
+        payload: UzaEvents[T],
+        eventId?: string,
+      ) => Promise<void>,
     ) => Promise<R>,
   ): Promise<R> {
     return this.prisma.$transaction(async (tx) => {
-      const emit = async <T extends UzaEventName>(name: T, payload: UzaEvents[T], eventId?: string) => {
+      const emit = async <T extends UzaEventName>(
+        name: T,
+        payload: UzaEvents[T],
+        eventId?: string,
+      ) => {
         await this.enqueue(tx, name, payload, actorId, eventId ? { eventId } : {});
       };
       return work(tx, emit);

@@ -2,8 +2,15 @@ import { beforeEach, afterAll, describe, expect, it } from 'vitest';
 import { prisma, resetDb } from './db';
 import { resetLogisticsDb } from './logistics-db';
 import {
-  receiving, release, qualityGate, receiveLot, warehouse, agent,
-  inspectionRecorded, qualityFailed, PO_REF,
+  receiving,
+  release,
+  qualityGate,
+  receiveLot,
+  warehouse,
+  agent,
+  inspectionRecorded,
+  qualityFailed,
+  PO_REF,
 } from './logistics-fixtures';
 
 beforeEach(async () => {
@@ -53,7 +60,9 @@ describe('QC release gate — a failed inspection blocks release', () => {
     const refs = packages.map((p) => p.ref);
     await qualityGate.handleQualityFailed(qualityFailed({ poRef: PO_REF }));
 
-    await expect(release.qcRelease(warehouse, refs)).rejects.toMatchObject({ code: 'GATE_QC_NOT_RELEASED' });
+    await expect(release.qcRelease(warehouse, refs)).rejects.toMatchObject({
+      code: 'GATE_QC_NOT_RELEASED',
+    });
     const after = await prisma.package.findMany({ where: { ref: { in: refs } } });
     expect(after.every((p) => p.qcReleased === false)).toBe(true);
   });
@@ -62,7 +71,9 @@ describe('QC release gate — a failed inspection blocks release', () => {
     const { packages } = await receiveLot({ poRef: PO_REF });
     const refs = packages.map((p) => p.ref);
     await qualityGate.handleQualityFailed(qualityFailed({ poRef: PO_REF }));
-    await qualityGate.handleInspectionRecorded(inspectionRecorded({ poRef: PO_REF, result: 'pass' }));
+    await qualityGate.handleInspectionRecorded(
+      inspectionRecorded({ poRef: PO_REF, result: 'pass' }),
+    );
 
     await release.qcRelease(warehouse, refs);
     const after = await prisma.package.findMany({ where: { ref: { in: refs } } });
@@ -77,7 +88,12 @@ describe('QC release gate — a failed inspection blocks release', () => {
 
   it('authorises qcRelease at the service layer — a customer is denied', async () => {
     const { packages } = await receiveLot();
-    await expect(release.qcRelease(agent, packages.map((p) => p.ref))).rejects.toMatchObject({
+    await expect(
+      release.qcRelease(
+        agent,
+        packages.map((p) => p.ref),
+      ),
+    ).rejects.toMatchObject({
       code: 'ACCESS_DENIED_ROLE',
     });
   });

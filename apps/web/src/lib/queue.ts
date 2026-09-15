@@ -60,7 +60,11 @@ export async function loadQueue(requested: number): Promise<QueueResult> {
     authedCall<ProjectListRow[]>(`/projects?limit=${MAX_LIMIT}`),
   ]);
 
-  if (qRes.kind === 'unauthorized' || oRes.kind === 'unauthorized' || pRes.kind === 'unauthorized') {
+  if (
+    qRes.kind === 'unauthorized' ||
+    oRes.kind === 'unauthorized' ||
+    pRes.kind === 'unauthorized'
+  ) {
     return { kind: 'unauthorized' };
   }
 

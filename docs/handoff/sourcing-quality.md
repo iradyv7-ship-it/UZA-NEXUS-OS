@@ -216,3 +216,88 @@ idempotency on the PO and inspection write paths.
   constants into `policy.ts` and `supplier`/`rfq`/`supplierQuote` into `ID_PATTERNS`.
 
 Proceeding meanwhile against local constants marked `// TODO: pending contract-request`.
+
+---
+
+## Addendum (2026-09-14) — supplier self-service, EV attachments, two-stage deal payment
+
+Founder request: a supplier-facing channel to submit a deal proactively (not only in
+response to an RFQ), with attachments (EV-heavy: images, inspection report, battery-health
+certificate), and a two-stage payment (booking fee reserves a unit; balance due only after
+a passing inspection). Plus: confirm FOB deals get their own freight arrangement.
+
+### What's real and tested
+
+- **`SupplierOfferService`** (`sourcing/offer/supplier-offer.service.ts`) — a supplier's
+  proactive offer, STAFF-RELAYED (`channel: 'staff_relay'`, `relayedBy`, free-text
+  `supplierContact`) because suppliers have no login role today (confirmed gap — see
+  contract-request below). `submit`/`addAttachment`/`accept`/`decline`/`read`, all
+  authorised on the EXISTING `supplierQuote:*` grant (no new ROLE_GRANTS entry needed).
+  Offline-safe via `clientRequestId` on both the offer and each attachment.
+- **`SupplierOfferAttachment`** — `image` | `inspection_report` |
+  `battery_health_certificate`, proper typed rows (not one opaque blob), bound to the
+  offer.
+- **`SupplierDealService`** (`sourcing/deal/supplier-deal.service.ts`) — the two-stage
+  payment state machine: `reserved → inspected → balance_due → paid`, with
+  `inspection_failed` as a visible, blocking side-state (never silently stuck). Grades via
+  the SAME `gradeInspection` boundary quality uses (never re-derived): a critical defect
+  fails, no override, and blocks `markBalanceDue`. `markBalanceDue` additionally requires
+  the result to be strictly `pass` (not `conditional`) — the money-release gate. Both
+  money-confirmation steps (`reserve`, `confirmBalancePaid`) require an explicit human
+  `confirmedBy` and are authorised on `po:approve` (finance/china_sourcing/ceo — an
+  existing, previously-unused grant, reused rather than requesting a new one). Offline-safe
+  via `SupplierDealEvent`, an append-only per-transition ledger keyed by `clientRequestId`
+  — the same idea as `sync.ts` but for state TRANSITIONS on an existing row, not new-row
+  creation.
+- **PurchaseOrder now carries `basis`/`inlandSeparable`**, copied from the linked
+  SupplierQuote at issuance (never trusted from the caller when a quote exists — same
+  discipline as `RfqService.addQuote`). Added `PurchaseOrderService.assignOriginForwarder`
+  to record who books the sea leg. Checked `logistics/logistics/container.service.ts` and
+  `logistics/logistics/freight.service.ts` (owned by logistics-warehouse, not edited here):
+  neither branches on incoterm, and that is CORRECT — `QuoteBasis` is only ever EXW or FOB,
+  never CIF/DAP, so a SupplierQuote/PO price never includes ocean freight either way; UZA
+  always books its own sea leg regardless of basis. The actual gap was that the PO didn't
+  retain which basis it was — fixed here, within this module's own files.
+
+### Prisma models added (migration `20260914120000_supplier_offer_and_deal`)
+
+| Model | Notes |
+|---|---|
+| `SupplierOffer` | proactive, staff-relayed today; `basis`/`inlandSeparable`; `OFF-CN-{year}-{seq:4}` |
+| `SupplierOfferAttachment` | `image`/`inspection_report`/`battery_health_certificate`, bound to the offer |
+| `SupplierDeal` | two-stage payment state machine; `DEAL-CN-{year}-{seq:4}` |
+| `SupplierDealEvent` | append-only per-transition offline-replay ledger, keyed by `clientRequestId` |
+| `PurchaseOrder` (altered) | `+basis`, `+inlandSeparable`, `+originForwarderRef`, `+originForwarderName` |
+
+### Contract-requests filed (2026-09-14)
+
+- `docs/contract-requests/2026-09-14-supplier-self-service-role.md` — the real blocker: a
+  `supplier` `Role` (login, `ROLE_GRANTS`, `Actor.scope.supplierRef`, `inScope` case) for a
+  supplier to authenticate and manage ONLY its own offers. NOT built (cannot be, without
+  this). Staff-relayed submission is the real, working interim.
+- `docs/contract-requests/2026-09-14-supplier-deal-ids-policy-and-masking.md` —
+  `supplierOffer`/`supplierDeal` ID_PATTERNS, `BOOKING_FEE_PER_UNIT_MINOR` policy constant
+  (flags an open RMB-vs-implicit-currency question — `Minor` has no currency dimension
+  anywhere in this codebase), and `bookingFeeMinor`/`balanceMinor` CONFIDENTIAL_FIELDS
+  entries (until accepted, `china_warehouse` sees these two unmasked — documented in
+  `SupplierDealService.read`, not hidden).
+
+### What is stubbed / an honest open gap
+
+- No real supplier login exists; `channel: 'staff_relay'` is the only value produced today.
+- `bookingFeeMinor`/`balanceMinor` are not yet in `CONFIDENTIAL_FIELDS` (see above).
+- The booking-fee constant's currency is unresolved (RMB figure, currency-agnostic `Minor`
+  type) — flagged, not silently assumed.
+- `SupplierDeal`/`SupplierOffer` do not publish domain events (`po.issued`,
+  `inspection.recorded`, `quality.failed`, `capa.closed` are the only four this module
+  owns per `EVENT_OWNERS`; a deal reaching `paid`, for instance, is not yet visible to
+  other modules via the event bus — would need its own contract-request if that
+  visibility turns out to be needed).
+- Tests were written (`test/sourcing.supplier-offer.test.ts`,
+  `test/sourcing.supplier-deal.test.ts`, plus three new cases in
+  `test/sourcing.po.test.ts`) following the exact same fixtures/conventions as the
+  existing passing suite, and `tsc --noEmit` is clean. They could NOT be executed against
+  a live Postgres in the sandbox this was built in (no reachable database — confirmed by
+  running an existing, previously-passing test file, which failed identically with a
+  connection error). This is an environment limitation, not a defect; run
+  `pnpm --filter api test` against a real `DATABASE_URL`/`TEST_DATABASE_URL` to confirm.

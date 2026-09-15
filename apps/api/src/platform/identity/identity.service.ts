@@ -7,9 +7,20 @@ import { hashPassword } from '../auth/password';
 
 /** Never return password hashes or MFA secrets over the wire. */
 const SAFE_USER_SELECT = {
-  id: true, ref: true, email: true, role: true, kind: true, officeId: true,
-  scopeCustomerId: true, scopeCustomerIds: true, scopeShipmentRefs: true,
-  mfaEnabled: true, expiresAt: true, disabledAt: true, createdAt: true, updatedAt: true,
+  id: true,
+  ref: true,
+  email: true,
+  role: true,
+  kind: true,
+  officeId: true,
+  scopeCustomerId: true,
+  scopeCustomerIds: true,
+  scopeShipmentRefs: true,
+  mfaEnabled: true,
+  expiresAt: true,
+  disabledAt: true,
+  createdAt: true,
+  updatedAt: true,
 } as const;
 
 export interface NewUser {
@@ -93,7 +104,10 @@ export class IdentityService {
 
   /** True when a partner/customer account is past its expiry. */
   async isExpired(userId: string): Promise<boolean> {
-    const u = await this.prisma.user.findUnique({ where: { id: userId }, select: { expiresAt: true } });
+    const u = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { expiresAt: true },
+    });
     return !!u?.expiresAt && u.expiresAt.getTime() <= Date.now();
   }
 

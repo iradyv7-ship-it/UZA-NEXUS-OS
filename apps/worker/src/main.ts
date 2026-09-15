@@ -21,7 +21,13 @@
 import { Queue, type ConnectionOptions } from 'bullmq';
 import IORedis from 'ioredis';
 import type { EventEnvelope } from '@uza/contracts';
-import { PrismaClient, drainOutbox, EVENTS_QUEUE, EVENT_JOB_OPTS, type OutboxHandler } from '@uza/api';
+import {
+  PrismaClient,
+  drainOutbox,
+  EVENTS_QUEUE,
+  EVENT_JOB_OPTS,
+  type OutboxHandler,
+} from '@uza/api';
 
 const POLL_MS = Number(process.env.OUTBOX_POLL_MS ?? 2000);
 
@@ -29,7 +35,9 @@ const redisUrl = process.env.REDIS_URL ?? 'redis://localhost:6379';
 const prisma = new PrismaClient();
 
 async function main(): Promise<void> {
-  const connection = new IORedis(redisUrl, { maxRetriesPerRequest: null }) as unknown as ConnectionOptions;
+  const connection = new IORedis(redisUrl, {
+    maxRetriesPerRequest: null,
+  }) as unknown as ConnectionOptions;
   const queue = new Queue(EVENTS_QUEUE, { connection });
 
   // Publisher: committed outbox rows -> BullMQ jobs (marks each row published once).
@@ -43,7 +51,9 @@ async function main(): Promise<void> {
     );
   }, POLL_MS);
 
-  console.log(`UZA outbox publisher up. Polling outbox every ${POLL_MS}ms, publishing to "${EVENTS_QUEUE}".`);
+  console.log(
+    `UZA outbox publisher up. Polling outbox every ${POLL_MS}ms, publishing to "${EVENTS_QUEUE}".`,
+  );
 
   const shutdown = async () => {
     clearInterval(publisher);

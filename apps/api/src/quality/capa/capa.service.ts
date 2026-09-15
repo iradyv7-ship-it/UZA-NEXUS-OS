@@ -54,7 +54,9 @@ export class CapaService {
       throw new BadRequestException(`capa ${capaRef} is already closed`);
     }
 
-    const reinspection = await this.prisma.inspection.findUnique({ where: { ref: reinspectionRef } });
+    const reinspection = await this.prisma.inspection.findUnique({
+      where: { ref: reinspectionRef },
+    });
     if (!reinspection) throw new NotFoundException(`reinspection ${reinspectionRef} not found`);
     if (reinspection.ref === capa.inspectionRef) {
       throw new BadRequestException('a CAPA cannot close against the inspection that opened it');

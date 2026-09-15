@@ -38,16 +38,25 @@ class RejectPaymentDto {
 // global ValidationPipe (transform:true) rejects non-numeric/out-of-range input with 400.
 class ListPaymentsQueryDto {
   @ApiPropertyOptional({ enum: PAYMENT_STATUSES })
-  @IsOptional() @IsIn(PAYMENT_STATUSES) status?: PaymentStatus;
+  @IsOptional()
+  @IsIn(PAYMENT_STATUSES)
+  status?: PaymentStatus;
 
   @ApiPropertyOptional() @IsOptional() @IsString() invoiceRef?: string;
 
   @ApiPropertyOptional({ minimum: 1, maximum: 100, default: 20 })
-  @IsOptional() @Type(() => Number) @IsInt() @Min(1) @Max(100)
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @Max(100)
   limit = 20;
 
   @ApiPropertyOptional({ minimum: 0, default: 0 })
-  @IsOptional() @Type(() => Number) @IsInt() @Min(0)
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(0)
   offset = 0;
 }
 
@@ -58,7 +67,8 @@ class RecordPayoutDto {
 }
 
 class SetClaimStatusDto {
-  @ApiProperty({ enum: CLAIM_STATUSES }) @IsIn(CLAIM_STATUSES) status!: 'submitted' | 'recovered' | 'written_off';
+  @ApiProperty({ enum: CLAIM_STATUSES }) @IsIn(CLAIM_STATUSES) status!:
+    'submitted' | 'recovered' | 'written_off';
 }
 
 class RecordPettyCashDto {
@@ -113,7 +123,9 @@ export class PaymentController {
   }
 
   @Post(':ref/verify')
-  @ApiOperation({ summary: 'FINANCE-ONLY verification; settles named installment (payment:approve)' })
+  @ApiOperation({
+    summary: 'FINANCE-ONLY verification; settles named installment (payment:approve)',
+  })
   verify(@CurrentActor() actor: Actor, @Param('ref') ref: string) {
     return this.payments.verify(actor, ref);
   }
@@ -126,7 +138,8 @@ export class PaymentController {
 
   @Get()
   @ApiOperation({
-    summary: 'List in-scope payments — the verification queue (payment:read, scoped; updatedAt desc)',
+    summary:
+      'List in-scope payments — the verification queue (payment:read, scoped; updatedAt desc)',
   })
   list(@CurrentActor() actor: Actor, @Query() q: ListPaymentsQueryDto) {
     return this.payments.list(
@@ -182,7 +195,11 @@ export class ForwarderClaimController {
 
   @Patch(':ref/status')
   @ApiOperation({ summary: 'Move a claim through its recovery lifecycle (claim:update)' })
-  setStatus(@CurrentActor() actor: Actor, @Param('ref') ref: string, @Body() dto: SetClaimStatusDto) {
+  setStatus(
+    @CurrentActor() actor: Actor,
+    @Param('ref') ref: string,
+    @Body() dto: SetClaimStatusDto,
+  ) {
     return this.claims.setStatus(actor, ref, dto.status);
   }
 }
@@ -219,7 +236,9 @@ export class SupplierBankController {
   }
 
   @Post('changes/:ref/approve')
-  @ApiOperation({ summary: 'Approve a bank change; applies on second distinct approval (payment:approve)' })
+  @ApiOperation({
+    summary: 'Approve a bank change; applies on second distinct approval (payment:approve)',
+  })
   approve(@CurrentActor() actor: Actor, @Param('ref') ref: string) {
     return this.bank.approve(actor, ref);
   }
