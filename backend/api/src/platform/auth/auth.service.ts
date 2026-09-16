@@ -106,6 +106,9 @@ export class AuthService {
    *    signup. `alternateEmails` is stored pre-lowercased (see seed-users.ts), so a plain
    *    `has` on the already-lowercased incoming address is a correct case-insensitive match
    *    without needing Prisma's `mode: 'insensitive'`, which array filters don't support.
+   *    The same address can legitimately be one user's primary email AND another user's
+   *    alternate (add-google-ceo-alias.ts + seed-users.ts do exactly that), so the primary
+   *    match wins — a single `findFirst` over both would pick a row in undefined order.
    *  - A matched user receives EXACTLY the JWT + Actor password login would issue, so the
    *    role and object-scope come from the user record and nothing else — signing in via an
    *    alternate email never grants anything the primary email wouldn't.
@@ -115,19 +118,24 @@ export class AuthService {
    *
    * On first success the verified Google `sub` is recorded on the user (authProvider =
    * 'google') so later logins can be strengthened; this is additive and never changes role
-   * or scope.
+   * or scope. `googleSub` is unique, and the email decides the account, so if the sub was
+   * previously recorded on a different row (the email moved, or an earlier login matched
+   * the other row of a primary/alternate pair) the link follows the email rather than
+   * failing the login on the unique constraint.
    */
   async loginWithGoogle(email: string, googleSub?: string): Promise<LoginResult> {
     const normalised = email.trim().toLowerCase();
-    const user = await this.prisma.user.findFirst({
-      where: {
-        OR: [
-          { email: { equals: normalised, mode: 'insensitive' } },
-          { alternateEmails: { has: normalised } },
-        ],
-      },
-      include: { office: true },
-    });
+    const include = { office: true } as const;
+    const user =
+      (await this.prisma.user.findFirst({
+        where: { email: { equals: normalised, mode: 'insensitive' } },
+        include,
+      })) ??
+      (await this.prisma.user.findFirst({
+        where: { alternateEmails: { has: normalised } },
+        orderBy: { createdAt: 'asc' },
+        include,
+      }));
 
     if (!user) {
       // Secure default: match-only. No matching user is a denial, audited then thrown.
@@ -186,11 +194,20 @@ export class AuthService {
     }
 
     // Record the verified Google link on first success; keep it idempotent on re-login.
+    // One Google account links to exactly one row (`googleSub` is unique): release the sub
+    // from any other row first, in the same transaction, so the link moves with the email
+    // instead of tripping the constraint and turning a valid sign-in into a 500.
     if (googleSub && (user.googleSub !== googleSub || user.authProvider !== 'google')) {
-      await this.prisma.user.update({
-        where: { id: user.id },
-        data: { googleSub, authProvider: 'google' },
-      });
+      await this.prisma.$transaction([
+        this.prisma.user.updateMany({
+          where: { googleSub, NOT: { id: user.id } },
+          data: { googleSub: null },
+        }),
+        this.prisma.user.update({
+          where: { id: user.id },
+          data: { googleSub, authProvider: 'google' },
+        }),
+      ]);
     }
 
     const actor = this.actorFor(user);

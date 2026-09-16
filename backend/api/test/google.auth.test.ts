@@ -122,6 +122,47 @@ describe('Google sign-in — alternate credential', () => {
     expect(decoded.ref).toBe('CEO-KGL-0001');
   });
 
+  it('same Gmail as one row’s alternate and another row’s primary: primary wins and the sub link moves (regression: unique googleSub 500)', async () => {
+    const off = await office();
+    // Production shape: seed-users.ts puts the founder's Gmail in CEO-KGL-0001.alternateEmails,
+    // add-google-ceo-alias.ts later creates CEO-KGL-0002 with that Gmail as its primary email.
+    const workAccount = await identity.createEmployee(ceo, {
+      ref: 'CEO-KGL-0001',
+      email: 'yves@uzasolutions.com',
+      password: 'sup3rsecret',
+      role: 'ceo',
+      officeId: off.id,
+    });
+    await prisma.user.update({
+      where: { id: workAccount.id },
+      // An earlier Google login already linked the sub to the work account.
+      data: { alternateEmails: ['iradyv7@gmail.com'], googleSub: 'sub-alt', authProvider: 'google' },
+    });
+    await identity.createEmployee(ceo, {
+      ref: 'CEO-KGL-0002',
+      email: 'iradyv7@gmail.com',
+      password: 'google-only-unused',
+      role: 'ceo',
+      officeId: off.id,
+    });
+
+    stubGoogle({ email: 'iradyv7@gmail.com', sub: 'sub-alt' });
+    const state = await google.createState();
+    // Before the fix this threw PrismaClientKnownRequestError P2002 on `googleSub`.
+    const result = await google.handleCallback('fake-code', state);
+
+    expect(result.actor.userId).toBe('CEO-KGL-0002');
+
+    const primary = await prisma.user.findUnique({ where: { email: 'iradyv7@gmail.com' } });
+    const alternate = await prisma.user.findUnique({ where: { email: 'yves@uzasolutions.com' } });
+    expect(primary?.googleSub).toBe('sub-alt');
+    expect(alternate?.googleSub).toBeNull();
+
+    // Second login is a plain re-login: no link churn, same account.
+    const again = await google.handleCallback('fake-code', await google.createState());
+    expect(again.actor.userId).toBe('CEO-KGL-0002');
+  });
+
   it('unknown email → denied, no token, audits NO_MATCHING_USER (no auto-provision)', async () => {
     stubGoogle({ email: 'stranger@gmail.com', sub: 'sub-x' });
     const state = await google.createState();
