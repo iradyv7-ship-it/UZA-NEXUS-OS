@@ -21,7 +21,6 @@ const PAYMENT_GRANTS: Record<Role, readonly string[]> = {
   front_office: ['payment:create'],
   sales_agent: [],
   logistics_partner: [],
-  pending: [],
 };
 
 export function can(
@@ -41,8 +40,6 @@ export function can(
  * This is a UI convenience, NOT a security boundary — the API still scopes every read.
  */
 export function homePathFor(actor: Actor): string {
-  // A Google sign-up nobody has approved yet has exactly one page: the waiting room.
-  if (actor.role === 'pending') return '/pending';
   if (actor.role === 'logistics_partner') return '/partner/shipments';
   // Executives land on the group view; everyone else lands on their own week. Neither is a
   // security boundary — the API scopes every read regardless.
@@ -54,17 +51,6 @@ export function homePathFor(actor: Actor): string {
  *  (the API also scopes it to an empty set for a non-partner, so this is UX, not the guard). */
 export function isPartner(actor: Actor): boolean {
   return actor.role === 'logistics_partner';
-}
-
-/** Awaiting approval: the shell hides every nav item and every page defers to /pending. */
-export function isPending(actor: Actor): boolean {
-  return actor.role === 'pending';
-}
-
-/** Who sees and works the sign-up approval queue (`/admin/access`). API-enforced (user:read,
- *  role:assign — `*:*` only, i.e. the CEO); this only decides whether to show the link. */
-export function canApproveAccess(actor: Actor): boolean {
-  return actor.role === 'ceo';
 }
 
 /**

@@ -2,41 +2,21 @@ import { redirect } from 'next/navigation';
 import { translator } from '@/i18n';
 import { getLocale, getSession } from '@/lib/session';
 import { homePathFor } from '@/lib/permissions';
-import { isGoogleConfigured } from '@/lib/googleAuth';
 import LoginForm from './LoginForm';
-import GoogleSignInButton from './GoogleSignInButton';
 import { LocaleSwitch } from '@/components/LocaleSwitch';
 
-type GoogleError = 'unauthorized' | 'not_configured' | 'google_failed';
-
-function googleErrorKey(error: string | undefined): string | null {
-  switch (error as GoogleError) {
-    case 'unauthorized':
-      return 'login.error.unauthorized';
-    case 'not_configured':
-      return 'login.google.unavailable';
-    case 'google_failed':
-      return 'login.error.google';
-    default:
-      return null;
-  }
-}
-
-export default async function LoginPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ error?: string }>;
-}) {
+/**
+ * Email + password only. Every seat is provisioned by `prisma/seed-users.ts` (one address
+ * per person, a shared temporary password everyone changes on first sign-in) — there is no
+ * self-service sign-up and no third-party identity provider, so this page renders without
+ * touching the API at all.
+ */
+export default async function LoginPage() {
   const session = await getSession();
   if (session) redirect(homePathFor(session.actor));
 
-  const [locale, googleConfigured, { error }] = await Promise.all([
-    getLocale(),
-    isGoogleConfigured(),
-    searchParams,
-  ]);
+  const locale = await getLocale();
   const t = translator(locale);
-  const errorKey = googleErrorKey(error);
 
   return (
     <main className="mx-auto flex min-h-screen max-w-md flex-col justify-center px-5 py-10 sm:max-w-lg sm:px-6">
@@ -52,12 +32,6 @@ export default async function LoginPage({
         <h2 className="text-xl font-semibold text-fg">{t('login.title')}</h2>
         <p className="mb-5 text-sm text-fgMuted">{t('login.subtitle')}</p>
 
-        {errorKey && (
-          <p role="alert" className="mb-4 rounded-lg bg-danger/10 px-3 py-2 text-sm text-danger">
-            {t(errorKey)}
-          </p>
-        )}
-
         <LoginForm
           labels={{
             email: t('login.email'),
@@ -68,23 +42,6 @@ export default async function LoginPage({
             network: t('login.error.network'),
           }}
         />
-
-        <div className="my-5 flex items-center gap-3" aria-hidden="true">
-          <span className="h-px flex-1 bg-border" />
-          <span className="text-xs uppercase tracking-wide text-fgSubtle">
-            {t('login.google.or')}
-          </span>
-          <span className="h-px flex-1 bg-border" />
-        </div>
-
-        <GoogleSignInButton
-          configured={googleConfigured}
-          label={t('login.google.submit')}
-          unavailable={t('login.google.unavailable')}
-        />
-        {googleConfigured && (
-          <p className="mt-3 text-center text-xs text-fgMuted">{t('login.google.signup')}</p>
-        )}
       </div>
 
       <p className="mt-4 text-center text-xs text-fgSubtle">{t('login.hint')}</p>

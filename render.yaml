@@ -41,12 +41,6 @@ services:
         generateValue: true
       - key: WEB_ORIGIN
         value: https://uza-nexus-web.vercel.app
-      - key: GOOGLE_CALLBACK_URL
-        value: https://uza-nexus-web.vercel.app/auth/google/return
-      - key: GOOGLE_CLIENT_ID
-        value: 937295586061-8hn5qj6dbb85roatb8k6baj2egbhbvde.apps.googleusercontent.com
-      - key: GOOGLE_CLIENT_SECRET
-        sync: false
 
   - type: keyvalue
     name: uza-nexus-redis
