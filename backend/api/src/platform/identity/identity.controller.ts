@@ -1,4 +1,4 @@
-import { Body, Controller, Param, Post } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { IsDateString, IsEmail, IsIn, IsOptional, IsString, MinLength } from 'class-validator';
 import type { Actor } from '@uza/contracts';
@@ -8,6 +8,8 @@ import type { RoleName } from '@prisma/client';
 
 // 'customer' deliberately excluded — see backend/contracts/src/permissions.ts. No account
 // with this role can be created through Nexus; customer-facing access belongs on uzabulk.com.
+// 'pending' is excluded too: it is only ever set by Google self-sign-up, never assigned —
+// approving a sign-up means picking one of these.
 const ROLES = [
   'ceo',
   'venture_manager',
@@ -76,8 +78,20 @@ export class IdentityController {
     return this.identity.createPartnerAccount(actor, dto, new Date(dto.expiresAt));
   }
 
+  /** Self-served Google sign-ups awaiting a role. Approve via `users/:id/roles`. */
+  @Get('users/pending')
+  listPending(@CurrentActor() actor: Actor) {
+    return this.identity.listPendingUsers(actor);
+  }
+
   @Post('users/:id/roles')
   assignRole(@CurrentActor() actor: Actor, @Param('id') id: string, @Body() dto: AssignRoleDto) {
     return this.identity.assignRole(actor, id, dto.role, dto.reason);
+  }
+
+  /** Turn an account away (or off). For a pending sign-up this is the "deny" action. */
+  @Post('users/:id/disable')
+  disable(@CurrentActor() actor: Actor, @Param('id') id: string) {
+    return this.identity.disableAccount(actor, id);
   }
 }

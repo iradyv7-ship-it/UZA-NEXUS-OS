@@ -45,6 +45,11 @@ enum UserKind {
 /// 'customer' deliberately excluded (removed 30 Aug 2026, zero accounts held it) — Nexus is
 /// the internal operating layer, a customer never authenticates into it. Customer-facing
 /// access belongs on uzabulk.com, reading Nexus as its source of truth.
+///
+/// `pending` is the role a self-served Google sign-up holds until the CEO approves it: it
+/// can authenticate (so the person sees a "waiting for approval" screen) but holds no grant
+/// at all — ROLE_GRANTS.pending is empty and every access map denies it. It is never an
+/// assignable target; approval means assigning one of the real roles.
 enum RoleName {
   ceo
   venture_manager
@@ -54,6 +59,7 @@ enum RoleName {
   finance
   sales_agent
   logistics_partner
+  pending
 }
 
 /// A principal that can authenticate. Employees, customers and external partners are
@@ -94,9 +100,11 @@ model User {
 
   // Alternate credentials. Google/OIDC sign-in matches an EXISTING active user by email
   // and issues the same app JWT + Actor as password login — it never changes a user's
-  // role or scope, and it never auto-provisions. `googleSub` records the verified Google
-  // subject on first Google login so later logins can be strengthened; `authProvider`
-  // records which credential last authenticated. Both are additive and nullable/defaulted.
+  // role or scope. An unknown Google email is provisioned as a `pending` user (no grants)
+  // for the CEO to approve — see AuthService.loginWithGoogle. `googleSub` records the
+  // verified Google subject on first Google login so later logins can be strengthened;
+  // `authProvider` records which credential last authenticated. Both are additive and
+  // nullable/defaulted.
   googleSub    String? @unique
   authProvider String  @default("password")
 

@@ -45,6 +45,9 @@ function stubGoogle(id: { email: string; emailVerified?: boolean; sub?: string; 
 beforeEach(async () => {
   await resetDb();
   vi.restoreAllMocks();
+  // Sign-up knobs are read per call from the environment; start every test from defaults.
+  delete process.env.GOOGLE_SIGNUP_OFFICE;
+  delete process.env.GOOGLE_OPEN_SIGNUP;
 });
 afterAll(async () => {
   await prisma.$disconnect();
@@ -163,19 +166,93 @@ describe('Google sign-in — alternate credential', () => {
     expect(again.actor.userId).toBe('CEO-KGL-0002');
   });
 
-  it('unknown email → denied, no token, audits NO_MATCHING_USER (no auto-provision)', async () => {
-    stubGoogle({ email: 'stranger@gmail.com', sub: 'sub-x' });
-    const state = await google.createState();
+  it('unknown email → self-service sign-up: a `pending` user in the sign-up office, no grants, Google-only', async () => {
+    const off = await office(); // code 'RW'
+    process.env.GOOGLE_SIGNUP_OFFICE = 'RW';
+    delete process.env.GOOGLE_OPEN_SIGNUP;
 
-    await expect(google.handleCallback('fake-code', state)).rejects.toThrow();
+    stubGoogle({ email: 'Stranger@Gmail.com', sub: 'sub-x' });
+    const result = await google.handleCallback('fake-code', await google.createState());
 
-    // No user was created — match-only.
-    expect(await prisma.user.count()).toBe(0);
-    const denial = await prisma.auditLog.findFirst({
-      where: { action: 'login', decision: 'deny', reason: 'NO_MATCHING_USER' },
+    expect(result.actor.role).toBe('pending');
+    expect(result.actor.userId).toBe('PND-RW-0001');
+    expect(result.actor.office).toBe('RW');
+    expect(result.mfaRequired).toBe(false);
+
+    const created = await prisma.user.findUnique({ where: { email: 'stranger@gmail.com' } });
+    expect(created?.role).toBe('pending');
+    expect(created?.officeId).toBe(off.id);
+    expect(created?.googleSub).toBe('sub-x');
+    expect(created?.authProvider).toBe('google');
+    expect(created?.disabledAt).toBeNull();
+
+    // Google-only by construction: no password anyone knows can log this account in.
+    await expect(auth.login('stranger@gmail.com', 'anything')).rejects.toThrow();
+
+    const signup = await prisma.auditLog.findFirst({
+      where: { action: 'login', decision: 'allow', reason: 'SELF_SIGNUP' },
     });
-    expect(denial).not.toBeNull();
-    expect(denial?.actorId).toBe('stranger@gmail.com');
+    expect(signup?.actorId).toBe('PND-RW-0001');
+
+    // Second sign-in is a plain match — no second row, sequence untouched.
+    const again = await google.handleCallback('fake-code', await google.createState());
+    expect(again.actor.userId).toBe('PND-RW-0001');
+    expect(await prisma.user.count({ where: { role: 'pending' } })).toBe(1);
+
+    // The next stranger gets the next number.
+    stubGoogle({ email: 'another@gmail.com', sub: 'sub-y' });
+    const second = await google.handleCallback('fake-code', await google.createState());
+    expect(second.actor.userId).toBe('PND-RW-0002');
+
+    // A pending user is in the CEO's approval queue, and approving assigns a real role.
+    const queue = await identity.listPendingUsers(ceo);
+    expect(queue.map((u) => u.ref)).toEqual(['PND-RW-0001', 'PND-RW-0002']);
+    await identity.assignRole(ceo, created!.id, 'front_office', 'approved');
+    stubGoogle({ email: 'stranger@gmail.com', sub: 'sub-x' });
+    const approved = await google.handleCallback('fake-code', await google.createState());
+    expect(approved.actor.role).toBe('front_office');
+    expect((await identity.listPendingUsers(ceo)).map((u) => u.ref)).toEqual(['PND-RW-0002']);
+
+    // Denying (disable) removes it from the queue and blocks the next Google sign-in.
+    const other = await prisma.user.findUnique({ where: { email: 'another@gmail.com' } });
+    await identity.disableAccount(ceo, other!.id);
+    expect(await identity.listPendingUsers(ceo)).toEqual([]);
+    stubGoogle({ email: 'another@gmail.com', sub: 'sub-y' });
+    await expect(
+      google.handleCallback('fake-code', await google.createState()),
+    ).rejects.toThrow('Account disabled');
+  });
+
+  it('GOOGLE_OPEN_SIGNUP=0 → match-only: unknown email denied, no row, audits NO_MATCHING_USER', async () => {
+    process.env.GOOGLE_OPEN_SIGNUP = '0';
+    try {
+      stubGoogle({ email: 'stranger@gmail.com', sub: 'sub-x' });
+      const state = await google.createState();
+
+      await expect(google.handleCallback('fake-code', state)).rejects.toThrow();
+
+      expect(await prisma.user.count()).toBe(0);
+      const denial = await prisma.auditLog.findFirst({
+        where: { action: 'login', decision: 'deny', reason: 'NO_MATCHING_USER' },
+      });
+      expect(denial).not.toBeNull();
+      expect(denial?.actorId).toBe('stranger@gmail.com');
+    } finally {
+      delete process.env.GOOGLE_OPEN_SIGNUP;
+    }
+  });
+
+  it('sign-up office missing → refused, nothing created', async () => {
+    process.env.GOOGLE_SIGNUP_OFFICE = 'NOPE';
+    try {
+      stubGoogle({ email: 'stranger@gmail.com', sub: 'sub-x' });
+      await expect(
+        google.handleCallback('fake-code', await google.createState()),
+      ).rejects.toThrow(/GOOGLE_SIGNUP_OFFICE/);
+      expect(await prisma.user.count()).toBe(0);
+    } finally {
+      delete process.env.GOOGLE_SIGNUP_OFFICE;
+    }
   });
 
   it('disabled account → denied, audits ACCOUNT_DISABLED', async () => {

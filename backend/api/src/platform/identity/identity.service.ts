@@ -97,6 +97,20 @@ export class IdentityService {
     });
   }
 
+  /**
+   * The CEO's approval queue: every self-served Google sign-up still holding the `pending`
+   * role (see AuthService.provisionPendingGoogleUser). Approve with `assignRole`, turn away
+   * with `disableAccount` — a disabled pending row keeps the email from re-provisioning.
+   */
+  async listPendingUsers(actor: Actor) {
+    await this.authz.authorize(actor, 'user', 'read');
+    return this.prisma.user.findMany({
+      where: { role: 'pending', disabledAt: null },
+      orderBy: { createdAt: 'asc' },
+      select: SAFE_USER_SELECT,
+    });
+  }
+
   async disableAccount(actor: Actor, userId: string) {
     await this.authz.authorize(actor, 'user', 'update');
     return this.prisma.user.update({ where: { id: userId }, data: { disabledAt: new Date() } });

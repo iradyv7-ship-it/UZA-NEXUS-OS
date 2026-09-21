@@ -52,5 +52,9 @@ export const financeScopeWhere = (actor: Actor): FinanceScopeWhere => {
     // we ever build a predicate — this branch keeps the mirror total.)
     case 'logistics_partner':
       return MATCH_NONE;
+
+    // Awaiting CEO approval: no grant, so authorize() already denied; keep the mirror total.
+    case 'pending':
+      return MATCH_NONE;
   }
 };

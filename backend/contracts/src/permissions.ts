@@ -18,7 +18,9 @@ export type Role =
   | 'front_office'
   | 'finance'
   | 'sales_agent'
-  | 'logistics_partner';
+  | 'logistics_partner'
+  // A self-served Google sign-up awaiting CEO approval. Authenticates, holds no grant.
+  | 'pending';
 
 export interface Actor {
   readonly userId: string;
@@ -144,6 +146,9 @@ export const ROLE_GRANTS: Record<Role, readonly string[]> = {
     'uza-id:links',
   ],
   logistics_partner: ['shipment:read', 'package:read', 'delivery:*', 'customsDoc:*'],
+  // Nothing, by construction: `can()` is false for every resource until the CEO assigns a
+  // real role. The only thing a pending user can do is see that they are pending.
+  pending: [],
 };
 
 /**
@@ -206,6 +211,8 @@ export const inScope = (actor: Actor, obj: Scopable): boolean => {
       const ref = obj.shipmentRef ?? (obj.kind === 'shipment' ? obj.ref : undefined);
       return !!ref && (actor.scope.shipmentRefs ?? []).includes(ref);
     }
+    case 'pending':
+      return false;
   }
 };
 

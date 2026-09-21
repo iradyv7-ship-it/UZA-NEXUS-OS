@@ -72,6 +72,8 @@ export const COMMAND_ACCESS: Record<Role, readonly CommandCapability[]> = {
   // Explicitly denied: the brief requires these roles get a 403 on every command route.
   sales_agent: NONE,
   logistics_partner: NONE,
+  // Awaiting CEO approval — no access anywhere until a real role is assigned.
+  pending: NONE,
 };
 
 /** Pure role-gate check. Object-scope is applied separately by the services. */

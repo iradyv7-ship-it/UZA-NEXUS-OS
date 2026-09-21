@@ -47,5 +47,9 @@ export const shipmentScopeWhere = (actor: Actor): ShipmentScopeWhere => {
     // inScope → ref ∈ scope.shipmentRefs (the shipment's own ref is its scope key).
     case 'logistics_partner':
       return { ref: { in: [...(actor.scope.shipmentRefs ?? [])] } };
+
+    // Awaiting CEO approval: no grant, so authorize() already denied; keep the mirror total.
+    case 'pending':
+      return MATCH_NONE;
   }
 };

@@ -3,7 +3,8 @@ import { JwtService } from '@nestjs/jwt';
 import type { Actor } from '@uza/contracts';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
-import { verifyPassword } from './password';
+import { hashPassword, verifyPassword } from './password';
+import { randomBytes } from 'node:crypto';
 import { toActor } from './actor';
 import { encryptMfaSecret, generateMfaSecret, mfaOtpAuthUrl, verifyMfaCode } from './mfa';
 
@@ -33,6 +34,25 @@ export interface MfaEnrollment {
  * before the account starts requiring it. Enrolling with a secret nobody can generate a
  * code from would be a self-lockout, not security.
  */
+/**
+ * Self-service Google sign-up is ON unless GOOGLE_OPEN_SIGNUP is explicitly "0"/"false".
+ * Read per call (not at construction) so tests can flip it and so a Render env change takes
+ * effect on restart without any other wiring.
+ */
+function openGoogleSignup(): boolean {
+  const v = (process.env.GOOGLE_OPEN_SIGNUP ?? '').trim().toLowerCase();
+  return !(v === '0' || v === 'false' || v === 'off' || v === 'no');
+}
+
+/** Prisma P2002 on the named column — the only error `provisionPendingGoogleUser` retries. */
+function isUniqueViolation(err: unknown, column: string): boolean {
+  if (!err || typeof err !== 'object') return false;
+  const e = err as { code?: unknown; meta?: { target?: unknown } };
+  if (e.code !== 'P2002') return false;
+  const target = e.meta?.target;
+  return Array.isArray(target) ? target.includes(column) : String(target ?? '').includes(column);
+}
+
 @Injectable()
 export class AuthService {
   constructor(
@@ -102,8 +122,7 @@ export class AuthService {
    *
    *  - It matches an EXISTING active user by their primary email OR any of their
    *    `alternateEmails` (e.g. a personal Gmail routing to a company account), case-
-   *    insensitively. It never auto-provisions — an unmatched email is a denial, not a
-   *    signup. `alternateEmails` is stored pre-lowercased (see seed-users.ts), so a plain
+   *    insensitively. `alternateEmails` is stored pre-lowercased (see seed-users.ts), so a plain
    *    `has` on the already-lowercased incoming address is a correct case-insensitive match
    *    without needing Prisma's `mode: 'insensitive'`, which array filters don't support.
    *    The same address can legitimately be one user's primary email AND another user's
@@ -115,6 +134,12 @@ export class AuthService {
    *  - Disabled and expired accounts are refused, mirroring the password path, and every
    *    denial writes an audit row before throwing (NO_MATCHING_USER / ACCOUNT_DISABLED /
    *    ACCOUNT_EXPIRED / MFA_REQUIRED).
+   *  - An UNKNOWN email is self-service sign-up: a `pending` user is created (no grants, see
+   *    ROLE_GRANTS.pending) in the GOOGLE_SIGNUP_OFFICE office (default KGL), and the person
+   *    signs in to a "waiting for approval" screen. The CEO promotes them with
+   *    `POST /identity/users/:id/roles` or turns them away with `.../disable`. The pending
+   *    role is what keeps this safe: the account exists, but `can()` is false everywhere
+   *    until a human picks a role. GOOGLE_OPEN_SIGNUP=0 restores match-only (unknown = 401).
    *
    * On first success the verified Google `sub` is recorded on the user (authProvider =
    * 'google') so later logins can be strengthened; this is additive and never changes role
@@ -138,17 +163,27 @@ export class AuthService {
       }));
 
     if (!user) {
-      // Secure default: match-only. No matching user is a denial, audited then thrown.
-      await this.audit.record({
-        actorId: normalised,
-        actorRole: 'unknown',
-        resource: 'session',
-        action: 'login',
-        decision: 'deny',
-        reason: 'NO_MATCHING_USER',
-        detail: { provider: 'google', email: normalised },
+      if (!openGoogleSignup()) {
+        // Match-only mode: no matching user is a denial, audited then thrown.
+        await this.audit.record({
+          actorId: normalised,
+          actorRole: 'unknown',
+          resource: 'session',
+          action: 'login',
+          decision: 'deny',
+          reason: 'NO_MATCHING_USER',
+          detail: { provider: 'google', email: normalised },
+        });
+        throw new UnauthorizedException('Google sign-in is not permitted for this account');
+      }
+      const created = await this.provisionPendingGoogleUser(normalised, googleSub);
+      const actor = this.actorFor(created);
+      const accessToken = await this.jwt.signAsync({
+        sub: created.id,
+        ref: created.ref,
+        role: created.role,
       });
-      throw new UnauthorizedException('Google sign-in is not permitted for this account');
+      return { accessToken, actor, mfaRequired: false };
     }
 
     if (user.disabledAt) {
@@ -221,6 +256,61 @@ export class AuthService {
       detail: { provider: 'google' },
     });
     return { accessToken, actor, mfaRequired: false };
+  }
+
+  /**
+   * Self-service Google sign-up. Creates the `pending` user row a first-time Google email
+   * gets: no grants, no usable password (a random, unrecoverable one — this account is
+   * Google-only by construction), the Google `sub` already linked, and a readable ref of
+   * the form PND-{office}-{seq:4} so the CEO can tell sign-ups apart in the approval list.
+   * Audited as an allow with reason SELF_SIGNUP so the approval queue has a paper trail.
+   */
+  private async provisionPendingGoogleUser(email: string, googleSub: string | undefined) {
+    const officeCode = (process.env.GOOGLE_SIGNUP_OFFICE || 'KGL').trim().toUpperCase();
+    const office = await this.prisma.office.findFirst({ where: { code: officeCode } });
+    if (!office) {
+      // Misconfiguration, not a user error: don't create a row nobody can find.
+      throw new UnauthorizedException(
+        `Google sign-up office "${officeCode}" does not exist — set GOOGLE_SIGNUP_OFFICE`,
+      );
+    }
+
+    const passwordHash = await hashPassword(randomBytes(32).toString('hex'));
+    const prefix = `PND-${office.code}-`;
+
+    // Sequential ref, retried on the (rare) concurrent-signup collision on the unique `ref`.
+    for (let attempt = 0; attempt < 5; attempt++) {
+      const taken = await this.prisma.user.count({ where: { ref: { startsWith: prefix } } });
+      const ref = `${prefix}${String(taken + 1 + attempt).padStart(4, '0')}`;
+      try {
+        const created = await this.prisma.user.create({
+          data: {
+            ref,
+            email,
+            passwordHash,
+            role: 'pending',
+            kind: 'employee',
+            officeId: office.id,
+            googleSub: googleSub ?? null,
+            authProvider: 'google',
+          },
+          include: { office: true },
+        });
+        await this.audit.record({
+          actorId: created.ref,
+          actorRole: created.role,
+          resource: 'session',
+          action: 'login',
+          decision: 'allow',
+          reason: 'SELF_SIGNUP',
+          detail: { provider: 'google', email, office: office.code },
+        });
+        return created;
+      } catch (err) {
+        if (!isUniqueViolation(err, 'ref')) throw err;
+      }
+    }
+    throw new UnauthorizedException('Could not allocate a sign-up reference; please retry');
   }
 
   private actorFor(user: {

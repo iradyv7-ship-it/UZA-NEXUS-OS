@@ -24,7 +24,9 @@ export type Role =
   | 'front_office'
   | 'finance'
   | 'sales_agent'
-  | 'logistics_partner';
+  | 'logistics_partner'
+  // A self-served Google sign-up awaiting CEO approval. Authenticates, holds no grant.
+  | 'pending';
 
 export interface Actor {
   userId: string;

@@ -119,6 +119,8 @@ export const PLANNING_ACCESS: Record<Role, readonly PlanningCapability[]> = {
   // Explicitly denied: the brief requires these roles get a 403 on every planning route.
   sales_agent: NONE,
   logistics_partner: NONE,
+  // Awaiting CEO approval — no access anywhere until a real role is assigned.
+  pending: NONE,
 };
 
 /** Pure role-gate check. Object-scope is applied separately by the services. */

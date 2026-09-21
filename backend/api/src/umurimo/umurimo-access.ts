@@ -106,6 +106,8 @@ export const UMURIMO_ACCESS: Record<Role, readonly UmurimoCapability[]> = {
   front_office: INTERNAL,
   sales_agent: NONE,
   logistics_partner: NONE,
+  // Awaiting CEO approval — no access anywhere until a real role is assigned.
+  pending: NONE,
 };
 
 /** Pure role-gate check. Object scope is applied separately by the services. */

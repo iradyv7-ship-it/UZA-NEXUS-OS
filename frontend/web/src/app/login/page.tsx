@@ -82,6 +82,9 @@ export default async function LoginPage({
           label={t('login.google.submit')}
           unavailable={t('login.google.unavailable')}
         />
+        {googleConfigured && (
+          <p className="mt-3 text-center text-xs text-fgMuted">{t('login.google.signup')}</p>
+        )}
       </div>
 
       <p className="mt-4 text-center text-xs text-fgSubtle">{t('login.hint')}</p>

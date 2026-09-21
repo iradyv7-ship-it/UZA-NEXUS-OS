@@ -2,7 +2,13 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { translator } from '@/i18n';
 import { getLocale, getSession } from '@/lib/session';
-import { can, homePathFor, canManageShipments } from '@/lib/permissions';
+import {
+  can,
+  homePathFor,
+  canManageShipments,
+  canApproveAccess,
+  isPending,
+} from '@/lib/permissions';
 import { LocaleSwitch } from '@/components/LocaleSwitch';
 import { SHELL_PADDING_X, SHELL_WIDTH } from '@/components/ui';
 import { logoutAction } from '@/app/actions';
@@ -21,13 +27,17 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const showVerifyQueue = can(session.actor, 'payment', 'read');
   const showOps = canManageShipments(session.actor);
   const showCommand = session.actor.role === 'ceo' || session.actor.role === 'venture_manager';
+  const showAccess = canApproveAccess(session.actor);
+  // A sign-up nobody has approved yet holds no grant: every link would only lead to a
+  // denial, so the shell offers none — just who they are and the way out.
+  const pending = isPending(session.actor);
   const home = homePathFor(session.actor);
 
   // The unread count. A message nobody is told about is not a message, and until now the
   // count existed in the API and was only ever seen by someone who already went looking.
   // Failure here must never take the shell down with it — a badge is not worth a blank page.
-  const inbox = await authedCall<{ unread: number }>('/planning/memos');
-  const unread = inbox.kind === 'ok' ? inbox.data.unread : 0;
+  const inbox = pending ? null : await authedCall<{ unread: number }>('/planning/memos');
+  const unread = inbox?.kind === 'ok' ? inbox.data.unread : 0;
 
   return (
     <div className="min-h-screen bg-bg">
@@ -41,78 +51,87 @@ export default async function AppLayout({ children }: { children: React.ReactNod
               <span className="text-[11px] text-fgMuted">{t('app.tagline')}</span>
             </Link>
             <div className="flex flex-wrap items-center justify-end gap-2">
-              {showCommand && (
-                <Link
-                  href="/nexus"
-                  className="rounded-lg bg-primary px-3 py-2 text-sm font-semibold text-surface"
-                >
-                  Nexus
-                </Link>
-              )}
-              <Link href="/my-week" className={NAV}>
-                My week
-              </Link>
-              {showCommand && (
-                <Link href="/digest" className={NAV}>
-                  Monday digest
-                </Link>
-              )}
-              <Link href="/week" className={NAV}>
-                Initiatives
-              </Link>
-              <Link href="/memos" className={`${NAV} relative`}>
-                Messages
-                {unread > 0 && (
-                  <span
-                    aria-label={`${unread} unread`}
-                    className="ml-1.5 inline-flex min-w-[1.25rem] items-center justify-center rounded-full bg-danger px-1.5 py-0.5 text-[11px] font-semibold leading-none text-surface"
-                  >
-                    {unread}
-                  </span>
-                )}
-              </Link>
-              <Link href="/tasks" className={NAV}>
-                Tasks
-              </Link>
-              {showCommand && (
-                <Link href="/projects" className={NAV}>
-                  Projects
-                </Link>
-              )}
-              {showCommand && (
-                <Link href="/funding" className={NAV}>
-                  Funding
-                </Link>
-              )}
-              {showCommand && (
-                <Link href="/register" className={NAV}>
-                  Review
-                </Link>
-              )}
-              {showCommand && (
-                <Link href="/command" className={NAV}>
-                  Command
-                </Link>
-              )}
-              {showCommand && (
-                <Link href="/systems" className={NAV}>
-                  Systems
-                </Link>
-              )}
-              {showCommand && (
-                <Link href="/empower" className={NAV}>
-                  Empower
-                </Link>
-              )}
-              {showVerifyQueue && (
-                <Link href="/finance/payments" className={NAV}>
-                  {t('nav.verifyQueue')}
-                </Link>
-              )}
-              {showOps && (
-                <Link href="/ops/shipments" className={NAV}>
-                  Ops
-                </Link>
+              {!pending && (
+                <>
+                  {showCommand && (
+                    <Link
+                      href="/nexus"
+                      className="rounded-lg bg-primary px-3 py-2 text-sm font-semibold text-surface"
+                    >
+                      Nexus
+                    </Link>
+                  )}
+                  <Link href="/my-week" className={NAV}>
+                    My week
+                  </Link>
+                  {showCommand && (
+                    <Link href="/digest" className={NAV}>
+                      Monday digest
+                    </Link>
+                  )}
+                  <Link href="/week" className={NAV}>
+                    Initiatives
+                  </Link>
+                  <Link href="/memos" className={`${NAV} relative`}>
+                    Messages
+                    {unread > 0 && (
+                      <span
+                        aria-label={`${unread} unread`}
+                        className="ml-1.5 inline-flex min-w-[1.25rem] items-center justify-center rounded-full bg-danger px-1.5 py-0.5 text-[11px] font-semibold leading-none text-surface"
+                      >
+                        {unread}
+                      </span>
+                    )}
+                  </Link>
+                  <Link href="/tasks" className={NAV}>
+                    Tasks
+                  </Link>
+                  {showCommand && (
+                    <Link href="/projects" className={NAV}>
+                      Projects
+                    </Link>
+                  )}
+                  {showCommand && (
+                    <Link href="/funding" className={NAV}>
+                      Funding
+                    </Link>
+                  )}
+                  {showCommand && (
+                    <Link href="/register" className={NAV}>
+                      Review
+                    </Link>
+                  )}
+                  {showCommand && (
+                    <Link href="/command" className={NAV}>
+                      Command
+                    </Link>
+                  )}
+                  {showCommand && (
+                    <Link href="/systems" className={NAV}>
+                      Systems
+                    </Link>
+                  )}
+                  {showCommand && (
+                    <Link href="/empower" className={NAV}>
+                      Empower
+                    </Link>
+                  )}
+                  {showVerifyQueue && (
+                    <Link href="/finance/payments" className={NAV}>
+                      {t('nav.verifyQueue')}
+                    </Link>
+                  )}
+                  {showOps && (
+                    <Link href="/ops/shipments" className={NAV}>
+                      Ops
+                    </Link>
+                  )}
+                  {showAccess && (
+                    <Link href="/admin/access" className={NAV}>
+                      {t('nav.access')}
+                    </Link>
+                  )}
+                </>
               )}
               <LocaleSwitch locale={locale} />
               <form action={logoutAction}>
